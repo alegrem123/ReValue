@@ -73,7 +73,7 @@ function buildWalletDoc(idUtente) {
  * @param {'accredito'|'sottrazione'} tipo
  * @param {number} ammontare - deve essere > 0
  * @param {string} motivo
- * @param {string|ObjectId|null} riferimento - opzionale, FK prenotazione/riscatto
+ * @param {string|ObjectId|null} riferimento - opzionale
  * @returns {Object}
  * @throws {Error} se tipo non valido o ammontare <= 0
  */
