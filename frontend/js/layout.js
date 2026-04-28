@@ -140,6 +140,16 @@ function updateAuthUI(user) {
     guestEls.forEach(el => el.classList.add('d-none'));
     const nameEl = document.getElementById('navbar-username');
     if (nameEl) nameEl.textContent = user.nome || 'Profilo';
+
+    fetch('/api/wallet/balance', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        const el = document.getElementById('navbar-balance');
+        if (el) el.textContent = data.bilancio ?? 0;
+      })
+      .catch(() => {});
   } else {
     authEls.forEach(el  => el.classList.add('d-none'));
     guestEls.forEach(el => el.classList.remove('d-none'));
