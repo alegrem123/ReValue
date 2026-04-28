@@ -1,0 +1,26 @@
+const { Router } = require('express');
+const { authenticate, optionalAuthenticate } = require('../middleware/authMiddleware');
+const {
+  getCatalogo,
+  getAnnuncio,
+  creaAnnuncio,
+  modificaAnnuncio,
+  cancellaAnnuncio,
+  prenotaAnnuncio,
+  annullaPrenotazione,
+} = require('../controllers/annunciController');
+
+const router = Router();
+
+// RF4/UC8: catalogo pubblico — auth opzionale (cambia visibilità lat/lng)
+router.get('/', optionalAuthenticate, getCatalogo);
+router.get('/:id', optionalAuthenticate, getAnnuncio);
+
+// route protette — richiedono autenticazione
+router.post('/', authenticate, creaAnnuncio);
+router.put('/:id', authenticate, modificaAnnuncio);
+router.delete('/:id', authenticate, cancellaAnnuncio);
+router.post('/:id/prenota', authenticate, prenotaAnnuncio);
+router.delete('/:id/prenotazione', authenticate, annullaPrenotazione);
+
+module.exports = router;
