@@ -10,9 +10,11 @@ app.use(express.urlencoded({ extended: true }));
 
 const authRoutes = require('./src/routes/authRoutes');
 const annunciRoutes = require('./src/routes/annunciRoutes');
+const walletRoutes = require('./src/routes/walletRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/annunci', annunciRoutes);
+app.use('/api/wallet', walletRoutes);
 
 app.get('/', (_req, res) => {
   res.json({ message: 'Server running' });
