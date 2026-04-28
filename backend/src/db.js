@@ -1,7 +1,7 @@
 /**
  * db.js
  * Gestisce la connessione a MongoDB tramite mongojs.
- * Esporta una singola istanza condivisa del DB.
+ * Esporta una singola istanza condivisa del DB tramite helper getDb().
  */
 
 const mongojs = require('mongojs');
@@ -22,4 +22,13 @@ db.on('connect', () => {
   console.log('Connesso a MongoDB Atlas');
 });
 
-module.exports = db;
+/**
+ * Restituisce l'istanza condivisa del database MongoDB.
+ * @returns {Object} Istanza del database mongojs connessa.
+ */
+function getDb() {
+  return db;
+}
+
+module.exports = { getDb };
+
