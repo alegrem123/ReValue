@@ -77,6 +77,7 @@ async function bannaUtente(req, res) {
     }
 
     utente.isSospeso = true;
+    utente.bannato = true;
     await utente.save();
 
     return res.status(200).json({ message: `Utente ${utente.email} bannato` });
@@ -121,7 +122,7 @@ async function riabilitaUtente(req, res) {
   try {
     const utente = await User.findByIdAndUpdate(
       req.params.id,
-      { $set: { isSospeso: false } },
+      { $set: { isSospeso: false } }, // non resetta bannato — ban è permanente
       { new: true }
     );
     if (!utente) return res.status(404).json({ error: 'Utente non trovato' });
