@@ -16,6 +16,61 @@ function generaCodiceQR() {
 }
 
 /**
+ * Estrae un valore numerico da dimensione testuale.
+ * Supporta dimensioni enumerative: piccolo, medio, grande, molto grande.
+ * Se numerico, usa il valore diretto; altrimenti usa la scala enumerativa.
+ */
+function normalizeDimensione(value) {
+  if (value == null) return 1;
+  const parsed = parseFloat(value);
+  if (!Number.isNaN(parsed)) {
+    return parsed;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  switch (normalized) {
+    case 'piccolo':
+    case 'small':
+    case 's':
+      return 1;
+    case 'medio':
+    case 'medium':
+    case 'm':
+      return 2;
+    case 'grande':
+    case 'large':
+    case 'l':
+      return 3;
+    case 'molto grande':
+    case 'extra large':
+    case 'xl':
+    case 'xlarge':
+      return 4;
+    default:
+      return 1; // default a piccolo se non riconosciuto
+  }
+}
+
+/**
+ * Calcola i giorni rimanenti fino a dataScadenza.
+ */
+function giorniRimanenti(dataScadenza) {
+  const now = Date.now();
+  const target = new Date(dataScadenza).getTime();
+  const diff = target - now;
+  return Math.max(0, diff / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Calcola il valore dell'annuncio per l'asta inversa.
+ * formula: dimensione * giorni-rimanenti
+ */
+function calcolaValoreAnnuncio(annuncio) {
+  const dimensione = normalizeDimensione(annuncio.oggetto?.dimensioni);
+  return dimensione * giorniRimanenti(annuncio.dataScadenza);
+}
+
+/**
  * Calcola distanza haversine in km tra due punti geografici.
  * @param {number} lat1 - Latitudine punto 1
  * @param {number} lng1 - Longitudine punto 1
@@ -51,7 +106,7 @@ async function getCatalogo(req, res) {
     const filtro = { isAttivo: true, stato: 'DISPONIBILE' };
 
     if (categoria) filtro['oggetto.categoria'] = categoria;
-    if (dimensione) filtro['oggetto.dimensione'] = dimensione;
+    if (dimensione) filtro['oggetto.dimensioni'] = dimensione;
     if (materiale) filtro['oggetto.materiale'] = materiale;
 
     // filtro intervallo scadenza (RF22: data di scadenza)
@@ -62,10 +117,13 @@ async function getCatalogo(req, res) {
     }
 
     // filtro distanza con haversine (calcolo manuale dopo query)
-    // Nota: per dataset piccoli, filtriamo in JS dopo la query per semplicità
 
-    // RNF1: ordinamento nativo DBMS su dataScadenza
-    const sort = ordinamento === 'DESC' ? { dataScadenza: -1 } : { dataScadenza: 1 };
+    const sortKey = String(ordinamento || 'dataScadenza_asc').toLowerCase();
+    const dbSort = sortKey === 'valore_asc' || sortKey === 'valore_desc'
+      ? null
+      : sortKey === 'dataScadenza_desc'
+        ? { dataScadenza: -1 }
+        : { dataScadenza: 1 };
 
     // RF4: omette lat/lng per utenti non autenticati
     const autenticato = !!req.user;
@@ -79,9 +137,11 @@ async function getCatalogo(req, res) {
     const skip = (pageNum - 1) * limitNum;
 
     // Recupera tutti gli annunci filtrati (senza paginazione per applicare filtro distanza)
-    let annunci = await Annuncio.find(filtro, projection)
-      .sort(sort)
-      .populate('donatore', 'nome cognome');
+    let query = Annuncio.find(filtro, projection).populate('donatore', 'nome cognome');
+    if (dbSort) {
+      query = query.sort(dbSort);
+    }
+    let annunci = await query;
 
     // Applica filtro distanza se richiesto
     if (lat && lng && raggio) {
@@ -89,10 +149,18 @@ async function getCatalogo(req, res) {
       const userLng = parseFloat(lng);
       const maxDist = parseFloat(raggio);
       annunci = annunci.filter(annuncio => {
-        if (!annuncio.latitudine || !annuncio.longitudine) return false;
+        if (annuncio.latitudine == null || annuncio.longitudine == null) return false;
         const dist = haversineDistance(userLat, userLng, annuncio.latitudine, annuncio.longitudine);
         return dist <= maxDist;
       });
+    }
+
+    // Ordina per valore se richiesto
+    if (sortKey === 'valore_asc' || sortKey === 'valore_desc') {
+      annunci = annunci
+        .map((annuncio) => ({ annuncio, valore: calcolaValoreAnnuncio(annuncio) }))
+        .sort((a, b) => (sortKey === 'valore_asc' ? a.valore - b.valore : b.valore - a.valore))
+        .map((item) => item.annuncio);
     }
 
     // Calcola total dopo filtro distanza
@@ -118,7 +186,7 @@ async function getCatalogo(req, res) {
 /**
  * GET /api/annunci/:id
  * Dettaglio singolo annuncio.
- * Svela indirizzo esatto solo se l'utente ha una prenotazione ATTIVA sull'annuncio (RF25).
+ * Indirizzo visibile solo se autenticato.
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -134,19 +202,9 @@ async function getAnnuncio(req, res) {
 
     const dati = annuncio.toObject();
 
-    // RF25: svela indirizzo esatto solo all'acquirente con prenotazione attiva
-    const userId = req.user?.id;
-    if (userId) {
-      const prenotazione = await Prenotazione.findOne({
-        annuncio: annuncio._id,
-        acquirente: userId,
-        stato: 'ATTIVA',
-      });
-      if (!prenotazione) {
-        delete dati.latitudine;
-        delete dati.longitudine;
-      }
-    } else {
+    // Indirizzo visibile solo se autenticato
+    const autenticato = !!req.user;
+    if (!autenticato) {
       delete dati.latitudine;
       delete dati.longitudine;
     }
