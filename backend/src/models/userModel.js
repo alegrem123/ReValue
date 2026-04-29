@@ -43,6 +43,10 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    bannato: {
+      type: Boolean,
+      default: false,
+    },
     ruolo: {
       type: String,
       required: [true, 'ruolo is required'],
