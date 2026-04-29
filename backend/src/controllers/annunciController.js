@@ -456,6 +456,76 @@ async function annullaPrenotazione(req, res) {
   }
 }
 
+/**
+ * PATCH /api/annunci/:id/stato
+ * Cambia stato annuncio: DISPONIBILE→PRENOTATO→RITIRATO/SCADUTO.
+ * Solo donatore o admin possono cambiare stato.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function cambiaStatoAnnuncio(req, res) {
+  try {
+    const { stato } = req.body;
+
+    if (!stato || !['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
+      return res.status(400).json({ error: 'Stato non valido' });
+    }
+
+    const annuncio = await Annuncio.findById(req.params.id);
+
+    if (!annuncio) {
+      return res.status(404).json({ error: 'Annuncio non trovato' });
+    }
+
+    // Solo donatore o admin possono cambiare stato
+    const isDonatore = annuncio.donatore.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin'; // assumendo campo role
+
+    if (!isDonatore && !isAdmin) {
+      return res.status(403).json({ error: 'Non autorizzato' });
+    }
+
+    // Validazione transizioni
+    const transizioniValide = {
+      'DISPONIBILE': ['PRENOTATO', 'SCADUTO'],
+      'PRENOTATO': ['RITIRATO', 'DISPONIBILE'], // annulla prenotazione
+      'RITIRATO': [],
+      'SCADUTO': []
+    };
+
+    if (!transizioniValide[annuncio.stato].includes(stato)) {
+      return res.status(400).json({ error: `Transizione non valida da ${annuncio.stato} a ${stato}` });
+    }
+
+    annuncio.stato = stato;
+    await annuncio.save();
+
+    return res.status(200).json(annuncio);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * GET /api/annunci/me
+ * Annunci dell'utente loggato, anche scaduti/ritirati.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function getMieiAnnunci(req, res) {
+  try {
+    const annunci = await Annuncio.find({ donatore: req.user.id })
+      .populate('donatore', 'nome cognome')
+      .sort({ dataScadenza: -1 }); // più recenti prima
+
+    return res.status(200).json(annunci);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 module.exports = {
   getCatalogo,
   getAnnuncio,
@@ -464,4 +534,6 @@ module.exports = {
   cancellaAnnuncio,
   prenotaAnnuncio,
   annullaPrenotazione,
+  cambiaStatoAnnuncio,
+  getMieiAnnunci,
 };
