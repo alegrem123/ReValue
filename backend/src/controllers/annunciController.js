@@ -16,6 +16,25 @@ function generaCodiceQR() {
 }
 
 /**
+ * Calcola distanza haversine in km tra due punti geografici.
+ * @param {number} lat1 - Latitudine punto 1
+ * @param {number} lng1 - Longitudine punto 1
+ * @param {number} lat2 - Latitudine punto 2
+ * @param {number} lng2 - Longitudine punto 2
+ * @returns {number} Distanza in km
+ */
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371; // Raggio terrestre in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
  * GET /api/annunci
  * Catalogo pubblico — accessibile senza autenticazione (RF4, UC8).
  * Nasconde lat/lng esatte agli utenti non autenticati (RF4: privacy indirizzo).
@@ -27,11 +46,12 @@ function generaCodiceQR() {
  */
 async function getCatalogo(req, res) {
   try {
-    const { categoria, materiale, scadenzaDopo, scadenzaPrima, ordinamento } = req.query;
+    const { categoria, dimensione, materiale, scadenzaDopo, scadenzaPrima, lat, lng, raggio, ordinamento, page = 1, limit = 10 } = req.query;
 
     const filtro = { isAttivo: true, stato: 'DISPONIBILE' };
 
     if (categoria) filtro['oggetto.categoria'] = categoria;
+    if (dimensione) filtro['oggetto.dimensione'] = dimensione;
     if (materiale) filtro['oggetto.materiale'] = materiale;
 
     // filtro intervallo scadenza (RF22: data di scadenza)
@@ -40,6 +60,9 @@ async function getCatalogo(req, res) {
       if (scadenzaDopo) filtro.dataScadenza.$gte = new Date(scadenzaDopo);
       if (scadenzaPrima) filtro.dataScadenza.$lte = new Date(scadenzaPrima);
     }
+
+    // filtro distanza con haversine (calcolo manuale dopo query)
+    // Nota: per dataset piccoli, filtriamo in JS dopo la query per semplicità
 
     // RNF1: ordinamento nativo DBMS su dataScadenza
     const sort = ordinamento === 'DESC' ? { dataScadenza: -1 } : { dataScadenza: 1 };
@@ -50,11 +73,43 @@ async function getCatalogo(req, res) {
       ? '-__v'
       : '-latitudine -longitudine -__v';
 
-    const annunci = await Annuncio.find(filtro, projection)
+    // Paginazione
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 10)); // max 100 items per page
+    const skip = (pageNum - 1) * limitNum;
+
+    // Recupera tutti gli annunci filtrati (senza paginazione per applicare filtro distanza)
+    let annunci = await Annuncio.find(filtro, projection)
       .sort(sort)
       .populate('donatore', 'nome cognome');
 
-    return res.status(200).json(annunci);
+    // Applica filtro distanza se richiesto
+    if (lat && lng && raggio) {
+      const userLat = parseFloat(lat);
+      const userLng = parseFloat(lng);
+      const maxDist = parseFloat(raggio);
+      annunci = annunci.filter(annuncio => {
+        if (!annuncio.latitudine || !annuncio.longitudine) return false;
+        const dist = haversineDistance(userLat, userLng, annuncio.latitudine, annuncio.longitudine);
+        return dist <= maxDist;
+      });
+    }
+
+    // Calcola total dopo filtro distanza
+    const total = annunci.length;
+
+    // Applica paginazione manuale
+    const paginatedAnnunci = annunci.slice(skip, skip + limitNum);
+
+    return res.status(200).json({
+      data: paginatedAnnunci,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum),
+      },
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
