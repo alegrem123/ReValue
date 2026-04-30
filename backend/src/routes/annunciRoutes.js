@@ -16,15 +16,15 @@ const router = Router();
 
 // RF4/UC8: catalogo pubblico — auth opzionale (cambia visibilità lat/lng)
 router.get('/', optionalAuthenticate, getCatalogo);
-router.get('/:id', optionalAuthenticate, getAnnuncio);
 
 // route protette — richiedono autenticazione
+router.get('/me', authenticate, getMieiAnnunci);
+router.get('/:id', optionalAuthenticate, getAnnuncio);
 router.post('/', authenticate, creaAnnuncio);
 router.put('/:id', authenticate, modificaAnnuncio);
 router.delete('/:id', authenticate, cancellaAnnuncio);
 router.post('/:id/prenota', authenticate, prenotaAnnuncio);
 router.delete('/:id/prenotazione', authenticate, annullaPrenotazione);
 router.patch('/:id/stato', authenticate, cambiaStatoAnnuncio);
-router.get('/me', authenticate, getMieiAnnunci);
 
 module.exports = router;
