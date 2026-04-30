@@ -58,7 +58,12 @@ const annuncioSchema = new Schema(
     dataScadenza: {
       type: Date,
       required: [true, 'dataScadenza is required'],
-      // OCL #5: dataScadenza > now per annunci attivi — validata a livello di service
+      validate: {
+        validator(value) {
+          return value > new Date();
+        },
+        message: 'dataScadenza deve essere nel futuro (OCL #5)',
+      },
     },
     // OCL #7 / UC2: incrementato ad ogni prenota() per optimistic lock
     versione: {
