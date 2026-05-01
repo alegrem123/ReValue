@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 
@@ -7,6 +8,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve frontend statico da /frontend/
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 const authRoutes = require('./src/routes/authRoutes');
 const annunciRoutes = require('./src/routes/annunciRoutes');
@@ -21,9 +25,5 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/scambi', scambiRoutes);
 app.use('/api/messaggi', messaggiRoutes);
 app.use('/api/admin', adminRoutes);
-
-app.get('/', (_req, res) => {
-  res.json({ message: 'Server running' });
-});
 
 module.exports = app;
