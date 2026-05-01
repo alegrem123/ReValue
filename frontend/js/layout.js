@@ -141,7 +141,7 @@ function updateAuthUI(user) {
     const nameEl = document.getElementById('navbar-username');
     if (nameEl) nameEl.textContent = user.nome || 'Profilo';
 
-    fetch('/api/wallet/balance', {
+    fetch('/api/wallet/saldo', {
       headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` },
     })
       .then(r => r.json())
