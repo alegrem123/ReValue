@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profilo — RE-VALUE</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHviAXMgRXELFdQERoMKGGEkODfC3X5"
+    crossorigin="anonymous"
+  />
+
+  <style>
+    :root {
+      --rv-green:       #2E7D32;
+      --rv-green-light: #43A047;
+      --rv-green-dark:  #1B5E20;
+      --rv-accent:      #FFC107;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background-color: #f8f9fa;
+    }
+
+    .avatar-circle {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--rv-green-dark), var(--rv-green-light));
+      color: #fff;
+      font-size: 2.2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .wallet-card {
+      background: linear-gradient(135deg, var(--rv-green-dark) 0%, var(--rv-green-light) 100%);
+      color: #fff;
+      border-radius: 1rem;
+    }
+
+    .wallet-card .balance {
+      font-size: 2.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .wallet-card .balance-label {
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+
+    .stat-pill {
+      background: rgba(255,255,255,0.18);
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #e9ecef 25%, #dee2e6 50%, #e9ecef 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="navbar-container"></div>
+
+  <main class="container py-4" style="max-width: 760px;">
+
+    <!-- ── Alert ─────────────────────────────────── -->
+    <div id="alert-box" class="alert d-none mb-4" role="alert"></div>
+
+    <!-- ── Header profilo ─────────────────────────── -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-4 flex-wrap">
+
+          <div class="avatar-circle" id="avatar-initials">
+            <i class="bi bi-person-fill"></i>
+          </div>
+
+          <div class="flex-grow-1">
+            <h1 class="h4 fw-bold mb-1" id="profile-nome">
+              <span class="skeleton d-inline-block" style="width:160px;height:1.4rem;">&nbsp;</span>
+            </h1>
+            <p class="text-muted mb-1 small" id="profile-email">
+              <span class="skeleton d-inline-block" style="width:200px;height:1rem;">&nbsp;</span>
+            </p>
+            <span id="profile-ruolo" class="badge bg-success d-none">Utente</span>
+            <span id="profile-admin-badge" class="badge bg-danger d-none">Admin</span>
+          </div>
+
+          <a href="#" id="btn-edit-profile" class="btn btn-outline-secondary btn-sm d-none">
+            <i class="bi bi-pencil me-1"></i>Modifica profilo
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Wallet card ─────────────────────────────── -->
+    <div class="wallet-card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+        <div>
+          <p class="balance-label mb-1">
+            <i class="bi bi-wallet2 me-1"></i>Saldo crediti
+          </p>
+          <div class="balance" id="wallet-balance">
+            <span class="skeleton d-inline-block rounded" style="width:100px;height:2.8rem;background:rgba(255,255,255,.2);">&nbsp;</span>
+          </div>
+          <p class="balance-label mt-2 mb-0">crediti RE-VALUE</p>
+        </div>
+
+        <div class="d-flex flex-column gap-2 text-end">
+          <a href="/views/wallethistory.html" class="btn btn-warning btn-sm fw-semibold">
+            <i class="bi bi-clock-history me-1"></i>Storico transazioni
+          </a>
+          <a href="/views/premi.html" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-gift me-1"></i>Riscatta premi
+          </a>
+        </div>
+      </div>
+
+      <!-- Ultime transazioni inline -->
+      <hr style="border-color: rgba(255,255,255,.25);" class="mt-3 mb-3" />
+      <p class="balance-label mb-2 small">Ultime transazioni</p>
+      <div id="recent-transactions">
+        <span class="skeleton d-inline-block rounded" style="width:100%;height:1rem;background:rgba(255,255,255,.15);">&nbsp;</span>
+      </div>
+    </div>
+
+    <!-- ── Info account ─────────────────────────────── -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white border-bottom fw-semibold py-3">
+        <i class="bi bi-person-lines-fill me-2 text-success"></i>Informazioni account
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3" id="info-fields">
+          <!-- Skeleton iniziale -->
+          <div class="col-sm-6">
+            <label class="form-label text-muted small">Nome</label>
+            <div class="skeleton rounded" style="height:2.2rem;">&nbsp;</div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label text-muted small">Cognome</label>
+            <div class="skeleton rounded" style="height:2.2rem;">&nbsp;</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small">Email</label>
+            <div class="skeleton rounded" style="height:2.2rem;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Statistiche ─────────────────────────────── -->
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white border-bottom fw-semibold py-3">
+        <i class="bi bi-bar-chart-fill me-2 text-success"></i>Statistiche
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3 text-center">
+          <div class="col-4">
+            <div class="fw-bold fs-4" id="stat-transazioni">—</div>
+            <div class="text-muted small">Transazioni</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold fs-4" id="stat-accrediti">—</div>
+            <div class="text-muted small">Accrediti</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold fs-4" id="stat-sottrazioni">—</div>
+            <div class="text-muted small">Utilizzi crediti</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmO7Qqxp4Fq/LRPF1lQBkUa/Ji"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/apiClient.js"></script>
+
+  <script>
+    /* ── Guard: redirect al login se non autenticato ── */
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+      window.location.href = '/views/login.html?redirect=/views/profile.html';
+    }
+
+    /* ── Decodifica JWT payload (no verify — solo UI) ── */
+    function decodeJwt(t) {
+      try { return JSON.parse(atob(t.split('.')[1])); }
+      catch { return null; }
+    }
+
+    /* ── Rimuove skeleton e sostituisce con testo ── */
+    function fill(id, text) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = '';
+      el.textContent = text;
+    }
+
+    /* ── Formatta data transazione ── */
+    function fmtDate(d) {
+      return new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    /* ── Renderizza info utente ── */
+    function renderUser(user) {
+      const nome    = user.nome    || '—';
+      const cognome = user.cognome || '—';
+      const email   = user.email   || '—';
+      const ruolo   = user.ruolo   || 'user';
+
+      // Header
+      fill('profile-nome', `${nome} ${cognome}`);
+      fill('profile-email', email);
+
+      // Avatar iniziali
+      const av = document.getElementById('avatar-initials');
+      if (nome !== '—') {
+        av.innerHTML = '';
+        av.textContent = (nome[0] + (cognome[0] || '')).toUpperCase();
+      }
+
+      // Badge ruolo
+      if (ruolo === 'admin') {
+        document.getElementById('profile-admin-badge').classList.remove('d-none');
+      } else {
+        document.getElementById('profile-ruolo').classList.remove('d-none');
+      }
+
+      // Bottone modifica
+      document.getElementById('btn-edit-profile').classList.remove('d-none');
+
+      // Info fields
+      document.getElementById('info-fields').innerHTML = `
+        <div class="col-sm-6">
+          <label class="form-label text-muted small">Nome</label>
+          <div class="form-control-plaintext fw-semibold border rounded px-3 py-2 bg-white">${nome}</div>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label text-muted small">Cognome</label>
+          <div class="form-control-plaintext fw-semibold border rounded px-3 py-2 bg-white">${cognome}</div>
+        </div>
+        <div class="col-12">
+          <label class="form-label text-muted small">Email</label>
+          <div class="form-control-plaintext border rounded px-3 py-2 bg-white">${email}</div>
+        </div>
+      `;
+    }
+
+    /* ── Renderizza wallet ── */
+    function renderWallet(bilancio, storico) {
+      // Saldo
+      const balEl = document.getElementById('wallet-balance');
+      balEl.innerHTML = '';
+      balEl.textContent = bilancio ?? 0;
+
+      // Ultime 3 transazioni
+      const txEl = document.getElementById('recent-transactions');
+      const ultimi = (storico?.data || []).slice(0, 3);
+      if (ultimi.length === 0) {
+        txEl.innerHTML = '<span style="opacity:.7;font-size:.85rem;">Nessuna transazione ancora.</span>';
+        return;
+      }
+
+      txEl.innerHTML = ultimi.map(t => {
+        const accredito = t.tipo === 'accredito';
+        const icon  = accredito ? '↑' : '↓';
+        const color = accredito ? 'rgba(255,255,255,1)' : 'rgba(255,193,7,1)';
+        return `
+          <div class="d-flex justify-content-between align-items-center py-1" style="font-size:.85rem;">
+            <span style="opacity:.85;">${icon} ${t.motivo || t.tipo}</span>
+            <span style="color:${color};font-weight:600;">${accredito ? '+' : '-'}${t.ammontare} cr.</span>
+            <span style="opacity:.6;">${fmtDate(t.data)}</span>
+          </div>
+        `;
+      }).join('');
+
+      // Statistiche
+      const all = storico?.data || [];
+      const totAll = storico?.totale ?? all.length;
+      const accrediti   = all.filter(t => t.tipo === 'accredito').length;
+      const sottrazioni = all.filter(t => t.tipo !== 'accredito').length;
+
+      fill('stat-transazioni', totAll);
+      fill('stat-accrediti',   accrediti);
+      fill('stat-sottrazioni', sottrazioni);
+    }
+
+    /* ── Caricamento dati ── */
+    async function loadProfile() {
+      const payload = decodeJwt(token);
+
+      // Wallet (sempre disponibile)
+      const walletRes = await api.get('/api/wallet/me?limit=3');
+      if (walletRes.ok) {
+        renderWallet(walletRes.data.bilancio, walletRes.data.storico);
+      } else {
+        document.getElementById('wallet-balance').textContent = '—';
+        document.getElementById('recent-transactions').textContent = 'Errore caricamento wallet.';
+      }
+
+      // Profilo utente — endpoint AG (GET /api/users/me)
+      const userRes = await api.get('/api/users/me');
+      if (userRes.ok && userRes.data) {
+        renderUser(userRes.data);
+      } else {
+        // Fallback: mostra solo ciò che c'è nel JWT
+        renderUser({ ruolo: payload?.ruolo || 'user' });
+        const alertEl = document.getElementById('alert-box');
+        alertEl.className = 'alert alert-warning';
+        alertEl.innerHTML = '<i class="bi bi-info-circle me-2"></i>Dati profilo non ancora disponibili.';
+        alertEl.classList.remove('d-none');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadProfile);
+  </script>
+
+</body>
+</html>
