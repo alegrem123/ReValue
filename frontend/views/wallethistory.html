@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Storico transazioni — RE-VALUE</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHviAXMgRXELFdQERoMKGGEkODfC3X5"
+    crossorigin="anonymous"
+  />
+
+  <style>
+    :root {
+      --rv-green:       #2E7D32;
+      --rv-green-light: #43A047;
+      --rv-green-dark:  #1B5E20;
+      --rv-accent:      #FFC107;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background-color: #f8f9fa;
+    }
+
+    .balance-banner {
+      background: linear-gradient(135deg, var(--rv-green-dark) 0%, var(--rv-green-light) 100%);
+      color: #fff;
+      border-radius: 1rem;
+    }
+
+    .balance-banner .amount {
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .tx-row {
+      transition: background-color 0.15s;
+    }
+
+    .tx-row:hover {
+      background-color: #f1f8f1;
+    }
+
+    .tx-badge-accredito {
+      color: #2E7D32;
+      background-color: #e8f5e9;
+    }
+
+    .tx-badge-sottrazione {
+      color: #b71c1c;
+      background-color: #fdecea;
+    }
+
+    .amount-accredito  { color: #2E7D32; font-weight: 700; }
+    .amount-sottrazione { color: #c62828; font-weight: 700; }
+
+    .skeleton {
+      background: linear-gradient(90deg, #e9ecef 25%, #dee2e6 50%, #e9ecef 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .page-btn.active {
+      background-color: var(--rv-green);
+      border-color: var(--rv-green);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="navbar-container"></div>
+
+  <main class="container py-4" style="max-width: 820px;">
+
+    <!-- ── Saldo banner ─────────────────────────────── -->
+    <div class="balance-banner p-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <p class="mb-1 small" style="opacity:.8;">
+          <i class="bi bi-wallet2 me-1"></i>Saldo attuale
+        </p>
+        <div class="amount" id="wallet-balance">
+          <span class="skeleton d-inline-block rounded" style="width:90px;height:2.4rem;background:rgba(255,255,255,.2);">&nbsp;</span>
+        </div>
+        <p class="mt-1 mb-0 small" style="opacity:.8;">crediti RE-VALUE</p>
+      </div>
+      <a href="/views/profile.html" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-person-circle me-1"></i>Vai al profilo
+      </a>
+    </div>
+
+    <!-- ── Filtri ─────────────────────────────────────── -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-3">
+        <form id="filter-form" class="row g-2 align-items-end">
+
+          <div class="col-sm-4">
+            <label for="filter-tipo" class="form-label small fw-semibold mb-1">Tipo</label>
+            <select id="filter-tipo" class="form-select form-select-sm">
+              <option value="">Tutti</option>
+              <option value="accredito">Accrediti</option>
+              <option value="sottrazione">Utilizzi</option>
+            </select>
+          </div>
+
+          <div class="col-sm-3">
+            <label for="filter-from" class="form-label small fw-semibold mb-1">Dal</label>
+            <input type="date" id="filter-from" class="form-control form-control-sm" />
+          </div>
+
+          <div class="col-sm-3">
+            <label for="filter-to" class="form-label small fw-semibold mb-1">Al</label>
+            <input type="date" id="filter-to" class="form-control form-control-sm" />
+          </div>
+
+          <div class="col-sm-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm w-100"
+                    style="background-color:var(--rv-green);color:#fff;border-color:var(--rv-green);">
+              <i class="bi bi-funnel"></i>
+            </button>
+            <button type="button" id="btn-reset" class="btn btn-sm btn-outline-secondary w-100">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Risultati header ──────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small" id="results-info">Caricamento…</span>
+      <select id="page-size" class="form-select form-select-sm" style="width:auto;">
+        <option value="10">10 per pagina</option>
+        <option value="20" selected>20 per pagina</option>
+        <option value="50">50 per pagina</option>
+      </select>
+    </div>
+
+    <!-- ── Lista transazioni ─────────────────────────── -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div id="tx-list">
+        <!-- skeleton -->
+        <ul class="list-group list-group-flush">
+          ${Array(5).fill(0).map(() => `
+            <li class="list-group-item py-3">
+              <div class="skeleton rounded mb-1" style="width:60%;height:.9rem;">&nbsp;</div>
+              <div class="skeleton rounded" style="width:35%;height:.8rem;">&nbsp;</div>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── Paginazione ───────────────────────────────── -->
+    <nav id="pagination-container" aria-label="Paginazione transazioni" class="d-none">
+      <ul class="pagination justify-content-center" id="pagination"></ul>
+    </nav>
+
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmO7Qqxp4Fq/LRPF1lQBkUa/Ji"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/apiClient.js"></script>
+
+  <script>
+    /* ── Guard ── */
+    if (!localStorage.getItem('jwt')) {
+      window.location.href = '/views/login.html?redirect=/views/wallethistory.html';
+    }
+
+    let currentPage = 1;
+
+    /* ── Leggi filtri dal form ── */
+    function getFilters() {
+      return {
+        tipo:  document.getElementById('filter-tipo').value  || undefined,
+        from:  document.getElementById('filter-from').value  || undefined,
+        to:    document.getElementById('filter-to').value    || undefined,
+        limit: document.getElementById('page-size').value,
+        page:  currentPage,
+      };
+    }
+
+    /* ── Costruisce query string ── */
+    function toQueryString(params) {
+      const q = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => { if (v !== undefined) q.set(k, v); });
+      return q.toString() ? '?' + q.toString() : '';
+    }
+
+    /* ── Formatta data ── */
+    function fmtDate(d) {
+      return new Date(d).toLocaleString('it-IT', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    }
+
+    /* ── Renderizza riga transazione ── */
+    function txRow(t) {
+      const accredito = t.tipo === 'accredito';
+      const badgeCls  = accredito ? 'tx-badge-accredito' : 'tx-badge-sottrazione';
+      const amtCls    = accredito ? 'amount-accredito'  : 'amount-sottrazione';
+      const icon      = accredito ? 'bi-arrow-up-circle-fill' : 'bi-arrow-down-circle-fill';
+      const prefix    = accredito ? '+' : '−';
+
+      return `
+        <li class="list-group-item tx-row py-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+              <i class="bi ${icon} fs-5 ${amtCls}"></i>
+              <div>
+                <div class="fw-semibold">${t.motivo || (accredito ? 'Accredito' : 'Utilizzo crediti')}</div>
+                <div class="text-muted small">${fmtDate(t.data)}</div>
+              </div>
+            </div>
+            <div class="text-end">
+              <div class="${amtCls} fs-6">${prefix}${t.ammontare} cr.</div>
+              <span class="badge ${badgeCls} small">${accredito ? 'Accredito' : 'Utilizzo'}</span>
+            </div>
+          </div>
+        </li>`;
+    }
+
+    /* ── Renderizza paginazione ── */
+    function renderPagination(pagina, totalePagine) {
+      const nav  = document.getElementById('pagination-container');
+      const list = document.getElementById('pagination');
+
+      if (totalePagine <= 1) { nav.classList.add('d-none'); return; }
+      nav.classList.remove('d-none');
+
+      const items = [];
+
+      // Prev
+      items.push(`
+        <li class="page-item ${pagina === 1 ? 'disabled' : ''}">
+          <button class="page-link page-btn" data-page="${pagina - 1}">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+        </li>`);
+
+      // Numeri pagina (max 5 visibili)
+      const start = Math.max(1, pagina - 2);
+      const end   = Math.min(totalePagine, start + 4);
+      for (let i = start; i <= end; i++) {
+        items.push(`
+          <li class="page-item">
+            <button class="page-link page-btn ${i === pagina ? 'active' : ''}" data-page="${i}">${i}</button>
+          </li>`);
+      }
+
+      // Next
+      items.push(`
+        <li class="page-item ${pagina === totalePagine ? 'disabled' : ''}">
+          <button class="page-link page-btn" data-page="${pagina + 1}">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </li>`);
+
+      list.innerHTML = items.join('');
+
+      list.querySelectorAll('.page-btn:not(.active)').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const p = parseInt(btn.dataset.page, 10);
+          if (p >= 1 && p <= totalePagine) {
+            currentPage = p;
+            loadTransazioni();
+          }
+        });
+      });
+    }
+
+    /* ── Carica dati ── */
+    async function loadTransazioni() {
+      const txList = document.getElementById('tx-list');
+      txList.innerHTML = `
+        <ul class="list-group list-group-flush">
+          ${[1,2,3].map(() => `
+            <li class="list-group-item py-3">
+              <div class="skeleton rounded mb-1" style="width:60%;height:.9rem;">&nbsp;</div>
+              <div class="skeleton rounded" style="width:35%;height:.8rem;">&nbsp;</div>
+            </li>`).join('')}
+        </ul>`;
+
+      document.getElementById('results-info').textContent = 'Caricamento…';
+
+      const filters = getFilters();
+      const qs      = toQueryString(filters);
+
+      const [walletRes, storicoRes] = await Promise.all([
+        api.get('/api/wallet/saldo'),
+        api.get('/api/wallet/storico' + qs),
+      ]);
+
+      /* Saldo */
+      const balEl = document.getElementById('wallet-balance');
+      balEl.innerHTML = '';
+      balEl.textContent = walletRes.ok ? (walletRes.data?.bilancio ?? 0) : '—';
+
+      /* Transazioni */
+      if (!storicoRes.ok) {
+        txList.innerHTML = `
+          <div class="p-4 text-center text-danger">
+            <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+            ${storicoRes.error || 'Errore caricamento storico.'}
+          </div>`;
+        document.getElementById('results-info').textContent = '';
+        return;
+      }
+
+      const { data, totale, pagina, totalePagine } = storicoRes.data;
+
+      /* Info risultati */
+      const limit  = parseInt(filters.limit, 10);
+      const offset = (pagina - 1) * limit;
+      document.getElementById('results-info').textContent =
+        totale === 0
+          ? 'Nessuna transazione trovata.'
+          : `${offset + 1}–${Math.min(offset + data.length, totale)} di ${totale} transazioni`;
+
+      /* Lista */
+      if (data.length === 0) {
+        txList.innerHTML = `
+          <div class="p-5 text-center text-muted">
+            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+            Nessuna transazione in questo intervallo.
+          </div>`;
+      } else {
+        txList.innerHTML = `<ul class="list-group list-group-flush">${data.map(txRow).join('')}</ul>`;
+      }
+
+      renderPagination(pagina, totalePagine);
+    }
+
+    /* ── Event listeners ── */
+    document.getElementById('filter-form').addEventListener('submit', e => {
+      e.preventDefault();
+      currentPage = 1;
+      loadTransazioni();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      document.getElementById('filter-tipo').value = '';
+      document.getElementById('filter-from').value = '';
+      document.getElementById('filter-to').value   = '';
+      document.getElementById('page-size').value   = '20';
+      currentPage = 1;
+      loadTransazioni();
+    });
+
+    document.getElementById('page-size').addEventListener('change', () => {
+      currentPage = 1;
+      loadTransazioni();
+    });
+
+    document.addEventListener('DOMContentLoaded', loadTransazioni);
+  </script>
+
+</body>
+</html>
