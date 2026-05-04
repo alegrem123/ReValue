@@ -13,6 +13,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 const authRoutes = require('./src/routes/authRoutes');
+const utentiRoutes = require('./src/routes/usersRoutes');
 const annunciRoutes = require('./src/routes/annunciRoutes');
 const walletRoutes = require('./src/routes/walletRoutes');
 const scambiRoutes = require('./src/routes/scambiRoutes');
@@ -21,6 +22,7 @@ const adminRoutes = require('./src/routes/adminRoutes');
 const prenotazioniRoutes = require('./src/routes/prenotazioniRoutes');
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', utentiRoutes);
 app.use('/api/annunci', annunciRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/scambi', scambiRoutes);
