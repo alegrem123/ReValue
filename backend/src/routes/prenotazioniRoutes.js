@@ -6,6 +6,7 @@ const {
   annullaPrenotazione,
   getMiePrenotazioni,
   getPrenotazione,
+  segnalaMancatoRitiro,
 } = require('../controllers/prenotazioniController');
 
 const router = Router();
@@ -15,5 +16,6 @@ router.post('/', authenticate, notSospeso, creaPrenotazione);
 router.get('/me', authenticate, getMiePrenotazioni);
 router.get('/:id', authenticate, getPrenotazione);
 router.delete('/:id', authenticate, notSospeso, annullaPrenotazione);
+router.post('/:id/no-show', authenticate, notSospeso, segnalaMancatoRitiro);
 
 module.exports = router;

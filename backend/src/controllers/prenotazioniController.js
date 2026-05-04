@@ -3,6 +3,7 @@ const Annuncio = require('../models/annuncioModel');
 const Prenotazione = require('../models/prenotazioneModel');
 const TokenQR = require('../models/tokenQRModel');
 const Conversazione = require('../models/conversazioneModel');
+const User = require('../models/userModel');
 
 // QR token valido 48 ore dalla prenotazione
 const QR_TTL_MS = 48 * 60 * 60 * 1000;
@@ -200,9 +201,60 @@ async function getPrenotazione(req, res) {
   }
 }
 
+/**
+ * POST /api/prenotazioni/:id/no-show
+ * Il donatore segnala il mancato ritiro (RF19).
+ * La prenotazione diventa ANNULLATA, l'annuncio torna DISPONIBILE,
+ * e l'acquirente subisce un malus. Se i malus raggiungono 3, l'utente viene sospeso.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function segnalaMancatoRitiro(req, res) {
+  try {
+    const prenotazione = await Prenotazione.findById(req.params.id);
+
+    if (!prenotazione || prenotazione.stato !== 'ATTIVA') {
+      return res.status(404).json({ error: 'Prenotazione attiva non trovata' });
+    }
+
+    if (prenotazione.donatore.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Solo il donatore può segnalare il mancato ritiro' });
+    }
+
+    // Aggiorna stato prenotazione
+    prenotazione.stato = 'ANNULLATA';
+    await prenotazione.save();
+
+    // Ripristina annuncio (OCL #11)
+    await Annuncio.findByIdAndUpdate(prenotazione.annuncio, {
+      $set: { stato: 'DISPONIBILE' },
+      $inc: { versione: 1 },
+    });
+
+    // Rimuove TokenQR associato
+    await TokenQR.deleteOne({ prenotazione: prenotazione._id });
+
+    // Penalità all'acquirente
+    const acquirente = await User.findById(prenotazione.acquirente);
+    if (acquirente) {
+      acquirente.malusCount += 1;
+      if (acquirente.malusCount >= 3) {
+        acquirente.isSospeso = true;
+      }
+      await acquirente.save();
+    }
+
+    return res.status(200).json({ message: 'Mancato ritiro segnalato con successo' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 module.exports = {
   creaPrenotazione,
   annullaPrenotazione,
   getMiePrenotazioni,
   getPrenotazione,
+  segnalaMancatoRitiro,
 };
