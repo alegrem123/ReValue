@@ -29,7 +29,7 @@ const NAVBAR_HTML = `
         </li>
         <!-- Visibili solo se loggato -->
         <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="/views/my-annunci.html">I miei annunci</a>
+          <a class="nav-link text-white" href="/views/annuncio.html">I miei annunci</a>
         </li>
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="/views/messaggi.html">
@@ -118,7 +118,7 @@ function getUser() {
  */
 function setActiveLink() {
   const path = window.location.pathname;
-  document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+  document.querySelectorAll('.navbar-nav .nav-link').forEach((link) => {
     if (link.getAttribute('href') && path.endsWith(link.getAttribute('href'))) {
       link.classList.add('fw-bold');
       link.style.opacity = '1';
@@ -132,27 +132,27 @@ function setActiveLink() {
  * Mostra/nasconde voci navbar in base allo stato di autenticazione.
  */
 function updateAuthUI(user) {
-  const authEls  = document.querySelectorAll('.nav-auth');
+  const authEls = document.querySelectorAll('.nav-auth');
   const guestEls = document.querySelectorAll('.nav-guest');
 
   if (user) {
-    authEls.forEach(el  => el.classList.remove('d-none'));
-    guestEls.forEach(el => el.classList.add('d-none'));
+    authEls.forEach((el) => el.classList.remove('d-none'));
+    guestEls.forEach((el) => el.classList.add('d-none'));
     const nameEl = document.getElementById('navbar-username');
     if (nameEl) nameEl.textContent = user.nome || 'Profilo';
 
     fetch('/api/wallet/saldo', {
       headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` },
     })
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         const el = document.getElementById('navbar-balance');
         if (el) el.textContent = data.bilancio ?? 0;
       })
       .catch(() => {});
   } else {
-    authEls.forEach(el  => el.classList.add('d-none'));
-    guestEls.forEach(el => el.classList.remove('d-none'));
+    authEls.forEach((el) => el.classList.add('d-none'));
+    guestEls.forEach((el) => el.classList.remove('d-none'));
   }
 }
 
@@ -160,10 +160,10 @@ function updateAuthUI(user) {
  * Inizializza navbar e footer, poi aggiorna UI.
  */
 function initLayout() {
-  const navContainer    = document.getElementById('navbar-container');
+  const navContainer = document.getElementById('navbar-container');
   const footerContainer = document.getElementById('footer-container');
 
-  if (navContainer)    navContainer.innerHTML    = NAVBAR_HTML;
+  if (navContainer) navContainer.innerHTML = NAVBAR_HTML;
   if (footerContainer) footerContainer.innerHTML = FOOTER_HTML;
 
   const user = getUser();
