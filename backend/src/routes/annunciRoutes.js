@@ -6,8 +6,6 @@ const {
   creaAnnuncio,
   modificaAnnuncio,
   cancellaAnnuncio,
-  prenotaAnnuncio,
-  annullaPrenotazione,
   cambiaStatoAnnuncio,
   getMieiAnnunci,
 } = require('../controllers/annunciController');
@@ -23,8 +21,6 @@ router.get('/:id', optionalAuthenticate, getAnnuncio);
 router.post('/', authenticate, creaAnnuncio);
 router.put('/:id', authenticate, modificaAnnuncio);
 router.delete('/:id', authenticate, cancellaAnnuncio);
-router.post('/:id/prenota', authenticate, prenotaAnnuncio);
-router.delete('/:id/prenotazione', authenticate, annullaPrenotazione);
 router.patch('/:id/stato', authenticate, cambiaStatoAnnuncio);
 
 module.exports = router;
