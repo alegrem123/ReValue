@@ -34,7 +34,8 @@ function buildUpdatePayload(body) {
   const allowedFields = ['nome', 'cognome', 'telefono', 'citta', 'descrizione'];
   return allowedFields.reduce((acc, field) => {
     if (Object.prototype.hasOwnProperty.call(body, field)) {
-      acc[field] = typeof body[field] === 'string' ? body[field].trim() : body[field];
+      acc[field] =
+        typeof body[field] === 'string' ? body[field].trim() : body[field];
     }
     return acc;
   }, {});

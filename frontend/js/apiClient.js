@@ -7,7 +7,17 @@
  *  - restituisce sempre { ok, data, error } — convenzione API del progetto
  */
 
-const API_BASE = '';   // stesso origine; cambia in prod se serve
+const API_BASE = (function () {
+  // Se stai servendo il frontend da Live Server su 127.0.0.1:5500,
+  // punta le richieste verso il backend in esecuzione su 127.0.0.1:3000.
+  if (
+    window.location.hostname === '127.0.0.1' &&
+    window.location.port === '5500'
+  ) {
+    return 'http://127.0.0.1:3000';
+  }
+  return '';
+})();
 
 /**
  * Legge il JWT da localStorage.
@@ -38,7 +48,9 @@ function buildHeaders(withBody = false) {
  */
 function handleUnauthorized() {
   localStorage.removeItem('jwt');
-  const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+  const redirect = encodeURIComponent(
+    window.location.pathname + window.location.search
+  );
   window.location.href = `/views/login.html?redirect=${redirect}`;
 }
 
@@ -52,9 +64,16 @@ function handleUnauthorized() {
  * @param {boolean} [options.auth=true]   — se false non aggiunge il token
  * @returns {Promise<{ok: boolean, data: *, status: number, error: string|null}>}
  */
-async function request(endpoint, { method = 'GET', body = null, auth = true } = {}) {
-  const hasBody  = body !== null && body !== undefined;
-  const headers  = auth ? buildHeaders(hasBody) : (hasBody ? new Headers({ 'Content-Type': 'application/json' }) : new Headers());
+async function request(
+  endpoint,
+  { method = 'GET', body = null, auth = true } = {}
+) {
+  const hasBody = body !== null && body !== undefined;
+  const headers = auth
+    ? buildHeaders(hasBody)
+    : hasBody
+      ? new Headers({ 'Content-Type': 'application/json' })
+      : new Headers();
 
   const init = {
     method,
@@ -66,7 +85,12 @@ async function request(endpoint, { method = 'GET', body = null, auth = true } = 
   try {
     res = await fetch(API_BASE + endpoint, init);
   } catch (networkErr) {
-    return { ok: false, data: null, status: 0, error: 'Errore di rete. Controlla la connessione.' };
+    return {
+      ok: false,
+      data: null,
+      status: 0,
+      error: 'Errore di rete. Controlla la connessione.',
+    };
   }
 
   if (res.status === 401 && auth) {
@@ -85,7 +109,7 @@ async function request(endpoint, { method = 'GET', body = null, auth = true } = 
   }
 
   const error = !res.ok
-    ? (data?.error || data?.message || `Errore ${res.status}`)
+    ? data?.error || data?.message || `Errore ${res.status}`
     : null;
 
   return { ok: res.ok, data, status: res.status, error };

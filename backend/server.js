@@ -1,4 +1,5 @@
-require('dotenv').config(); // must be first — loads .env before any other module reads process.env
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') }); // must be first — loads .env from backend folder
 
 const app = require('./app');
 const { connectDB } = require('./src/db');

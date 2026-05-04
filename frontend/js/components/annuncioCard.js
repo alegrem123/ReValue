@@ -16,13 +16,17 @@ function formatDistanceLabel(distanceKm) {
   if (distanceKm == null || Number.isNaN(distanceKm)) {
     return 'Distanza non disponibile';
   }
-  return `${distanceKm.toFixed(1)} km`; 
+  return `${distanceKm.toFixed(1)} km`;
 }
 
 function createAnnuncioCard(annuncio) {
-  const foto = annuncio.oggetto?.foto?.[0] || 'https://via.placeholder.com/420x220/ced4da/6c757d?text=Immagine+non+disponibile';
+  const foto =
+    annuncio.oggetto?.foto?.[0] ||
+    'https://via.placeholder.com/420x220/ced4da/6c757d?text=Immagine+non+disponibile';
   const titolo = annuncio.titolo || 'Annuncio senza titolo';
-  const scadenza = annuncio.dataScadenza ? formatDateItalian(annuncio.dataScadenza) : 'Data non disponibile';
+  const scadenza = annuncio.dataScadenza
+    ? formatDateItalian(annuncio.dataScadenza)
+    : 'Data non disponibile';
   const distanza = formatDistanceLabel(annuncio.distanza);
   const dettaglioUrl = `/views/annuncio.html?id=${annuncio._id}`;
 

@@ -80,7 +80,9 @@ describe('Auth flow', () => {
     await register(req, res);
 
     expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Email già registrata' }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Email già registrata' })
+    );
   });
 
   test('login ok con credenziali corrette', async () => {
@@ -134,15 +136,21 @@ describe('Auth flow', () => {
     await login(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Credenziali non valide' }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Credenziali non valide' })
+    );
   });
 });
 
 describe('JWT utility', () => {
   test('verifyToken fallisce per JWT scaduto', async () => {
-    const token = jwt.sign({ id: 'test-id', ruolo: 'user' }, process.env.JWT_SECRET, {
-      expiresIn: '-1s',
-    });
+    const token = jwt.sign(
+      { id: 'test-id', ruolo: 'user' },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '-1s',
+      }
+    );
 
     expect(() => verifyToken(token)).toThrow('Token expired');
   });

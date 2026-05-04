@@ -9,7 +9,8 @@ const catalogAlert = document.getElementById('catalog-alert');
 const catalogGrid = document.getElementById('catalog-grid');
 
 async function loadCatalogo() {
-  if (!catalogContainer || !catalogGrid || !catalogSpinner || !catalogAlert) return;
+  if (!catalogContainer || !catalogGrid || !catalogSpinner || !catalogAlert)
+    return;
 
   catalogSpinner.classList.remove('d-none');
   catalogAlert.classList.add('d-none');
@@ -19,7 +20,8 @@ async function loadCatalogo() {
   catalogSpinner.classList.add('d-none');
 
   if (!response.ok) {
-    catalogAlert.textContent = response.error || 'Errore nel caricamento del catalogo.';
+    catalogAlert.textContent =
+      response.error || 'Errore nel caricamento del catalogo.';
     catalogAlert.classList.remove('d-none', 'alert-success');
     catalogAlert.classList.add('alert', 'alert-danger');
     return;

@@ -60,7 +60,12 @@ function normalizeDimensione(value) {
 
 function calculateEstimatedCredits(annuncio) {
   const dimensione = normalizeDimensione(annuncio.oggetto?.dimensioni);
-  const giorni = annuncio.dataScadenza ? Math.max(0, (new Date(annuncio.dataScadenza) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+  const giorni = annuncio.dataScadenza
+    ? Math.max(
+        0,
+        (new Date(annuncio.dataScadenza) - new Date()) / (1000 * 60 * 60 * 24)
+      )
+    : 0;
   if (!annuncio.dataScadenza || giorni <= 0) return 'N/A';
   return Math.max(1, Math.round(dimensione * giorni)).toString();
 }
@@ -74,9 +79,12 @@ async function loadAnnuncio() {
     return;
   }
 
-  const response = await api.get(`/api/annunci/${encodeURIComponent(id)}`, { auth: false });
+  const response = await api.get(`/api/annunci/${encodeURIComponent(id)}`, {
+    auth: false,
+  });
   if (!response.ok) {
-    annuncioAlert.textContent = response.error || 'Impossibile caricare l\'annuncio.';
+    annuncioAlert.textContent =
+      response.error || "Impossibile caricare l'annuncio.";
     annuncioAlert.className = 'alert alert-danger';
     annuncioAlert.classList.remove('d-none');
     annuncioTitle.textContent = 'Annuncio non disponibile';
@@ -86,15 +94,19 @@ async function loadAnnuncio() {
   const annuncio = response.data;
   annuncioTitle.textContent = annuncio.titolo || 'Annuncio senza titolo';
   annuncioDonatore.textContent = `Donatore: ${annuncio.donatore?.nome || 'Utente anonimo'}`;
-  annuncioDescription.textContent = annuncio.oggetto?.descrizione || 'Descrizione non disponibile.';
+  annuncioDescription.textContent =
+    annuncio.oggetto?.descrizione || 'Descrizione non disponibile.';
   annuncioDeadline.textContent = formatItalianDate(annuncio.dataScadenza);
-  annuncioCategory.textContent = annuncio.oggetto?.categoria || 'Non specificato';
-  annuncioMaterial.textContent = annuncio.oggetto?.materiale || 'Non specificato';
+  annuncioCategory.textContent =
+    annuncio.oggetto?.categoria || 'Non specificato';
+  annuncioMaterial.textContent =
+    annuncio.oggetto?.materiale || 'Non specificato';
   annuncioSize.textContent = annuncio.oggetto?.dimensioni || 'Non specificato';
-  annuncioValue.textContent = `${calculateEstimatedCredits(annuncio)} crediti`; 
-  annuncioLocation.textContent = annuncio.latitudine != null && annuncio.longitudine != null
-    ? `Lat: ${annuncio.latitudine.toFixed(4)}, Lng: ${annuncio.longitudine.toFixed(4)}`
-    : 'Visibile solo per utenti autenticati';
+  annuncioValue.textContent = `${calculateEstimatedCredits(annuncio)} crediti`;
+  annuncioLocation.textContent =
+    annuncio.latitudine != null && annuncio.longitudine != null
+      ? `Lat: ${annuncio.latitudine.toFixed(4)}, Lng: ${annuncio.longitudine.toFixed(4)}`
+      : 'Visibile solo per utenti autenticati';
 
   const foto = annuncio.oggetto?.foto?.[0];
   if (foto) {
