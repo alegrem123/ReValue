@@ -10,17 +10,6 @@ const Segnalazione = require('../models/segnalazioneModel');
 const DISDETTA_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 
-// QR token valido 48 ore dalla prenotazione
-const QR_TTL_MS = 48 * 60 * 60 * 1000;
-
-/**
- * Genera un codice QR crittograficamente sicuro.
- * @returns {string} stringa esadecimale da 64 caratteri
- */
-function generaCodiceQR() {
-  return crypto.randomBytes(32).toString('hex');
-}
-
 /**
  * POST /api/prenotazioni
  * Prenota un oggetto (RF24, UC2).
@@ -73,14 +62,6 @@ async function creaPrenotazione(req, res) {
       annuncio: annuncio._id,
       acquirente: req.user.id,
       donatore: annuncio.donatore,
-    });
-
-    // genera TokenQR (D2 §2.3.3 generaQR(), RF17)
-    const scadenzaQR = new Date(Date.now() + QR_TTL_MS);
-    await TokenQR.create({
-      prenotazione: prenotazione._id,
-      codice: generaCodiceQR(),
-      scadenza: scadenzaQR,
     });
 
     // crea Conversazione (D2 §2.4.1, composizione con Prenotazione)

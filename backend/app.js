@@ -27,6 +27,7 @@ const scambiRoutes = require('./src/routes/scambiRoutes');
 const messaggiRoutes = require('./src/routes/messaggiRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const prenotazioniRoutes = require('./src/routes/prenotazioniRoutes');
+const qrRoutes = require('./src/routes/qrRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', utentiRoutes);
@@ -36,5 +37,6 @@ app.use('/api/scambi', scambiRoutes);
 app.use('/api/messaggi', messaggiRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/prenotazioni', prenotazioniRoutes);
+app.use('/api/qr', qrRoutes);
 
 module.exports = app;
