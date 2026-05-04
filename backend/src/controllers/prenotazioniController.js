@@ -4,6 +4,11 @@ const Prenotazione = require('../models/prenotazioneModel');
 const TokenQR = require('../models/tokenQRModel');
 const Conversazione = require('../models/conversazioneModel');
 const User = require('../models/userModel');
+const Segnalazione = require('../models/segnalazioneModel');
+
+// finestra massima per disdire il ritiro (RF20): 3 giorni in ms
+const DISDETTA_TTL_MS = 3 * 24 * 60 * 60 * 1000;
+
 
 // QR token valido 48 ore dalla prenotazione
 const QR_TTL_MS = 48 * 60 * 60 * 1000;
@@ -222,6 +227,15 @@ async function segnalaMancatoRitiro(req, res) {
       return res.status(403).json({ error: 'Solo il donatore può segnalare il mancato ritiro' });
     }
 
+    // Crea segnalazione no-show
+    await Segnalazione.create({
+      segnalante: req.user.id,
+      segnalato: prenotazione.acquirente,
+      annuncio: prenotazione.annuncio,
+      tipo: 'altro',
+      motivo: 'No-show: acquirente non si è presentato al ritiro',
+    });
+
     // Aggiorna stato prenotazione
     prenotazione.stato = 'ANNULLATA';
     await prenotazione.save();
@@ -251,10 +265,55 @@ async function segnalaMancatoRitiro(req, res) {
   }
 }
 
+/**
+ * POST /api/prenotazioni/:id/disdici
+ * Il donatore disdice il ritiro (RF20): entro 3 giorni dalla dataScadenza dell'annuncio.
+ * Riporta l'annuncio a DISPONIBILE e annulla la prenotazione.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function disdiciPrenotazione(req, res) {
+  try {
+    const prenotazione = await Prenotazione.findById(req.params.id).populate('annuncio');
+
+    if (!prenotazione || prenotazione.stato !== 'ATTIVA') {
+      return res.status(404).json({ error: 'Prenotazione attiva non trovata' });
+    }
+
+    if (prenotazione.donatore.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Non autorizzato' });
+    }
+
+    // RF20: disdetta consentita solo entro 3 giorni dalla dataScadenza
+    const msAllaScadenza = prenotazione.annuncio.dataScadenza.getTime() - Date.now();
+    if (msAllaScadenza < 0 || msAllaScadenza > DISDETTA_TTL_MS) {
+      return res.status(409).json({
+        error: 'Disdetta consentita solo entro 3 giorni dalla data di ritiro (RF20)',
+      });
+    }
+
+    prenotazione.stato = 'ANNULLATA';
+    await prenotazione.save();
+
+    await Annuncio.findByIdAndUpdate(prenotazione.annuncio._id, {
+      $set: { stato: 'DISPONIBILE' },
+      $inc: { versione: 1 },
+    });
+
+    await TokenQR.deleteOne({ prenotazione: prenotazione._id });
+
+    return res.status(200).json({ message: 'Ritiro disdetto' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 module.exports = {
   creaPrenotazione,
   annullaPrenotazione,
   getMiePrenotazioni,
   getPrenotazione,
   segnalaMancatoRitiro,
+  disdiciPrenotazione,
 };
