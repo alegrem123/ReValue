@@ -19,6 +19,10 @@ const messaggioSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    letto: {
+      type: Boolean,
+      default: false,
+    },
   },
   { _id: true }
 );
