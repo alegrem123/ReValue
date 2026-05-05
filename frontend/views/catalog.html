@@ -53,6 +53,9 @@
       border: 1px solid rgba(0, 0, 0, 0.08);
     }
 
+    .filter-panel {
+      border-left: 4px solid var(--rv-green);
+    }
   </style>
 </head>
 <body>
@@ -75,6 +78,53 @@
     </section>
 
     <div id="catalog-alert" class="alert d-none" role="alert"></div>
+
+    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 filter-panel">
+      <form id="catalog-filters" class="row g-3 align-items-end">
+        <div class="col-md-6 col-lg-3">
+          <label for="filter-category" class="form-label">Categoria</label>
+          <input id="filter-category" name="categoria" type="text" class="form-control" placeholder="Es. Mobili" />
+        </div>
+        <div class="col-md-6 col-lg-2">
+          <label for="filter-size" class="form-label">Dimensione</label>
+          <select id="filter-size" name="dimensione" class="form-select">
+            <option value="">Tutte</option>
+            <option value="piccolo">Piccolo</option>
+            <option value="medio">Medio</option>
+            <option value="grande">Grande</option>
+            <option value="molto grande">Molto grande</option>
+          </select>
+        </div>
+        <div class="col-md-6 col-lg-2">
+          <label for="filter-material" class="form-label">Materiale</label>
+          <input id="filter-material" name="materiale" type="text" class="form-control" placeholder="Es. Legno" />
+        </div>
+        <div class="col-md-6 col-lg-2">
+          <label for="filter-distance" class="form-label">Distanza</label>
+          <select id="filter-distance" name="raggio" class="form-select">
+            <option value="">Qualsiasi</option>
+            <option value="2">Entro 2 km</option>
+            <option value="5">Entro 5 km</option>
+            <option value="10">Entro 10 km</option>
+            <option value="25">Entro 25 km</option>
+          </select>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <label for="filter-deadline" class="form-label">Scadenza entro</label>
+          <input id="filter-deadline" name="scadenzaPrima" type="date" class="form-control" />
+        </div>
+        <div class="col-12 d-flex flex-column flex-md-row gap-2 justify-content-between">
+          <button id="use-position-btn" type="button" class="btn btn-outline-success">
+            <i class="bi bi-geo-alt"></i>
+            Usa posizione
+          </button>
+          <div class="d-flex gap-2">
+            <button type="reset" class="btn btn-outline-secondary">Pulisci</button>
+            <button type="submit" class="btn btn-success">Applica filtri</button>
+          </div>
+        </div>
+      </form>
+    </section>
 
     <section class="bg-white rounded-4 p-4 shadow-sm mb-4">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">

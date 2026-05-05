@@ -7,27 +7,103 @@ const catalogContainer = document.getElementById('catalog-container');
 const catalogSpinner = document.getElementById('catalog-spinner');
 const catalogAlert = document.getElementById('catalog-alert');
 const catalogGrid = document.getElementById('catalog-grid');
+const catalogFilters = document.getElementById('catalog-filters');
+const usePositionBtn = document.getElementById('use-position-btn');
+
+const catalogState = {
+  lat: null,
+  lng: null,
+};
+
+function setAlert(message, type = 'danger') {
+  if (!catalogAlert) return;
+  catalogAlert.textContent = message;
+  catalogAlert.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+  catalogAlert.classList.add('alert', `alert-${type}`);
+}
+
+function clearAlert() {
+  if (!catalogAlert) return;
+  catalogAlert.classList.add('d-none');
+  catalogAlert.textContent = '';
+}
+
+function buildCatalogQuery() {
+  const params = new URLSearchParams();
+  if (!catalogFilters) return params.toString();
+
+  const formData = new FormData(catalogFilters);
+  formData.forEach((value, key) => {
+    const normalized = String(value).trim();
+    if (normalized) params.set(key, normalized);
+  });
+
+  if (params.has('raggio') && catalogState.lat != null && catalogState.lng != null) {
+    params.set('lat', catalogState.lat);
+    params.set('lng', catalogState.lng);
+  } else {
+    params.delete('raggio');
+  }
+
+  return params.toString();
+}
+
+function getDistanceKm(lat1, lng1, lat2, lng2) {
+  const earthRadiusKm = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+      Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function enrichWithDistance(annunci) {
+  if (catalogState.lat == null || catalogState.lng == null) return annunci;
+
+  const userLat = Number(catalogState.lat);
+  const userLng = Number(catalogState.lng);
+  return annunci.map((annuncio) => {
+    if (
+      !Number.isFinite(Number(annuncio.latitudine)) ||
+      !Number.isFinite(Number(annuncio.longitudine))
+    ) {
+      return annuncio;
+    }
+
+    return {
+      ...annuncio,
+      distanza: getDistanceKm(
+        userLat,
+        userLng,
+        Number(annuncio.latitudine),
+        Number(annuncio.longitudine)
+      ),
+    };
+  });
+}
 
 async function loadCatalogo() {
   if (!catalogContainer || !catalogGrid || !catalogSpinner || !catalogAlert)
     return;
 
   catalogSpinner.classList.remove('d-none');
-  catalogAlert.classList.add('d-none');
+  clearAlert();
   catalogGrid.innerHTML = '';
 
-  const response = await api.get('/api/annunci');
+  const query = buildCatalogQuery();
+  const endpoint = query ? `/api/annunci?${query}` : '/api/annunci';
+  const response = await api.get(endpoint);
   catalogSpinner.classList.add('d-none');
 
   if (!response.ok) {
-    catalogAlert.textContent =
-      response.error || 'Errore nel caricamento del catalogo.';
-    catalogAlert.classList.remove('d-none', 'alert-success');
-    catalogAlert.classList.add('alert', 'alert-danger');
+    setAlert(response.error || 'Errore nel caricamento del catalogo.');
     return;
   }
 
-  const annunci = response.data?.data || [];
+  const annunci = enrichWithDistance(response.data?.data || []);
   window.updateCatalogMap?.(annunci);
 
   if (annunci.length === 0) {
@@ -47,7 +123,59 @@ async function loadCatalogo() {
   catalogGrid.appendChild(fragment);
 }
 
+function handleFilterSubmit(event) {
+  event.preventDefault();
+
+  const distance = catalogFilters?.elements?.raggio?.value;
+  if (distance && (catalogState.lat == null || catalogState.lng == null)) {
+    setAlert('Per filtrare per distanza devi prima usare la tua posizione.', 'warning');
+    return;
+  }
+
+  loadCatalogo();
+}
+
+function handleFilterReset() {
+  window.setTimeout(loadCatalogo, 0);
+}
+
+function useCurrentPosition() {
+  if (!navigator.geolocation) {
+    setAlert('Geolocalizzazione non supportata dal browser.', 'warning');
+    return;
+  }
+
+  if (usePositionBtn) {
+    usePositionBtn.disabled = true;
+    usePositionBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rilevo posizione';
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      catalogState.lat = position.coords.latitude.toFixed(6);
+      catalogState.lng = position.coords.longitude.toFixed(6);
+      if (usePositionBtn) {
+        usePositionBtn.disabled = false;
+        usePositionBtn.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Posizione attiva';
+      }
+      clearAlert();
+      loadCatalogo();
+    },
+    () => {
+      if (usePositionBtn) {
+        usePositionBtn.disabled = false;
+        usePositionBtn.innerHTML = '<i class="bi bi-geo-alt"></i> Usa posizione';
+      }
+      setAlert('Non è stato possibile rilevare la posizione.', 'warning');
+    },
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+  );
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   window.initCatalogMap?.();
+  catalogFilters?.addEventListener('submit', handleFilterSubmit);
+  catalogFilters?.addEventListener('reset', handleFilterReset);
+  usePositionBtn?.addEventListener('click', useCurrentPosition);
   loadCatalogo();
 });
