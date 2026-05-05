@@ -1,0 +1,61 @@
+const Conversazione = require('../models/conversazioneModel');
+
+/**
+ * GET /api/conversazioni/me
+ * Lista conversazioni dell'utente autenticato.
+ * Per ogni conversazione: ultimo messaggio + count messaggi non letti (RF12).
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function getConversazioniMe(req, res) {
+  try {
+    const conversazioni = await Conversazione.find({
+      partecipanti: req.user.id,
+    })
+      .populate('partecipanti', 'nome cognome')
+      .populate('prenotazione', 'stato dataPrenotazione')
+      .lean();
+
+    const result = conversazioni.map((conv) => {
+      const messaggi = conv.messaggi || [];
+
+      const ultimoMessaggio = messaggi.length > 0
+        ? messaggi[messaggi.length - 1]
+        : null;
+
+      // Non letti: mittente !== me E letto=false
+      const nonLetti = messaggi.filter(
+        (m) => m.mittente.toString() !== req.user.id && !m.letto
+      ).length;
+
+      return {
+        _id:             conv._id,
+        prenotazione:    conv.prenotazione,
+        partecipanti:    conv.partecipanti,
+        createdAt:       conv.createdAt,
+        ultimoMessaggio: ultimoMessaggio
+          ? {
+              testo:     ultimoMessaggio.testo,
+              mittente:  ultimoMessaggio.mittente,
+              timestamp: ultimoMessaggio.timestamp,
+            }
+          : null,
+        nonLetti,
+      };
+    });
+
+    // Ordina per timestamp ultimo messaggio (più recente prima)
+    result.sort((a, b) => {
+      const tA = a.ultimoMessaggio?.timestamp ?? a.createdAt;
+      const tB = b.ultimoMessaggio?.timestamp ?? b.createdAt;
+      return new Date(tB) - new Date(tA);
+    });
+
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = { getConversazioniMe };
