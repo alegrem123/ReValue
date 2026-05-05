@@ -16,7 +16,7 @@ async function loadCatalogo() {
   catalogAlert.classList.add('d-none');
   catalogGrid.innerHTML = '';
 
-  const response = await api.get('/api/annunci', { auth: false });
+  const response = await api.get('/api/annunci');
   catalogSpinner.classList.add('d-none');
 
   if (!response.ok) {
@@ -28,6 +28,8 @@ async function loadCatalogo() {
   }
 
   const annunci = response.data?.data || [];
+  window.updateCatalogMap?.(annunci);
+
   if (annunci.length === 0) {
     catalogGrid.innerHTML = `
       <div class="col-12">
@@ -45,4 +47,7 @@ async function loadCatalogo() {
   catalogGrid.appendChild(fragment);
 }
 
-window.addEventListener('DOMContentLoaded', loadCatalogo);
+window.addEventListener('DOMContentLoaded', () => {
+  window.initCatalogMap?.();
+  loadCatalogo();
+});
