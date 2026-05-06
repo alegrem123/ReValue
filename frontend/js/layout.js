@@ -9,10 +9,14 @@
  * - Mostra/nasconde voci in base al JWT in localStorage
  */
 
+const isViewsPage = window.location.pathname.includes('/views/');
+const homeUrl = isViewsPage ? '../index.html' : 'index.html';
+const viewUrl = (fileName) => (isViewsPage ? fileName : `views/${fileName}`);
+
 const NAVBAR_HTML = `
 <nav class="navbar navbar-expand-lg sticky-top" style="background-color: #2E7D32;">
   <div class="container">
-    <a class="navbar-brand fw-bold text-white" href="/index.html">
+    <a class="navbar-brand fw-bold text-white" href="${homeUrl}">
       RE-VALUE
     </a>
     <button class="navbar-toggler border-white" type="button"
@@ -22,17 +26,17 @@ const NAVBAR_HTML = `
     <div class="collapse navbar-collapse" id="navbarMain">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
-          <a class="nav-link text-white" href="/index.html">Home</a>
+          <a class="nav-link text-white" href="${homeUrl}">Home</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-white" href="/views/catalog.html">Catalogo</a>
+          <a class="nav-link text-white" href="${viewUrl('catalog.html')}">Catalogo</a>
         </li>
         <!-- Visibili solo se loggato -->
         <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="/views/create-annuncio.html">Crea annuncio</a>
+          <a class="nav-link text-white" href="${viewUrl('create-annuncio.html')}">Crea annuncio</a>
         </li>
         <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="/views/messaggi.html">
+          <a class="nav-link text-white" href="${viewUrl('messaggi.html')}">
             Messaggi
             <span id="unread-badge" class="badge bg-warning text-dark ms-1 d-none">0</span>
           </a>
@@ -42,20 +46,20 @@ const NAVBAR_HTML = `
       <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
         <!-- Visibili solo se NON loggato -->
         <li class="nav-item nav-guest">
-          <a class="nav-link text-white" href="/views/login.html">Accedi</a>
+          <a class="nav-link text-white" href="${viewUrl('login.html')}">Accedi</a>
         </li>
         <li class="nav-item nav-guest">
-          <a class="btn btn-warning btn-sm ms-2" href="/views/register.html">Registrati</a>
+          <a class="btn btn-warning btn-sm ms-2" href="${viewUrl('register.html')}">Registrati</a>
         </li>
         <!-- Visibili solo se loggato -->
         <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="/views/profile.html">
+          <a class="nav-link text-white" href="${viewUrl('profile.html')}">
             <i class="bi bi-person-circle me-1"></i>
             <span id="navbar-username">Profilo</span>
           </a>
         </li>
         <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="/views/wallethistory.html">
+          <a class="nav-link text-white" href="${viewUrl('wallethistory.html')}">
              <span id="navbar-balance">0</span> crediti
           </a>
         </li>
@@ -80,9 +84,9 @@ const FOOTER_HTML = `
       </div>
       <div class="col-md-4 text-md-center">
         <ul class="list-unstyled mb-0 small">
-          <li><a href="/index.html" class="text-white-50 text-decoration-none">Home</a></li>
-          <li><a href="/views/catalog.html" class="text-white-50 text-decoration-none">Catalogo</a></li>
-          <li><a href="/views/register.html" class="text-white-50 text-decoration-none">Registrati</a></li>
+          <li><a href="${homeUrl}" class="text-white-50 text-decoration-none">Home</a></li>
+          <li><a href="${viewUrl('catalog.html')}" class="text-white-50 text-decoration-none">Catalogo</a></li>
+          <li><a href="${viewUrl('register.html')}" class="text-white-50 text-decoration-none">Registrati</a></li>
         </ul>
       </div>
       <div class="col-md-4 text-md-end small opacity-75">
@@ -119,7 +123,9 @@ function getUser() {
 function setActiveLink() {
   const path = window.location.pathname;
   document.querySelectorAll('.navbar-nav .nav-link').forEach((link) => {
-    if (link.getAttribute('href') && path.endsWith(link.getAttribute('href'))) {
+    const href = link.getAttribute('href');
+    const target = href ? href.split('/').pop() : '';
+    if (target && path.endsWith(target)) {
       link.classList.add('fw-bold');
       link.style.opacity = '1';
     } else {
@@ -175,7 +181,7 @@ function initLayout() {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('jwt');
-      window.location.href = '/index.html';
+      window.location.href = homeUrl;
     });
   }
 }

@@ -17,8 +17,8 @@ let photoBase64 = [];
 
 function requireAuth() {
   if (!localStorage.getItem('jwt')) {
-    const redirect = encodeURIComponent('/views/create-annuncio.html');
-    window.location.href = `/views/login.html?redirect=${redirect}`;
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `login.html?redirect=${redirect}`;
     return false;
   }
   return true;
@@ -143,7 +143,7 @@ async function handleSubmit(event) {
 
   showAlert('Annuncio pubblicato correttamente.', 'success');
   window.setTimeout(() => {
-    window.location.href = `/views/annuncio.html?id=${response.data._id}`;
+    window.location.href = `annuncio.html?id=${response.data._id}`;
   }, 500);
 }
 

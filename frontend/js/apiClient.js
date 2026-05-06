@@ -19,6 +19,12 @@ const API_BASE = (function () {
   return '';
 })();
 
+function frontendViewUrl(fileName) {
+  return window.location.pathname.includes('/views/')
+    ? fileName
+    : `views/${fileName}`;
+}
+
 /**
  * Legge il JWT da localStorage.
  * @returns {string|null}
@@ -51,7 +57,7 @@ function handleUnauthorized() {
   const redirect = encodeURIComponent(
     window.location.pathname + window.location.search
   );
-  window.location.href = `/views/login.html?redirect=${redirect}`;
+  window.location.href = `${frontendViewUrl('login.html')}?redirect=${redirect}`;
 }
 
 /**

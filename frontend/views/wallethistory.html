@@ -100,7 +100,7 @@
         </div>
         <p class="mt-1 mb-0 small" style="opacity:.8;">crediti RE-VALUE</p>
       </div>
-      <a href="/views/profile.html" class="btn btn-outline-light btn-sm">
+      <a href="profile.html" class="btn btn-outline-light btn-sm">
         <i class="bi bi-person-circle me-1"></i>Vai al profilo
       </a>
     </div>
@@ -182,13 +182,13 @@
 
     crossorigin="anonymous"
   ></script>
-  <script src="/js/layout.js"></script>
-  <script src="/js/apiClient.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/apiClient.js"></script>
 
   <script>
     /* ── Guard ── */
     if (!localStorage.getItem('jwt')) {
-      window.location.href = '/views/login.html?redirect=/views/wallethistory.html';
+      window.location.href = 'login.html?redirect=wallethistory.html';
     }
 
     let currentPage = 1;

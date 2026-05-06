@@ -88,7 +88,7 @@ function setActionState(annuncio) {
     annuncioAction.textContent = 'Accedi per prenotare';
     annuncioAction.className = 'btn btn-outline-success btn-lg';
     annuncioAction.addEventListener('click', () => {
-      window.location.href = `/views/login.html?redirect=${redirect}`;
+      window.location.href = `login.html?redirect=${redirect}`;
     });
     return;
   }
@@ -163,7 +163,7 @@ async function loadAnnuncio() {
   }
 
   if (annuncioDonorProfile && annuncio.donatore?._id) {
-    annuncioDonorProfile.href = `/views/public-profile.html?id=${annuncio.donatore._id}`;
+    annuncioDonorProfile.href = `public-profile.html?id=${annuncio.donatore._id}`;
   } else if (annuncioDonorProfile) {
     annuncioDonorProfile.classList.add('d-none');
   }

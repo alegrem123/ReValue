@@ -19,7 +19,7 @@ function hasCoordinates(annuncio) {
 function buildPopupContent(annuncio) {
   const titolo = annuncio.titolo || 'Annuncio senza titolo';
   const categoria = annuncio.oggetto?.categoria || 'Categoria non indicata';
-  const dettaglioUrl = `/views/annuncio.html?id=${annuncio._id}`;
+  const dettaglioUrl = `annuncio.html?id=${annuncio._id}`;
 
   return `
     <div class="fw-semibold mb-1">${titolo}</div>

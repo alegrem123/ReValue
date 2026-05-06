@@ -28,7 +28,7 @@ function createAnnuncioCard(annuncio) {
     ? formatDateItalian(annuncio.dataScadenza)
     : 'Data non disponibile';
   const distanza = formatDistanceLabel(annuncio.distanza);
-  const dettaglioUrl = `/views/annuncio.html?id=${annuncio._id}`;
+  const dettaglioUrl = `annuncio.html?id=${annuncio._id}`;
 
   const col = document.createElement('div');
   col.className = 'col-md-6 col-lg-4 mb-4';

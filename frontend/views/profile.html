@@ -132,10 +132,10 @@
         </div>
 
         <div class="d-flex flex-column gap-2 text-end">
-          <a href="/views/wallethistory.html" class="btn btn-warning btn-sm fw-semibold">
+          <a href="wallethistory.html" class="btn btn-warning btn-sm fw-semibold">
             <i class="bi bi-clock-history me-1"></i>Storico transazioni
           </a>
-          <a href="/views/premi.html" class="btn btn-outline-light btn-sm">
+          <a href="premi.html" class="btn btn-outline-light btn-sm">
             <i class="bi bi-gift me-1"></i>Riscatta premi
           </a>
         </div>
@@ -205,14 +205,14 @@
 
     crossorigin="anonymous"
   ></script>
-  <script src="/js/layout.js"></script>
-  <script src="/js/apiClient.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/apiClient.js"></script>
 
   <script>
     /* ── Guard: redirect al login se non autenticato ── */
     const token = localStorage.getItem('jwt');
     if (!token) {
-      window.location.href = '/views/login.html?redirect=/views/profile.html';
+      window.location.href = 'login.html?redirect=profile.html';
     }
 
     /* ── Decodifica JWT payload (no verify — solo UI) ── */
