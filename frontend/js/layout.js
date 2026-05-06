@@ -29,7 +29,7 @@ const NAVBAR_HTML = `
         </li>
         <!-- Visibili solo se loggato -->
         <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="/views/annuncio.html">I miei annunci</a>
+          <a class="nav-link text-white" href="/views/create-annuncio.html">Crea annuncio</a>
         </li>
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="/views/messaggi.html">
