@@ -94,4 +94,37 @@ async function getMessaggi(req, res) {
   }
 }
 
-module.exports = { getConversazioniMe, getMessaggi };
+/**
+ * POST /api/conversazioni/:id/messaggi
+ * Invia un messaggio testuale. Solo autenticato + partecipante (RF10, RF14).
+ * requireParticipant attacca req.conversazione.
+ *
+ * Body: { testo: string }
+ */
+async function inviaMessaggio(req, res) {
+  try {
+    const { testo } = req.body;
+
+    if (!testo || typeof testo !== 'string' || testo.trim().length === 0) {
+      return res.status(400).json({ ok: false, error: 'testo è obbligatorio' });
+    }
+
+    const nuovoMessaggio = {
+      mittente:  req.user.id,
+      testo:     testo.trim(),
+      timestamp: new Date(),
+      letto:     false,
+    };
+
+    req.conversazione.messaggi.push(nuovoMessaggio);
+    await req.conversazione.save();
+
+    const salvato = req.conversazione.messaggi[req.conversazione.messaggi.length - 1];
+
+    return res.status(201).json({ ok: true, data: salvato });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+module.exports = { getConversazioniMe, getMessaggi, inviaMessaggio };
