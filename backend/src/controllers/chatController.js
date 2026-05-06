@@ -58,4 +58,40 @@ async function getConversazioniMe(req, res) {
   }
 }
 
-module.exports = { getConversazioniMe };
+/**
+ * GET /api/conversazioni/:id/messaggi
+ * Storico messaggi paginato. Solo partecipanti (RF11, RF13).
+ * requireParticipant middleware attacca req.conversazione.
+ *
+ * Query params: page (default 1), limit (default 20)
+ */
+async function getMessaggi(req, res) {
+  try {
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+
+    const messaggi = req.conversazione.messaggi;
+    const total    = messaggi.length;
+
+    // Messaggi più recenti prima: invertiamo, paginiamo, ri-invertiamo
+    const reversed = [...messaggi].reverse();
+    const slice    = reversed.slice((page - 1) * limit, page * limit).reverse();
+
+    return res.status(200).json({
+      ok: true,
+      data: {
+        messaggi: slice,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+module.exports = { getConversazioniMe, getMessaggi };

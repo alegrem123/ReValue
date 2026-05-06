@@ -1,10 +1,14 @@
 const { Router } = require('express');
 const { authenticate } = require('../middleware/authMiddleware');
-const { getConversazioniMe } = require('../controllers/chatController');
+const { requireParticipant } = require('../middleware/requireParticipant');
+const { getConversazioniMe, getMessaggi } = require('../controllers/chatController');
 
 const router = Router();
 
 // GET /api/conversazioni/me — lista conversazioni utente + ultimo msg + non letti
 router.get('/me', authenticate, getConversazioniMe);
+
+// GET /api/conversazioni/:id/messaggi — storico paginato, solo partecipante (RF11, RF13)
+router.get('/:id/messaggi', authenticate, requireParticipant, getMessaggi);
 
 module.exports = router;
