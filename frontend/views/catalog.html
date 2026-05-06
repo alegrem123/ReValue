@@ -109,9 +109,18 @@
             <option value="25">Entro 25 km</option>
           </select>
         </div>
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-lg-2">
           <label for="filter-deadline" class="form-label">Scadenza entro</label>
           <input id="filter-deadline" name="scadenzaPrima" type="date" class="form-control" />
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <label for="filter-sort" class="form-label">Ordina</label>
+          <select id="filter-sort" name="ordinamento" class="form-select">
+            <option value="dataScadenza_asc">Scadenza più vicina</option>
+            <option value="dataScadenza_desc">Scadenza più lontana</option>
+            <option value="valore_desc">Valore più alto</option>
+            <option value="valore_asc">Valore più basso</option>
+          </select>
         </div>
         <div class="col-12 d-flex flex-column flex-md-row gap-2 justify-content-between">
           <button id="use-position-btn" type="button" class="btn btn-outline-success">
