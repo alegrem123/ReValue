@@ -15,6 +15,9 @@ const annuncioValue = document.getElementById('annuncio-value');
 const annuncioLocation = document.getElementById('annuncio-location');
 const annuncioAlert = document.getElementById('annuncio-alert');
 const annuncioAction = document.getElementById('annuncio-action');
+const annuncioDonorProfile = document.getElementById('annuncio-donor-profile');
+
+let currentAnnuncio = null;
 
 function parseQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -70,28 +73,73 @@ function calculateEstimatedCredits(annuncio) {
   return Math.max(1, Math.round(dimensione * giorni)).toString();
 }
 
-async function loadAnnuncio() {
-  const id = parseQueryParam('id');
-  if (!id) {
-    annuncioAlert.textContent = 'ID annuncio mancante.';
-    annuncioAlert.className = 'alert alert-danger';
-    annuncioAlert.classList.remove('d-none');
+function showAlert(message, type = 'danger') {
+  annuncioAlert.textContent = message;
+  annuncioAlert.className = `alert alert-${type}`;
+  annuncioAlert.classList.remove('d-none');
+}
+
+function setActionState(annuncio) {
+  if (!annuncioAction) return;
+
+  const token = localStorage.getItem('jwt');
+  if (!token) {
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+    annuncioAction.textContent = 'Accedi per prenotare';
+    annuncioAction.className = 'btn btn-outline-success btn-lg';
+    annuncioAction.addEventListener('click', () => {
+      window.location.href = `/views/login.html?redirect=${redirect}`;
+    });
     return;
   }
 
-  const response = await api.get(`/api/annunci/${encodeURIComponent(id)}`, {
-    auth: false,
+  if (annuncio.stato !== 'DISPONIBILE') {
+    annuncioAction.textContent = 'Annuncio non disponibile';
+    annuncioAction.disabled = true;
+    return;
+  }
+
+  annuncioAction.addEventListener('click', prenotaAnnuncio);
+}
+
+async function prenotaAnnuncio() {
+  if (!currentAnnuncio?._id || !annuncioAction) return;
+
+  annuncioAction.disabled = true;
+  annuncioAction.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Prenotazione...';
+
+  const response = await api.post('/api/prenotazioni', {
+    annuncioId: currentAnnuncio._id,
   });
+
   if (!response.ok) {
-    annuncioAlert.textContent =
-      response.error || "Impossibile caricare l'annuncio.";
-    annuncioAlert.className = 'alert alert-danger';
-    annuncioAlert.classList.remove('d-none');
+    annuncioAction.disabled = false;
+    annuncioAction.textContent = 'Prenota annuncio';
+    showAlert(response.error || 'Impossibile prenotare questo annuncio.');
+    return;
+  }
+
+  showAlert('Annuncio prenotato. Trovi i dettagli nelle tue prenotazioni.', 'success');
+  annuncioAction.textContent = 'Prenotato';
+  annuncioAction.className = 'btn btn-success btn-lg';
+}
+
+async function loadAnnuncio() {
+  const id = parseQueryParam('id');
+  if (!id) {
+    showAlert('ID annuncio mancante.');
+    return;
+  }
+
+  const response = await api.get(`/api/annunci/${encodeURIComponent(id)}`);
+  if (!response.ok) {
+    showAlert(response.error || "Impossibile caricare l'annuncio.");
     annuncioTitle.textContent = 'Annuncio non disponibile';
     return;
   }
 
   const annuncio = response.data;
+  currentAnnuncio = annuncio;
   annuncioTitle.textContent = annuncio.titolo || 'Annuncio senza titolo';
   annuncioDonatore.textContent = `Donatore: ${annuncio.donatore?.nome || 'Utente anonimo'}`;
   annuncioDescription.textContent =
@@ -105,7 +153,7 @@ async function loadAnnuncio() {
   annuncioValue.textContent = `${calculateEstimatedCredits(annuncio)} crediti`;
   annuncioLocation.textContent =
     annuncio.latitudine != null && annuncio.longitudine != null
-      ? `Lat: ${annuncio.latitudine.toFixed(4)}, Lng: ${annuncio.longitudine.toFixed(4)}`
+      ? `Lat: ${Number(annuncio.latitudine).toFixed(4)}, Lng: ${Number(annuncio.longitudine).toFixed(4)}`
       : 'Visibile solo per utenti autenticati';
 
   const foto = annuncio.oggetto?.foto?.[0];
@@ -114,9 +162,13 @@ async function loadAnnuncio() {
     annuncioImage.alt = `Immagine annuncio ${annuncio.titolo}`;
   }
 
-  if (annuncioAction) {
-    annuncioAction.href = '/views/catalog.html';
+  if (annuncioDonorProfile && annuncio.donatore?._id) {
+    annuncioDonorProfile.href = `/views/public-profile.html?id=${annuncio.donatore._id}`;
+  } else if (annuncioDonorProfile) {
+    annuncioDonorProfile.classList.add('d-none');
   }
+
+  setActionState(annuncio);
 }
 
 window.addEventListener('DOMContentLoaded', loadAnnuncio);
