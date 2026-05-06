@@ -23,17 +23,24 @@ beforeEach(async () => {
   await Utente.deleteMany({});
 });
 
+function createTestUser(dati) {
+  return Utente.create({
+    idUtente: new mongoose.Types.ObjectId().toString(),
+    passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRj75O',
+    ruolo: 'user',
+    ...dati,
+  });
+}
+
 describe('Annunci - CRUD Operations', () => {
   let donatore;
 
   beforeEach(async () => {
     // Crea un utente donatore per i test
-    donatore = await Utente.create({
+    donatore = await createTestUser({
       nome: 'Mario',
       cognome: 'Rossi',
       email: 'mario@example.com',
-      passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRj75O',
-      ruolo: 'user',
     });
   });
 
@@ -255,12 +262,10 @@ describe('Annunci - Filtri', () => {
   let annunci;
 
   beforeEach(async () => {
-    donatore = await Utente.create({
+    donatore = await createTestUser({
       nome: 'Mario',
       cognome: 'Rossi',
       email: 'mario@example.com',
-      passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRj75O',
-      ruolo: 'user',
     });
 
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -366,12 +371,10 @@ describe('Annunci - Optimistic Locking (OCL #7, UC2)', () => {
   let annuncio;
 
   beforeEach(async () => {
-    donatore = await Utente.create({
+    donatore = await createTestUser({
       nome: 'Mario',
       cognome: 'Rossi',
       email: 'mario@example.com',
-      passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRj75O',
-      ruolo: 'user',
     });
 
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -422,20 +425,16 @@ describe('Annunci - Optimistic Locking (OCL #7, UC2)', () => {
 
   test('Previene doppia prenotazione con optimistic lock', async () => {
     // Simula due utenti che tentano di prenotare contemporaneamente
-    const acquirente1 = await Utente.create({
+    const acquirente1 = await createTestUser({
       nome: 'Alice',
       cognome: 'Verdi',
       email: 'alice@example.com',
-      passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRj75O',
-      ruolo: 'user',
     });
 
-    const acquirente2 = await Utente.create({
+    const acquirente2 = await createTestUser({
       nome: 'Bob',
       cognome: 'Bianchi',
       email: 'bob@example.com',
-      passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRj75O',
-      ruolo: 'user',
     });
 
     const versioneBefore = annuncio.versione;

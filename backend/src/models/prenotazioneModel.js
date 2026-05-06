@@ -17,6 +17,11 @@ const prenotazioneSchema = new Schema(
       ref: 'User',
       required: [true, 'acquirente is required'],
     },
+    donatore: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'donatore is required'],
+    },
     stato: {
       type: String,
       enum: STATI_PRENOTAZIONE,
@@ -41,6 +46,7 @@ prenotazioneSchema.index(
   { partialFilterExpression: { stato: 'ATTIVA' } }
 );
 prenotazioneSchema.index({ acquirente: 1 });
+prenotazioneSchema.index({ donatore: 1 });
 
 module.exports =
   mongoose.models.Prenotazione || mongoose.model('Prenotazione', prenotazioneSchema);
