@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../models/userModel');
+const Recensione = require('../models/recensioneModel');
 
 function sanitizePublicProfile(user) {
   if (!user) return null;
@@ -80,7 +81,35 @@ async function getPublicProfile(req, res) {
       return res.status(404).json({ error: 'Profilo utente non trovato' });
     }
 
-    return res.status(200).json({ user: sanitizePublicProfile(user) });
+    const [positive, negative, recentReviews] = await Promise.all([
+      Recensione.countDocuments({ recensito: user._id, positiva: true }),
+      Recensione.countDocuments({ recensito: user._id, positiva: false }),
+      Recensione.find({ recensito: user._id })
+        .sort({ data: -1 })
+        .limit(5)
+        .populate('recensore', 'nome cognome'),
+    ]);
+
+    return res.status(200).json({
+      user: sanitizePublicProfile(user),
+      recensioni: {
+        positive,
+        negative,
+        totale: positive + negative,
+        recenti: recentReviews.map((review) => ({
+          id: review._id,
+          positiva: review.positiva,
+          testo: review.testo,
+          data: review.data,
+          recensore: review.recensore
+            ? {
+                nome: review.recensore.nome,
+                cognome: review.recensore.cognome,
+              }
+            : null,
+        })),
+      },
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
