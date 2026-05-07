@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
+const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
 
 // Middleware
 app.use(
@@ -13,8 +14,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: requestBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
 
 // Serve frontend statico da /frontend/
 app.use(express.static(path.join(__dirname, '../frontend')));
