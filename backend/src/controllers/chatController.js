@@ -127,4 +127,28 @@ async function inviaMessaggio(req, res) {
   }
 }
 
-module.exports = { getConversazioniMe, getMessaggi, inviaMessaggio };
+/**
+ * GET /api/conversazioni/me/non-letti
+ * Count totale messaggi non letti su tutte le conversazioni dell'utente (RF12).
+ * Usato per badge navbar.
+ */
+async function getNonLettiCount(req, res) {
+  try {
+    const conversazioni = await Conversazione.find({
+      partecipanti: req.user.id,
+    }).lean();
+
+    const totale = conversazioni.reduce((acc, conv) => {
+      const nonLetti = (conv.messaggi || []).filter(
+        (m) => m.mittente.toString() !== req.user.id && !m.letto
+      ).length;
+      return acc + nonLetti;
+    }, 0);
+
+    return res.status(200).json({ ok: true, data: { nonLetti: totale } });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+module.exports = { getConversazioniMe, getMessaggi, inviaMessaggio, getNonLettiCount };
