@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>I miei annunci — RE-VALUE</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    crossorigin="anonymous"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    crossorigin="anonymous"
+  />
+  <style>
+    :root {
+      --rv-green: #2E7D32;
+      --rv-green-dark: #1B5E20;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background-color: #f8f9fa;
+    }
+
+    .page-header {
+      border-left: 4px solid var(--rv-green);
+    }
+
+    .annuncio-thumb {
+      width: 96px;
+      height: 72px;
+      object-fit: cover;
+      background-color: #e9ecef;
+    }
+
+    .status-badge {
+      letter-spacing: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="container py-5" style="max-width: 1080px;">
+    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 page-header">
+      <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
+        <div>
+          <p class="text-uppercase small text-success mb-2">Area personale</p>
+          <h1 class="h3 fw-bold mb-2">I miei annunci</h1>
+          <p class="text-muted mb-0">Gestisci gli annunci pubblicati e rimuovi quelli non più disponibili.</p>
+        </div>
+        <a href="create-annuncio.html" class="btn btn-success">
+          <i class="bi bi-plus-lg me-1"></i>Nuovo annuncio
+        </a>
+      </div>
+    </section>
+
+    <div id="my-annunci-alert" class="alert d-none" role="alert"></div>
+
+    <section class="bg-white rounded-4 shadow-sm overflow-hidden">
+      <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+        <h2 class="h5 fw-bold mb-0">Annunci pubblicati</h2>
+        <button id="refresh-annunci-btn" type="button" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-clockwise me-1"></i>Aggiorna
+        </button>
+      </div>
+      <div id="my-annunci-loading" class="text-center py-5">
+        <div class="spinner-border text-success" role="status"></div>
+        <p class="text-muted mt-3 mb-0">Caricamento annunci...</p>
+      </div>
+      <div id="my-annunci-empty" class="text-center py-5 d-none">
+        <i class="bi bi-inbox fs-1 text-muted"></i>
+        <p class="text-muted mt-3 mb-3">Non hai ancora pubblicato annunci.</p>
+        <a href="create-annuncio.html" class="btn btn-success">Crea il primo annuncio</a>
+      </div>
+      <div id="my-annunci-list" class="list-group list-group-flush"></div>
+    </section>
+  </main>
+
+  <div class="modal fade" id="edit-annuncio-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <form id="edit-annuncio-form" class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5">Modifica annuncio</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-annuncio-id" />
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="edit-title" class="form-label">Titolo</label>
+              <input id="edit-title" name="titolo" type="text" class="form-control" maxlength="120" required />
+            </div>
+            <div class="col-12">
+              <label for="edit-description" class="form-label">Descrizione</label>
+              <textarea id="edit-description" name="descrizione" class="form-control" rows="4" required></textarea>
+            </div>
+            <div class="col-md-6">
+              <label for="edit-category" class="form-label">Categoria</label>
+              <input id="edit-category" name="categoria" type="text" class="form-control" required />
+            </div>
+            <div class="col-md-6">
+              <label for="edit-material" class="form-label">Materiale</label>
+              <input id="edit-material" name="materiale" type="text" class="form-control" />
+            </div>
+            <div class="col-md-6">
+              <label for="edit-size" class="form-label">Dimensione</label>
+              <select id="edit-size" name="dimensioni" class="form-select">
+                <option value="piccolo">Piccolo</option>
+                <option value="medio">Medio</option>
+                <option value="grande">Grande</option>
+                <option value="molto grande">Molto grande</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="edit-deadline" class="form-label">Scadenza</label>
+              <input id="edit-deadline" name="dataScadenza" type="datetime-local" class="form-control" required />
+            </div>
+            <div class="col-md-6">
+              <label for="edit-lat" class="form-label">Latitudine</label>
+              <input id="edit-lat" name="latitudine" type="number" step="any" class="form-control" />
+            </div>
+            <div class="col-md-6">
+              <label for="edit-lng" class="form-label">Longitudine</label>
+              <input id="edit-lng" name="longitudine" type="number" step="any" class="form-control" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button id="edit-annuncio-submit" type="submit" class="btn btn-success">Salva modifiche</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../js/layout.js" defer></script>
+  <script src="../js/apiClient.js" defer></script>
+  <script src="../js/myAnnunci.js" defer></script>
+</body>
+</html>

@@ -36,6 +36,9 @@ const NAVBAR_HTML = `
           <a class="nav-link text-white" href="${viewUrl('create-annuncio.html')}">Crea annuncio</a>
         </li>
         <li class="nav-item nav-auth d-none">
+          <a class="nav-link text-white" href="${viewUrl('my-annunci.html')}">I miei annunci</a>
+        </li>
+        <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('messaggi.html')}">
             Messaggi
             <span id="unread-badge" class="badge bg-warning text-dark ms-1 d-none">0</span>
