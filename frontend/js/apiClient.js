@@ -8,11 +8,11 @@
  */
 
 const API_BASE = (function () {
-  // Se stai servendo il frontend da Live Server su 127.0.0.1:5500,
+  // Se stai servendo il frontend da Live Server su 127.0.0.1:55xx,
   // punta le richieste verso il backend in esecuzione su 127.0.0.1:3000.
   if (
-    window.location.hostname === '127.0.0.1' &&
-    window.location.port === '5500'
+    ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
+    window.location.port.startsWith('55')
   ) {
     return 'http://127.0.0.1:3000';
   }
