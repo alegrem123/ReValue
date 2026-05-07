@@ -90,6 +90,8 @@ function useCurrentLocation() {
     (position) => {
       latInput.value = position.coords.latitude.toFixed(6);
       lngInput.value = position.coords.longitude.toFixed(6);
+      latInput.dispatchEvent(new Event('input', { bubbles: true }));
+      lngInput.dispatchEvent(new Event('input', { bubbles: true }));
       useLocationBtn.disabled = false;
       useLocationBtn.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Posizione inserita';
     },

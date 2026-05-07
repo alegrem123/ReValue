@@ -14,6 +14,12 @@
     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     crossorigin="anonymous"
   />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQvO1Qbzt1z3VgOcYFhH4p+R1M1pR1Y="
+    crossorigin=""
+  />
   <style>
     :root {
       --rv-green: #2E7D32;
@@ -33,6 +39,11 @@
       aspect-ratio: 1;
       object-fit: cover;
       width: 100%;
+    }
+
+    .location-map {
+      min-height: 260px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
     }
   </style>
 </head>
@@ -108,6 +119,11 @@
               </button>
             </div>
             <div class="col-12">
+              <label for="annuncio-location-map" class="form-label">Seleziona sulla mappa</label>
+              <div id="annuncio-location-map" class="location-map rounded-3 overflow-hidden"></div>
+              <div class="form-text">Clicca sulla mappa per compilare latitudine e longitudine.</div>
+            </div>
+            <div class="col-12">
               <label for="annuncio-photos" class="form-label">Foto</label>
               <input id="annuncio-photos" name="foto" type="file" class="form-control" accept="image/*" multiple />
               <div class="form-text">Massimo 5 immagini. Verranno inviate in base64.</div>
@@ -134,8 +150,14 @@
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     crossorigin="anonymous"
   ></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
   <script src="../js/layout.js" defer></script>
   <script src="../js/apiClient.js" defer></script>
+  <script src="../js/locationPicker.js" defer></script>
   <script src="../js/createAnnuncio.js" defer></script>
 </body>
 </html>
