@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "RE-VALUE",
+    "slug": "revalue-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#2E7D32"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "it.revalue.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "RE-VALUE usa la fotocamera per aggiungere foto agli annunci.",
+        "NSPhotoLibraryUsageDescription": "RE-VALUE usa la libreria foto per aggiungere immagini agli annunci.",
+        "NSLocationWhenInUseUsageDescription": "RE-VALUE usa la posizione per associare coordinate agli annunci."
+      }
+    },
+    "android": {
+      "package": "it.revalue.mobile",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "extra": {
+      "apiBaseUrl": "http://127.0.0.1:3000"
+    }
+  }
+}
