@@ -99,28 +99,50 @@ function setActionState(annuncio) {
     return;
   }
 
-  annuncioAction.addEventListener('click', prenotaAnnuncio);
+  annuncioAction.addEventListener('click', () => apriModalePrenota(annuncio));
+}
+
+function apriModalePrenota(annuncio) {
+  document.getElementById('modal-titolo').textContent   = annuncio.titolo || '—';
+  document.getElementById('modal-scadenza').textContent = formatItalianDate(annuncio.dataScadenza);
+  document.getElementById('modal-crediti').textContent  = `${calculateEstimatedCredits(annuncio)} crediti`;
+
+  const confirmBtn = document.getElementById('modal-confirm-btn');
+  // Rimuove listener precedenti clonando il nodo
+  const fresh = confirmBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(fresh, confirmBtn);
+  fresh.addEventListener('click', prenotaAnnuncio);
+
+  const modal = new bootstrap.Modal(document.getElementById('modalPrenota'));
+  modal.show();
 }
 
 async function prenotaAnnuncio() {
-  if (!currentAnnuncio?._id || !annuncioAction) return;
+  if (!currentAnnuncio?._id) return;
 
-  annuncioAction.disabled = true;
-  annuncioAction.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Prenotazione...';
+  const modal      = bootstrap.Modal.getInstance(document.getElementById('modalPrenota'));
+  const confirmBtn = document.getElementById('modal-confirm-btn');
+
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Prenotazione...';
 
   const response = await api.post('/api/prenotazioni', {
     annuncioId: currentAnnuncio._id,
   });
 
+  confirmBtn.disabled = false;
+  confirmBtn.textContent = 'Conferma prenotazione';
+
   if (!response.ok) {
-    annuncioAction.disabled = false;
-    annuncioAction.textContent = 'Prenota annuncio';
+    modal?.hide();
     showAlert(response.error || 'Impossibile prenotare questo annuncio.');
     return;
   }
 
-  showAlert('Annuncio prenotato. Trovi i dettagli nelle tue prenotazioni.', 'success');
-  annuncioAction.textContent = 'Prenotato';
+  modal?.hide();
+  showAlert('Annuncio prenotato! Trovi i dettagli nelle tue prenotazioni.', 'success');
+  annuncioAction.textContent = 'Prenotato ✓';
+  annuncioAction.disabled = true;
   annuncioAction.className = 'btn btn-success btn-lg';
 }
 

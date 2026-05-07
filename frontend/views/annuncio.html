@@ -110,6 +110,38 @@
     </div>
   </main>
 
+  <!-- Modale conferma prenotazione (UC2) -->
+  <div class="modal fade" id="modalPrenota" tabindex="-1" aria-labelledby="modalPrenotaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold" id="modalPrenotaLabel">Conferma prenotazione</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">Stai per prenotare:</p>
+          <dl class="row">
+            <dt class="col-5 text-muted">Oggetto</dt>
+            <dd class="col-7 fw-semibold" id="modal-titolo">—</dd>
+            <dt class="col-5 text-muted">Scadenza</dt>
+            <dd class="col-7" id="modal-scadenza">—</dd>
+            <dt class="col-5 text-muted">Crediti stimati</dt>
+            <dd class="col-7 text-success fw-semibold" id="modal-crediti">—</dd>
+          </dl>
+          <p class="small text-muted mb-0">
+            Hai 15 minuti per annullare senza penalità. L'indirizzo esatto sarà svelato dopo la conferma.
+          </p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="button" class="btn btn-success" id="modal-confirm-btn">
+            Conferma prenotazione
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="footer-container"></div>
 
   <script
