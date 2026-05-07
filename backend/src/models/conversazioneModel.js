@@ -55,7 +55,6 @@ const conversazioneSchema = new Schema(
 
 // RNF9: messaggi persistiti e recuperabili — garantito da embedding
 // RF13: solo partecipanti possono inviare — enforced nel service
-conversazioneSchema.index({ prenotazione: 1 });
 
 module.exports =
   mongoose.models.Conversazione || mongoose.model('Conversazione', conversazioneSchema);
