@@ -85,4 +85,36 @@ async function invia(req, res) {
   }
 }
 
-module.exports = { getStorico, invia };
+/**
+ * PATCH /api/messaggi/:id/letto
+ * Marca un messaggio come letto. Solo partecipante della conversazione.
+ * `:id` è l'ObjectId del subdocument messaggio.
+ */
+async function marcaLetto(req, res) {
+  try {
+    const conversazione = await Conversazione.findOne({
+      'messaggi._id': req.params.id,
+    });
+
+    if (!conversazione) {
+      return res.status(404).json({ ok: false, error: 'Messaggio non trovato' });
+    }
+
+    const isPartecipante = conversazione.partecipanti.some(
+      (p) => p.toString() === req.user.id
+    );
+    if (!isPartecipante) {
+      return res.status(403).json({ ok: false, error: 'Non autorizzato' });
+    }
+
+    const messaggio = conversazione.messaggi.id(req.params.id);
+    messaggio.letto = true;
+    await conversazione.save();
+
+    return res.status(200).json({ ok: true, data: messaggio });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+module.exports = { getStorico, invia, marcaLetto };
