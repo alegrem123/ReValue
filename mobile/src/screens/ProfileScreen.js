@@ -72,7 +72,7 @@ export function ProfileScreen({ user, onLogout }) {
           transactions.map((item) => (
             <View key={item._id || item.id || `${item.tipo}-${item.createdAt}`} style={styles.transaction}>
               <Text style={styles.transactionTitle}>{item.tipo || 'Movimento'}</Text>
-              <Text style={styles.muted}>{item.crediti ?? item.importo ?? 0} crediti</Text>
+              <Text style={styles.muted}>{item.ammontare ?? 0} crediti</Text>
             </View>
           ))
         )}
