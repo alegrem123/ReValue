@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code scambio — RE-VALUE</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    crossorigin="anonymous"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    crossorigin="anonymous"
+  />
+  <style>
+    :root {
+      --rv-green:       #2E7D32;
+      --rv-green-light: #43A047;
+      --rv-green-dark:  #1B5E20;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background-color: #f8f9fa;
+    }
+
+    .page-header {
+      border-left: 4px solid var(--rv-green);
+    }
+
+    #qr-canvas {
+      max-width: 280px;
+      width: 100%;
+      height: auto;
+    }
+
+    .qr-wrapper {
+      background: #fff;
+      border: 3px solid var(--rv-green);
+      border-radius: 16px;
+      padding: 24px;
+      display: inline-block;
+    }
+
+    .countdown {
+      font-size: 1.1rem;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="container py-5">
+    <div id="qr-alert" class="alert d-none" role="alert"></div>
+
+    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 page-header">
+      <p class="text-uppercase small text-success mb-2">Conferma scambio</p>
+      <h1 class="h3 fw-bold mb-1">Mostra questo QR all'acquirente</h1>
+      <p class="text-muted mb-0">L'acquirente lo scansiona per certificare il ritiro fisico.</p>
+    </section>
+
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5 text-center">
+
+        <!-- Spinner durante generazione -->
+        <div id="qr-loading" class="py-5">
+          <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Generazione QR...</span>
+          </div>
+          <p class="mt-3 text-muted">Generazione QR in corso...</p>
+        </div>
+
+        <!-- QR generato -->
+        <div id="qr-content" class="d-none">
+          <div class="qr-wrapper mb-4">
+            <canvas id="qr-canvas"></canvas>
+          </div>
+
+          <div class="card border-0 shadow-sm p-3 mb-3">
+            <p class="mb-1 text-muted small">Annuncio</p>
+            <p class="fw-bold mb-0" id="qr-annuncio-title">—</p>
+          </div>
+
+          <div class="card border-0 shadow-sm p-3 mb-4">
+            <p class="mb-1 text-muted small">Scadenza QR</p>
+            <p class="countdown fw-semibold text-danger mb-0" id="qr-countdown">—</p>
+          </div>
+
+          <button id="btn-rigenera" class="btn btn-outline-success w-100 mb-3">
+            <i class="bi bi-arrow-clockwise me-2"></i>Rigenera QR
+          </button>
+          <a href="mybookings.html" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-arrow-left me-2"></i>Torna alle prenotazioni
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="../js/layout.js" defer></script>
+  <script src="../js/apiClient.js" defer></script>
+  <script src="../js/qr-display.js" defer></script>
+</body>
+</html>
