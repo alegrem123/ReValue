@@ -384,7 +384,7 @@ async function cambiaStatoAnnuncio(req, res) {
  */
 async function getMieiAnnunci(req, res) {
   try {
-    const annunci = await Annuncio.find({ donatore: req.user.id })
+    const annunci = await Annuncio.find({ donatore: req.user.id, isAttivo: true })
       .populate('donatore', 'nome cognome')
       .sort({ dataScadenza: -1 }); // più recenti prima
 
