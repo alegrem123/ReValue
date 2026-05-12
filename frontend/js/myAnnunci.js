@@ -99,9 +99,9 @@ function renderAnnunci() {
           <a href="annuncio.html?id=${encodeURIComponent(annuncio._id)}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-eye me-1"></i>Apri
           </a>
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-action="edit" data-id="${annuncio._id}">
+          <a href="edit-annuncio.html?id=${encodeURIComponent(annuncio._id)}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-pencil me-1"></i>Modifica
-          </button>
+          </a>
           <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${annuncio._id}">
             <i class="bi bi-trash me-1"></i>Elimina
           </button>

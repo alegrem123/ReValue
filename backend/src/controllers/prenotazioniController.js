@@ -41,6 +41,10 @@ async function creaPrenotazione(req, res) {
     }
 
     // OCL #5 / OCL #6: annuncio deve essere attivo, DISPONIBILE e non scaduto
+    if (annuncio.stato === 'PRENOTATO') {
+      return res.status(409).json({ error: 'Oggetto già prenotato' });
+    }
+
     if (annuncio.stato !== 'DISPONIBILE' || annuncio.dataScadenza <= new Date()) {
       return res.status(409).json({ error: 'Oggetto non più disponibile' });
     }
