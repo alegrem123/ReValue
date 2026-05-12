@@ -166,6 +166,32 @@ function updateAuthUI(user) {
 }
 
 /**
+ * Aggiorna badge non letti messaggi (RF12).
+ * Chiama GET /api/conversazioni/me/non-letti e mostra count nel badge navbar.
+ */
+function updateUnreadBadge() {
+  const token = localStorage.getItem('jwt');
+  if (!token) return;
+
+  fetch('/api/conversazioni/me/non-letti', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      const badge = document.getElementById('unread-badge');
+      if (!badge) return;
+      const count = data?.data?.nonLetti ?? data?.nonLetti ?? 0;
+      if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.classList.remove('d-none');
+      } else {
+        badge.classList.add('d-none');
+      }
+    })
+    .catch(() => {});
+}
+
+/**
  * Inizializza navbar e footer, poi aggiorna UI.
  */
 function initLayout() {
@@ -178,6 +204,12 @@ function initLayout() {
   const user = getUser();
   updateAuthUI(user);
   setActiveLink();
+
+  // Badge non letti: primo fetch + polling ogni 30s (RF12)
+  if (user) {
+    updateUnreadBadge();
+    setInterval(updateUnreadBadge, 30_000);
+  }
 
   // Logout
   const btnLogout = document.getElementById('btn-logout');
