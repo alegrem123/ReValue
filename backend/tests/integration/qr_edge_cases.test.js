@@ -95,6 +95,34 @@ async function generaQRToken(tokenDonatore, prenotazioneId) {
 describe('QR Edge Cases – test di regressione bug fix', () => {
   // Ogni test usa la propria coppia donatore/acquirente per isolamento.
 
+  describe('QR gia usato - validaQR sullo stesso codice due volte', () => {
+    let tokenD, tokenA, annId, prenId, qrCode;
+
+    beforeAll(async () => {
+      tokenD = await registra('d-used.qredge@test.com', 'DonatoreUsed');
+      tokenA = await registra('a-used.qredge@test.com', 'AcquirenteUsed');
+      annId  = await creaAnnuncio(tokenD);
+      prenId = await prenota(tokenA, annId);
+      qrCode = await generaQRToken(tokenD, prenId);
+
+      const res = await request(app)
+        .post('/api/qr/valida')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ codice: qrCode });
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('ritorna 400 con messaggio "gia utilizzato"', async () => {
+      const res = await request(app)
+        .post('/api/qr/valida')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ codice: qrCode });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toMatch(/utilizzato/i);
+    });
+  });
+
   // ── BUG #1: generaQR su prenotazione COMPLETATA ──────────────────────────
 
   describe('BUG #1 – generaQR su prenotazione COMPLETATA', () => {
