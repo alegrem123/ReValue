@@ -124,7 +124,7 @@ async function annullaPrenotazione() {
   modal?.hide();
 
   if (!res.ok) {
-    showAlert(res.error || "Impossibile annullare la prenotazione.");
+    window.showToast?.(res.error || "Impossibile annullare la prenotazione.", 'danger');
     return;
   }
 
@@ -133,7 +133,7 @@ async function annullaPrenotazione() {
   );
   pendingAnnulla = null;
   applyFilter();
-  showAlert('Prenotazione annullata.', 'success');
+  window.showToast?.('Prenotazione annullata.', 'success');
 }
 
 function applyFilter() {

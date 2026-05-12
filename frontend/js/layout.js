@@ -221,5 +221,92 @@ function initLayout() {
   }
 }
 
+/**
+ * Inietta toast container + skeleton CSS nel documento.
+ * Chiamato una volta sola da initLayout.
+ */
+function injectGlobalStyles() {
+  // Toast container (Bootstrap positioning)
+  if (!document.getElementById('rv-toast-container')) {
+    const tc = document.createElement('div');
+    tc.id = 'rv-toast-container';
+    tc.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    tc.style.zIndex = '9999';
+    document.body.appendChild(tc);
+  }
+
+  // Skeleton loader + spinner utility CSS
+  if (!document.getElementById('rv-global-style')) {
+    const style = document.createElement('style');
+    style.id = 'rv-global-style';
+    style.textContent = `
+      /* Skeleton loader */
+      .skeleton {
+        background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+        background-size: 200% 100%;
+        animation: skeleton-shimmer 1.4s infinite;
+        border-radius: 6px;
+        display: inline-block;
+      }
+      @keyframes skeleton-shimmer {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      .skeleton-text  { height: 1em; width: 100%; margin-bottom: 6px; }
+      .skeleton-title { height: 1.4em; width: 60%; margin-bottom: 10px; }
+      .skeleton-card  { height: 90px; width: 100%; margin-bottom: 12px; }
+
+      /* Spinner overlay su bottoni */
+      .btn-loading { position: relative; pointer-events: none; opacity: 0.75; }
+      .btn-loading::after {
+        content: '';
+        position: absolute;
+        width: 16px; height: 16px;
+        border: 2px solid transparent;
+        border-top-color: currentColor;
+        border-radius: 50%;
+        animation: btn-spin 0.6s linear infinite;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      @keyframes btn-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+/**
+ * Mostra un toast Bootstrap.
+ * @param {string} message  - Testo da mostrare
+ * @param {'success'|'danger'|'warning'|'info'} type - Tipo Bootstrap
+ * @param {number} delay - ms prima che sparisca (default 4000)
+ */
+window.showToast = function showToast(message, type = 'success', delay = 4000) {
+  const container = document.getElementById('rv-toast-container');
+  if (!container) return;
+
+  const icons = { success: '✓', danger: '✕', warning: '⚠', info: 'ℹ' };
+  const id = `toast-${Date.now()}`;
+
+  const html = `
+    <div id="${id}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body fw-semibold">
+          <span class="me-2">${icons[type] || ''}</span>${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Chiudi"></button>
+      </div>
+    </div>`;
+
+  container.insertAdjacentHTML('beforeend', html);
+  const toastEl = document.getElementById(id);
+  const toast = new bootstrap.Toast(toastEl, { delay });
+  toast.show();
+  toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+};
+
 // Avvia quando il DOM è pronto
-document.addEventListener('DOMContentLoaded', initLayout);
+document.addEventListener('DOMContentLoaded', () => {
+  injectGlobalStyles();
+  initLayout();
+});
