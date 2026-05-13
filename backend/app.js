@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
 const path = require('path');
+const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
@@ -16,6 +18,12 @@ app.use(
 );
 app.use(express.json({ limit: requestBodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(morgan('combined'));
+} else if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
 
 // Serve frontend statico da /frontend/
 app.use(express.static(path.join(__dirname, '../frontend')));
@@ -41,5 +49,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/prenotazioni', prenotazioniRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/conversazioni', chatRoutes);
+
+app.use('/api', notFoundHandler);
+app.use(errorHandler);
 
 module.exports = app;

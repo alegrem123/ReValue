@@ -75,9 +75,6 @@ async function invia(req, res) {
     conversazione.messaggi.push(messaggio);
     await conversazione.save();
 
-    // RF12: notifica push al destinatario
-    // TODO: implementare WebSocket/push notification (RNF7: latenza 1-3s)
-
     const ultimo = conversazione.messaggi[conversazione.messaggi.length - 1];
     return res.status(201).json(ultimo);
   } catch (err) {

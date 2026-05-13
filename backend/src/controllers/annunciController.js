@@ -348,7 +348,7 @@ async function cambiaStatoAnnuncio(req, res) {
 
     // Solo donatore o admin possono cambiare stato
     const isDonatore = annuncio.donatore.toString() === req.user.id;
-    const isAdmin = req.user.role === 'admin'; // assumendo campo role
+    const isAdmin = req.user.ruolo === 'admin';
 
     if (!isDonatore && !isAdmin) {
       return res.status(403).json({ error: 'Non autorizzato' });
