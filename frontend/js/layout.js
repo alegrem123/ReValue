@@ -243,6 +243,33 @@ function injectGlobalStyles() {
     const style = document.createElement('style');
     style.id = 'rv-global-style';
     style.textContent = `
+      /* ── Mobile responsive globals ── */
+
+      /* Touch targets minimi 44px (Apple HIG / WCAG 2.5.5) */
+      .btn, button, [role="button"], a.nav-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn-sm { min-height: 36px; }
+
+      /* Card action buttons: stack su xs */
+      @media (max-width: 575.98px) {
+        .card .d-flex.gap-2:not(.flex-nowrap) { flex-direction: column; }
+        .filter-btn { flex: 1 1 40%; }
+        .container { padding-left: 12px; padding-right: 12px; }
+        .modal-footer { flex-direction: column; gap: 8px; }
+        .modal-footer .btn { width: 100%; }
+        h1.h3, h1.display-6 { font-size: 1.4rem; }
+      }
+
+      /* QR image non overflow su schermi piccoli */
+      #qr-canvas, img[style*="260px"] { max-width: 100%; height: auto; }
+
+      /* Chat: fix altezza su browser mobile con barre UI */
+      .chat-wrapper { height: 100svh; height: 100dvh; }
+
       /* Skeleton loader */
       .skeleton {
         background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);

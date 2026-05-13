@@ -63,7 +63,7 @@ function buildCard(p) {
         </div>
 
         ${p.stato === 'ATTIVA' ? `
-        <div class="d-flex gap-2 flex-wrap mt-3">
+        <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
           <a href="annuncio.html?id=${p.annuncio?._id}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-eye me-1"></i>Vedi annuncio
           </a>
