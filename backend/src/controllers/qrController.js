@@ -1,8 +1,10 @@
 const crypto = require('crypto');
 const Prenotazione = require('../models/prenotazioneModel');
 const TokenQR = require('../models/tokenQRModel');
-const Annuncio = require('../models/annuncioModel');
-const { addPunti } = require('../services/walletService');
+const {
+  findTokenByCodice,
+  finalizzaScambio,
+} = require('../services/scambioQrService');
 const QR_TTL_MS = 24 * 60 * 60 * 1000; // 24 ore
 
 /** Codice di errore MongoDB per violazione di indice unique. */
@@ -92,10 +94,7 @@ async function validaQR(req, res) {
     }
 
     // Cerchiamo il token e facciamo populate di prenotazione e annuncio
-    const token = await TokenQR.findOne({ codice }).populate({
-      path: 'prenotazione',
-      populate: { path: 'annuncio' }
-    });
+    const token = await findTokenByCodice(codice);
 
     // BUG FIX #3: Il TTL index di MongoDB rimuove automaticamente i token scaduti.
     // Se findOne ritorna null NON possiamo sapere se il codice non è mai esistito
@@ -143,39 +142,12 @@ async function validaQR(req, res) {
       return res.status(403).json({ error: 'Scansione non autorizzata. Solo l\'acquirente può validare lo scambio.' });
     }
 
-    // Validazione completata: aggiorniamo gli stati
-    
-    // OCL #14 (post): stato prenotazione diventa COMPLETATA
-    prenotazione.stato = 'COMPLETATA';
-    await prenotazione.save();
-
-    // Constraint 12: stato annuncio diventa RITIRATO
-    const annuncio = prenotazione.annuncio;
-    annuncio.stato = 'RITIRATO';
-    await annuncio.save();
-
-    token.usato = true;
-    await token.save();
-
-    // RF27, OCL #16: Accredito crediti a donatore e acquirente
-    const VALORE_CREDITI = 50; // valore di base per lo scambio
-    await addPunti(
-      prenotazione.donatore.toString(),
-      VALORE_CREDITI,
-      'Scambio completato (Donatore)',
-      prenotazione._id
-    );
-    await addPunti(
-      prenotazione.acquirente.toString(),
-      VALORE_CREDITI,
-      'Scambio completato (Acquirente)',
-      prenotazione._id
-    );
+    const creditiAssegnati = await finalizzaScambio({ token, prenotazione });
 
     return res.status(200).json({
       message: 'Scambio validato con successo',
       prenotazione: prenotazione._id,
-      creditiAssegnati: VALORE_CREDITI
+      creditiAssegnati
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });

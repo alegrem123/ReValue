@@ -1,13 +1,9 @@
 const Prenotazione = require('../models/prenotazioneModel');
-const Annuncio = require('../models/annuncioModel');
-const TokenQR = require('../models/tokenQRModel');
-const { addPunti } = require('../services/walletService');
-
-// crediti assegnati a donatore e acquirente per ogni scambio completato
-const CREDITI_SCAMBIO = 10;
-
-// finestra massima per disdire il ritiro (RF20): 3 giorni in ms
-const DISDETTA_TTL_MS = 3 * 24 * 60 * 60 * 1000;
+const {
+  findActiveTokenByPrenotazione,
+  findTokenByCodice,
+  finalizzaScambio,
+} = require('../services/scambioQrService');
 
 /**
  * GET /api/scambi/:prenotazioneId/qr
@@ -31,7 +27,7 @@ async function getQR(req, res) {
       return res.status(403).json({ error: 'Non autorizzato' });
     }
 
-    const tokenQR = await TokenQR.findOne({ prenotazione: prenotazione._id, usato: false });
+    const tokenQR = await findActiveTokenByPrenotazione(prenotazione._id);
     if (!tokenQR) {
       return res.status(404).json({ error: 'Token QR non trovato o già usato' });
     }
@@ -68,10 +64,18 @@ async function validaScambio(req, res) {
       return res.status(400).json({ error: 'codice QR obbligatorio' });
     }
 
-    const prenotazione = await Prenotazione.findById(req.params.prenotazioneId)
-      .populate('annuncio');
+    const tokenQR = await findTokenByCodice(codice);
+    if (!tokenQR) {
+      return res.status(404).json({ error: 'Codice QR non valido, già scaduto o non esistente' });
+    }
 
-    if (!prenotazione || prenotazione.stato !== 'ATTIVA') {
+    const prenotazione = tokenQR.prenotazione;
+
+    if (!prenotazione || prenotazione._id.toString() !== req.params.prenotazioneId) {
+      return res.status(409).json({ error: 'Il codice QR non appartiene alla prenotazione indicata' });
+    }
+
+    if (prenotazione.stato !== 'ATTIVA') {
       return res.status(404).json({ error: 'Prenotazione attiva non trovata' });
     }
 
@@ -80,8 +84,7 @@ async function validaScambio(req, res) {
       return res.status(403).json({ error: 'Non autorizzato' });
     }
 
-    const tokenQR = await TokenQR.findOne({ prenotazione: prenotazione._id });
-    if (!tokenQR || tokenQR.usato) {
+    if (tokenQR.usato) {
       return res.status(409).json({ error: 'Token QR non valido o già usato' });
     }
 
@@ -95,29 +98,9 @@ async function validaScambio(req, res) {
       return res.status(401).json({ error: 'Scansione non autorizzata' });
     }
 
-    // marca token come usato
-    tokenQR.usato = true;
-    await tokenQR.save();
+    const crediti = await finalizzaScambio({ token: tokenQR, prenotazione });
 
-    // OCL #12: Prenotazione → COMPLETATA
-    prenotazione.stato = 'COMPLETATA';
-    await prenotazione.save();
-
-    // OCL #12: Annuncio → RITIRATO
-    await Annuncio.findByIdAndUpdate(prenotazione.annuncio._id, {
-      $set: { stato: 'RITIRATO', isAttivo: false },
-    });
-
-    // accredita crediti a entrambi i partecipanti (D2 §1.2.2, RNF5)
-    const donatoreId = prenotazione.annuncio.donatore;
-    const acquirenteId = prenotazione.acquirente;
-
-    await Promise.all([
-      addPunti(donatoreId, CREDITI_SCAMBIO, 'Scambio completato', prenotazione._id),
-      addPunti(acquirenteId, CREDITI_SCAMBIO, 'Scambio completato', prenotazione._id),
-    ]);
-
-    return res.status(200).json({ message: 'Scambio confermato', crediti: CREDITI_SCAMBIO });
+    return res.status(200).json({ message: 'Scambio confermato', crediti });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
