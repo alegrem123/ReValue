@@ -143,6 +143,75 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
     }
   );
 
+  // ── Test stress: 10 utenti prenotano lo stesso annuncio ─────────────────
+
+  test(
+    'Stress test: 10 utenti tentano di prenotare un nuovo annuncio contemporaneamente, solo 1 successo',
+    async () => {
+      // 1. Il donatore crea un NUOVO annuncio
+      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const resAnnuncio = await request(app)
+        .post('/api/annunci')
+        .set('Authorization', `Bearer ${tokenDonatore}`)
+        .send({
+          titolo: 'Divano usato',
+          dataScadenza: futureDate.toISOString(),
+          latitudine: 46.0,
+          longitudine: 11.0,
+          oggetto: {
+            categoria: 'Mobili',
+            descrizione: 'Divano a 3 posti',
+            dimensioni: 'grande',
+            materiale: 'tessuto',
+          },
+        });
+
+      expect(resAnnuncio.statusCode).toBe(201);
+      let nuovoAnnuncioId = resAnnuncio.body._id ?? resAnnuncio.body.annuncio?._id;
+      if (!nuovoAnnuncioId) {
+        const doc = await Annuncio.findOne({ titolo: 'Divano usato' });
+        nuovoAnnuncioId = doc._id.toString();
+      }
+
+      // 2. Creiamo 10 utenti acquirenti
+      const tokens = [];
+      for (let i = 0; i < 10; i++) {
+        const token = await registraUtente(`acquirente_stress_${i}@test.com`, `AcquirenteStress${i}`);
+        tokens.push(token);
+      }
+
+      // 3. Lanciamo le 10 richieste in parallelo
+      const requests = tokens.map(token => 
+        request(app)
+          .post('/api/prenotazioni')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ annuncioId: nuovoAnnuncioId })
+      );
+
+      const responses = await Promise.all(requests);
+      const statuses = responses.map(r => r.statusCode);
+
+      // 4. Verifichiamo che esattamente 1 abbia avuto successo (201) e 9 abbiano fallito (409)
+      const successi = statuses.filter(s => s === 201).length;
+      const fallimenti = statuses.filter(s => s === 409).length;
+
+      expect(successi).toBe(1);
+      expect(fallimenti).toBe(9);
+
+      // 5. Verifica nel DB che esista una sola prenotazione ATTIVA
+      const prenotazioniAttive = await Prenotazione.find({
+        annuncio: nuovoAnnuncioId,
+        stato: 'ATTIVA',
+      });
+      expect(prenotazioniAttive).toHaveLength(1);
+
+      // 6. Verifica stato e versione dell'annuncio
+      const annuncio = await Annuncio.findById(nuovoAnnuncioId);
+      expect(annuncio.stato).toBe('PRENOTATO');
+      expect(annuncio.versione).toBe(1);
+    }
+  );
+
   // ── Guardrail aggiuntivo: un terzo tentativo di prenotazione deve fallire ─
 
   test(
