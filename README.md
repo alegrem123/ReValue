@@ -21,7 +21,7 @@ ReValue/
 
 | Tool | Versione minima |
 |------|-----------------|
-| Node.js | 18.x |
+| Node.js | 18.18.2 consigliata (vedi `.nvmrc`) |
 | npm | 9.x |
 | Expo CLI | `npx expo` (incluso con Expo SDK 54) |
 | MongoDB Atlas | account con cluster attivo |
@@ -34,7 +34,7 @@ ReValue/
 
 ```bash
 cd backend
-npm install
+npm ci
 cp .env.example .env   # compila le variabili (vedi sotto)
 ```
 
@@ -59,15 +59,26 @@ npm run dev
 
 Server disponibile su `http://localhost:3000`.
 
-### Test
+### Esecuzione test backend
+
+Prerequisiti:
+- Node.js 18.18.2, come indicato nel file `.nvmrc` nella root del repository.
+- npm 9.x.
+- Dipendenze installate a partire da `backend/package-lock.json`.
+
+Comandi:
 
 ```bash
+cd backend
+npm ci
 npm test                  # singola run
 npm run test:watch        # watch mode
 npm run test:coverage     # con coverage report
 ```
 
-I test usano `mongodb-memory-server` — nessuna connessione Atlas necessaria.
+Gli script corrispondono a quelli definiti in `backend/package.json`. Per una esecuzione riproducibile usare `npm ci`, che installa esattamente le versioni risolte nel lockfile e fallisce se `package.json` e `package-lock.json` non sono coerenti.
+
+I test usano `mongodb-memory-server`: durante l'esecuzione viene avviata una istanza MongoDB temporanea in memoria, quindi non serve una connessione a MongoDB Atlas. Possibili fallimenti ambientali possono dipendere dal download o dalla cache del binario MongoDB usato da `mongodb-memory-server`, da restrizioni di rete o filesystem, oppure da incompatibilita' della piattaforma locale con il binario richiesto.
 
 ### Seed database
 
