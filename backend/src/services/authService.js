@@ -105,6 +105,10 @@ async function loginUser({ email, password }) {
     throw createAuthError(401, 'Credenziali non valide', 'INVALID_CREDENTIALS');
   }
 
+  if (user.bannato) {
+    throw createAuthError(403, 'Account bannato', 'ACCOUNT_BANNED');
+  }
+
   if (user.isSospeso) {
     throw createAuthError(403, 'Account sospeso', 'ACCOUNT_SUSPENDED');
   }
