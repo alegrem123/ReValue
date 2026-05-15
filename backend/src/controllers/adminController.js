@@ -113,19 +113,28 @@ async function sospendiUtente(req, res) {
 
 /**
  * POST /api/admin/utenti/:id/riabilita
- * Riabilita un account sospeso o bannato.
+ * Riabilita un account sospeso, ma non un account bannato.
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
 async function riabilitaUtente(req, res) {
   try {
-    const utente = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: { isSospeso: false } }, // non resetta bannato — ban è permanente
-      { new: true }
-    );
-    if (!utente) return res.status(404).json({ error: 'Utente non trovato' });
+    const utente = await User.findById(req.params.id);
+    if (!utente) {
+      return res.status(404).json({ error: 'Utente non trovato' });
+    }
+
+    if (utente.bannato) {
+      return res.status(403).json({ error: 'Account bannato non riabilitabile' });
+    }
+
+    if (!utente.isSospeso) {
+      return res.status(400).json({ error: 'Account non sospeso' });
+    }
+
+    utente.isSospeso = false;
+    await utente.save();
 
     return res.status(200).json({ message: `Utente ${utente.email} riabilitato` });
   } catch (err) {
