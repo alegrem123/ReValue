@@ -7,9 +7,15 @@ async function authenticate(req, res, next) {
     return res.status(401).json({ error: 'Token mancante' });
   }
 
+  let payload;
   try {
     const token = authHeader.slice(7);
-    const payload = verifyToken(token);
+    payload = verifyToken(token);
+  } catch (err) {
+    return res.status(401).json({ error: err.message });
+  }
+
+  try {
     const user = await User.findById(payload.id);
 
     if (!user) {
@@ -33,7 +39,7 @@ async function authenticate(req, res, next) {
     if (err.name === 'CastError') {
       return res.status(401).json({ error: 'Invalid token' });
     }
-    return res.status(401).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 }
 
