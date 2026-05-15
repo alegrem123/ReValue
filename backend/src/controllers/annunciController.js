@@ -1,4 +1,5 @@
 const Annuncio = require('../models/annuncioModel');
+const Prenotazione = require('../models/prenotazioneModel');
 
 /**
  * Estrae un valore numerico da dimensione testuale.
@@ -53,6 +54,38 @@ function giorniRimanenti(dataScadenza) {
 function calcolaValoreAnnuncio(annuncio) {
   const dimensione = normalizeDimensione(annuncio.oggetto?.dimensioni);
   return dimensione * giorniRimanenti(annuncio.dataScadenza);
+}
+
+async function getBookedAnnuncioIdsForUser(userId, annuncioIds) {
+  if (!userId || annuncioIds.length === 0) {
+    return new Set();
+  }
+
+  const prenotazioni = await Prenotazione.find(
+    {
+      acquirente: userId,
+      annuncio: { $in: annuncioIds },
+      stato: { $in: ['ATTIVA', 'COMPLETATA'] },
+    },
+    'annuncio'
+  );
+
+  return new Set(prenotazioni.map((prenotazione) => prenotazione.annuncio.toString()));
+}
+
+function isDonatoreOfAnnuncio(annuncio, userId) {
+  if (!userId || !annuncio?.donatore) {
+    return false;
+  }
+
+  const donatoreId = annuncio.donatore._id ?? annuncio.donatore;
+  return donatoreId.toString() === userId;
+}
+
+function removeExactCoordinates(annuncio) {
+  delete annuncio.latitudine;
+  delete annuncio.longitudine;
+  return annuncio;
 }
 
 /**
@@ -110,19 +143,13 @@ async function getCatalogo(req, res) {
         ? { dataScadenza: -1 }
         : { dataScadenza: 1 };
 
-    // RF4: omette lat/lng per utenti non autenticati
-    const autenticato = !!req.user;
-    const projection = autenticato
-      ? '-__v'
-      : '-latitudine -longitudine -__v';
-
     // Paginazione
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 10)); // max 100 items per page
     const skip = (pageNum - 1) * limitNum;
 
     // Recupera tutti gli annunci filtrati (senza paginazione per applicare filtro distanza)
-    let query = Annuncio.find(filtro, projection).populate('donatore', 'nome cognome');
+    let query = Annuncio.find(filtro, '-__v').populate('donatore', 'nome cognome');
     if (dbSort) {
       query = query.sort(dbSort);
     }
@@ -153,9 +180,25 @@ async function getCatalogo(req, res) {
 
     // Applica paginazione manuale
     const paginatedAnnunci = annunci.slice(skip, skip + limitNum);
+    const bookedAnnuncioIds = req.user?.ruolo === 'admin'
+      ? new Set()
+      : await getBookedAnnuncioIdsForUser(
+          req.user?.id,
+          paginatedAnnunci.map((annuncio) => annuncio._id)
+        );
+    const visibleAnnunci = paginatedAnnunci.map((annuncio) => {
+      const dati = annuncio.toObject();
+      const canSeeExactCoordinates = req.user && (
+        req.user.ruolo === 'admin' ||
+        isDonatoreOfAnnuncio(annuncio, req.user.id) ||
+        bookedAnnuncioIds.has(annuncio._id.toString())
+      );
+
+      return canSeeExactCoordinates ? dati : removeExactCoordinates(dati);
+    });
 
     return res.status(200).json({
-      data: paginatedAnnunci,
+      data: visibleAnnunci,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -187,11 +230,20 @@ async function getAnnuncio(req, res) {
 
     const dati = annuncio.toObject();
 
-    // Indirizzo visibile solo se autenticato
-    const autenticato = !!req.user;
-    if (!autenticato) {
-      delete dati.latitudine;
-      delete dati.longitudine;
+    const canSeeExactCoordinates = req.user && (
+      req.user.ruolo === 'admin' ||
+      isDonatoreOfAnnuncio(annuncio, req.user.id) ||
+      (
+        await Prenotazione.exists({
+          annuncio: annuncio._id,
+          acquirente: req.user.id,
+          stato: { $in: ['ATTIVA', 'COMPLETATA'] },
+        })
+      )
+    );
+
+    if (!canSeeExactCoordinates) {
+      removeExactCoordinates(dati);
     }
 
     return res.status(200).json(dati);

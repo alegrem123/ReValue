@@ -30,6 +30,7 @@ const userSchema = new Schema(
       trim: true,
       validate: {
         validator(value) {
+          // OCL #1: email deve rispettare un formato valido.
           return emailRegex.test(value);
         },
         message: 'email format is invalid',
@@ -38,6 +39,7 @@ const userSchema = new Schema(
     passwordHash: {
       type: String,
       required: [true, 'passwordHash is required'],
+      // OCL #2: la password in chiaro deve avere almeno 8 caratteri prima dell'hash.
       minlength: [60, 'passwordHash must be at least 60 characters long'],
     },
     malusCount: {

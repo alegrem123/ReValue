@@ -27,6 +27,10 @@ const prenotazioneSchema = new Schema(
       enum: STATI_PRENOTAZIONE,
       default: 'ATTIVA',
     },
+    dataCompletamento: {
+      type: Date,
+      default: null,
+    },
     dataPrenotazione: {
       type: Date,
       default: Date.now,

@@ -60,11 +60,21 @@ function requireAdmin(req, res, next) {
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
-function optionalAuthenticate(req, _res, next) {
+async function optionalAuthenticate(req, _res, next) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
-      req.user = verifyToken(authHeader.slice(7));
+      const payload = verifyToken(authHeader.slice(7));
+      const user = await User.findById(payload.id);
+      if (user && !user.isSospeso) {
+        req.user = {
+          ...payload,
+          id: user._id.toString(),
+          ruolo: user.ruolo,
+          nome: user.nome,
+          isSospeso: user.isSospeso,
+        };
+      }
     } catch {
       // token invalido — req.user resta undefined, nessun errore
     }

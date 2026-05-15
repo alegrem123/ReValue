@@ -44,6 +44,17 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
     const token = register.body.token;
     expect(token).toBeDefined();
 
+    const registerViewer = await request(app)
+      .post('/api/auth/register')
+      .send({
+        nome: 'Giulia',
+        cognome: 'Viewer',
+        email: 'catalog-viewer@test.com',
+        password: 'password123',
+      });
+    expect(registerViewer.statusCode).toBe(201);
+    const viewerToken = registerViewer.body.token;
+
     const dataScadenza = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const create = await request(app)
       .post('/api/annunci')
@@ -76,15 +87,17 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
 
     const privateCatalog = await request(app)
       .get('/api/annunci?categoria=Mobili&limit=20')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${viewerToken}`);
     expect(privateCatalog.statusCode).toBe(200);
-    expect(privateCatalog.body.data[0].latitudine).toBe(46.0667);
-    expect(privateCatalog.body.data[0].longitudine).toBe(11.1211);
+    expect(privateCatalog.body.data[0].latitudine).toBeUndefined();
+    expect(privateCatalog.body.data[0].longitudine).toBeUndefined();
 
     const detail = await request(app)
       .get(`/api/annunci/${annuncioId}`)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${viewerToken}`);
     expect(detail.statusCode).toBe(200);
+    expect(detail.body.latitudine).toBeUndefined();
+    expect(detail.body.longitudine).toBeUndefined();
     expect(detail.body.oggetto.descrizione).toContain('Scrivania');
 
     const updatedDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
@@ -115,6 +128,23 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
     expect(mine.statusCode).toBe(200);
     expect(mine.body).toHaveLength(1);
     expect(mine.body[0]._id).toBe(annuncioId);
+
+    const booking = await request(app)
+      .post('/api/prenotazioni')
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({ annuncioId });
+    expect(booking.statusCode).toBe(201);
+    expect(booking.body.indirizzo).toEqual({
+      latitudine: 46.07,
+      longitudine: 11.13,
+    });
+
+    const detailAfterBooking = await request(app)
+      .get(`/api/annunci/${annuncioId}`)
+      .set('Authorization', `Bearer ${viewerToken}`);
+    expect(detailAfterBooking.statusCode).toBe(200);
+    expect(detailAfterBooking.body.latitudine).toBe(46.07);
+    expect(detailAfterBooking.body.longitudine).toBe(11.13);
 
     const remove = await request(app)
       .delete(`/api/annunci/${annuncioId}`)

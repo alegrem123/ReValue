@@ -2,7 +2,7 @@ const Prenotazione = require('../models/prenotazioneModel');
 const {
   findActiveTokenByPrenotazione,
   findTokenByCodice,
-  finalizzaScambio,
+  finalizzaScambioAtomico,
 } = require('../services/scambioQrService');
 
 /**
@@ -98,10 +98,13 @@ async function validaScambio(req, res) {
       return res.status(401).json({ error: 'Scansione non autorizzata' });
     }
 
-    const crediti = await finalizzaScambio({ token: tokenQR, prenotazione });
+    const crediti = await finalizzaScambioAtomico({ tokenId: tokenQR._id });
 
     return res.status(200).json({ message: 'Scambio confermato', crediti });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
     return res.status(500).json({ error: err.message });
   }
 }

@@ -3,7 +3,7 @@ const Prenotazione = require('../models/prenotazioneModel');
 const TokenQR = require('../models/tokenQRModel');
 const {
   findTokenByCodice,
-  finalizzaScambio,
+  finalizzaScambioAtomico,
 } = require('../services/scambioQrService');
 const QR_TTL_MS = 24 * 60 * 60 * 1000; // 24 ore
 
@@ -142,7 +142,7 @@ async function validaQR(req, res) {
       return res.status(403).json({ error: 'Scansione non autorizzata. Solo l\'acquirente può validare lo scambio.' });
     }
 
-    const creditiAssegnati = await finalizzaScambio({ token, prenotazione });
+    const creditiAssegnati = await finalizzaScambioAtomico({ tokenId: token._id });
 
     return res.status(200).json({
       message: 'Scambio validato con successo',
@@ -150,6 +150,9 @@ async function validaQR(req, res) {
       creditiAssegnati
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
     return res.status(500).json({ error: err.message });
   }
 }

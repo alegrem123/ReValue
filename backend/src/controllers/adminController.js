@@ -17,20 +17,45 @@ async function getStatistiche(req, res) {
     inizioMese.setDate(1);
     inizioMese.setHours(0, 0, 0, 0);
 
-    const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets] = await Promise.all([
-      Prenotazione.countDocuments({ stato: 'COMPLETATA', dataPrenotazione: { $gte: inizioMese } }),
+    const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets, creditiErogati] = await Promise.all([
+      Prenotazione.countDocuments({ stato: 'COMPLETATA', dataCompletamento: { $gte: inizioMese } }),
       User.countDocuments({ ruolo: 'user' }),
       Segnalazione.countDocuments(),
-      Wallet.aggregate([{ $group: { _id: null, totaleCrediti: { $sum: '$bilancio' } } }]),
+      Wallet.aggregate([{ $group: { _id: null, liquiditaAttuale: { $sum: '$bilancio' } } }]),
+      Wallet.aggregate([
+        { $unwind: '$transazioni' },
+        {
+          $match: {
+            'transazioni.tipo': 'accredito',
+            'transazioni.motivo': { $regex: /^Scambio completato/ },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            creditiErogatiTotali: { $sum: '$transazioni.ammontare' },
+            creditiErogatiMese: {
+              $sum: {
+                $cond: [{ $gte: ['$transazioni.data', inizioMese] }, '$transazioni.ammontare', 0],
+              },
+            },
+          },
+        },
+      ]),
     ]);
 
-    const totaleCrediti = wallets[0]?.totaleCrediti ?? 0;
+    const liquiditaAttuale = wallets[0]?.liquiditaAttuale ?? 0;
+    const creditiErogatiTotali = creditiErogati[0]?.creditiErogatiTotali ?? 0;
+    const creditiErogatiMese = creditiErogati[0]?.creditiErogatiMese ?? 0;
 
     return res.status(200).json({
       scambiMensili,
       totaleUtenti,
       segnalazioniPendenti,
-      totaleCrediti,
+      liquiditaAttuale,
+      creditiErogatiTotali,
+      creditiErogatiMese,
+      totaleCrediti: liquiditaAttuale,
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
