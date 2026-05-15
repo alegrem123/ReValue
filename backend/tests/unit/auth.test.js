@@ -140,6 +140,36 @@ describe('Auth flow', () => {
       expect.objectContaining({ error: 'Credenziali non valide' })
     );
   });
+
+  test('login fail per utente bannato', async () => {
+    const password = 'Password123!';
+    const user = new User({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Paolo',
+      cognome: 'Blu',
+      email: 'paolo.blu@example.com',
+      passwordHash: await hashPassword(password),
+      ruolo: 'user',
+      bannato: true,
+      isSospeso: true,
+    });
+    await user.save();
+
+    const req = {
+      body: {
+        email: 'paolo.blu@example.com',
+        password,
+      },
+    };
+    const res = createMockRes();
+
+    await login(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Account bannato' })
+    );
+  });
 });
 
 describe('JWT utility', () => {
