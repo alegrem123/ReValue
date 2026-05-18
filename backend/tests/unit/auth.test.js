@@ -3,6 +3,14 @@ const jwt = require('jsonwebtoken');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const User = require('../../src/models/userModel');
 const { hashPassword } = require('../../src/utils/password');
+
+jest.mock('../../src/services/emailService', () => ({
+  sendWelcome: jest.fn(() => Promise.resolve({ skipped: true })),
+  sendBookingConfirmation: jest.fn(() => Promise.resolve({ skipped: true })),
+  sendSwapCompleted: jest.fn(() => Promise.resolve({ skipped: true })),
+}));
+
+const emailService = require('../../src/services/emailService');
 const { register, login } = require('../../src/controllers/authController');
 const { verifyToken } = require('../../src/utils/jwt');
 
@@ -21,6 +29,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await User.deleteMany({});
+  jest.clearAllMocks();
 });
 
 function createMockRes() {
@@ -54,6 +63,12 @@ describe('Auth flow', () => {
       email: 'mario.rossi@example.com',
     });
     expect(response.user.passwordHash).toBeUndefined();
+    expect(emailService.sendWelcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nome: 'Mario',
+        email: 'mario.rossi@example.com',
+      })
+    );
   });
 
   test('register fail se email già esiste', async () => {
