@@ -6,11 +6,15 @@ const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler
 
 const app = express();
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
+const corsOrigin =
+  process.env.NODE_ENV === 'production'
+    ? (process.env.FRONTEND_URL || '').split(',').map((origin) => origin.trim()).filter(Boolean)
+    : true;
 
 // Middleware
 app.use(
   cors({
-    origin: true,
+    origin: corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
