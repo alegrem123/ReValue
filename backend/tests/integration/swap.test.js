@@ -32,7 +32,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
   test('1. Register Donatore e Acquirente', async () => {
     // Registra il Donatore
     const resDonatore = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .send({
         nome: 'Mario',
         cognome: 'Rossi',
@@ -44,7 +44,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
 
     // Registra l'Acquirente
     const resAcquirente = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .send({
         nome: 'Luigi',
         cognome: 'Verdi',
@@ -58,7 +58,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
   test('2. Donatore crea un annuncio', async () => {
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 giorni
     const resAnnuncio = await request(app)
-      .post('/api/annunci')
+      .post('/api/v1/annunci')
       .set('Authorization', `Bearer ${tokenDonatore}`)
       .send({
         titolo: 'Sedia di legno',
@@ -87,7 +87,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
 
   test('3. Donatore non può prenotare il proprio annuncio', async () => {
     const resPrenota = await request(app)
-      .post('/api/prenotazioni')
+      .post('/api/v1/prenotazioni')
       .set('Authorization', `Bearer ${tokenDonatore}`)
       .send({
         annuncioId: annuncioId
@@ -99,7 +99,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
 
   test('4. Acquirente prenota l\'annuncio', async () => {
     const resPrenota = await request(app)
-      .post('/api/prenotazioni')
+      .post('/api/v1/prenotazioni')
       .set('Authorization', `Bearer ${tokenAcquirente}`)
       .send({
         annuncioId: annuncioId
@@ -112,7 +112,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
 
   test('5. Donatore genera il QR Code', async () => {
     const resQR = await request(app)
-      .post('/api/qr/genera')
+      .post('/api/v1/qr/genera')
       .set('Authorization', `Bearer ${tokenDonatore}`)
       .send({
         prenotazioneId: prenotazioneId
@@ -125,7 +125,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
 
   test('6. Acquirente valida il QR Code (Scambio Completato)', async () => {
     const resValida = await request(app)
-      .post('/api/qr/valida')
+      .post('/api/v1/qr/valida')
       .set('Authorization', `Bearer ${tokenAcquirente}`)
       .send({
         codice: qrCode
@@ -145,14 +145,14 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
 
   test('7. Verifica accreditamento punti nel Wallet per entrambi', async () => {
     const resWalletD = await request(app)
-      .get('/api/wallet/me')
+      .get('/api/v1/wallet/me')
       .set('Authorization', `Bearer ${tokenDonatore}`);
     
     expect(resWalletD.statusCode).toBe(200);
     expect(resWalletD.body.bilancio).toBe(50); // Valore di base assegnato in qrController.js
     
     const resWalletA = await request(app)
-      .get('/api/wallet/me')
+      .get('/api/v1/wallet/me')
       .set('Authorization', `Bearer ${tokenAcquirente}`);
       
     expect(resWalletA.statusCode).toBe(200);

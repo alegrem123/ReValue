@@ -1,7 +1,7 @@
 const Conversazione = require('../models/conversazioneModel');
 
 /**
- * GET /api/conversazioni/me
+ * GET /api/v1/conversazioni/me
  * Lista conversazioni dell'utente autenticato.
  * Per ogni conversazione: ultimo messaggio + count messaggi non letti (RF12).
  *
@@ -59,7 +59,7 @@ async function getConversazioniMe(req, res) {
 }
 
 /**
- * GET /api/conversazioni/:id/messaggi
+ * GET /api/v1/conversazioni/:id/messaggi
  * Storico messaggi paginato. Solo partecipanti (RF11, RF13).
  * requireParticipant middleware attacca req.conversazione.
  *
@@ -95,7 +95,7 @@ async function getMessaggi(req, res) {
 }
 
 /**
- * POST /api/conversazioni/:id/messaggi
+ * POST /api/v1/conversazioni/:id/messaggi
  * Invia un messaggio testuale. Solo autenticato + partecipante (RF10, RF14).
  * requireParticipant attacca req.conversazione.
  *
@@ -128,7 +128,7 @@ async function inviaMessaggio(req, res) {
 }
 
 /**
- * GET /api/conversazioni/me/non-letti
+ * GET /api/v1/conversazioni/me/non-letti
  * Count totale messaggi non letti su tutte le conversazioni dell'utente (RF12).
  * Usato per badge navbar.
  */

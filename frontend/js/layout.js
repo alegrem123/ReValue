@@ -153,7 +153,7 @@ function updateAuthUI(user) {
     const nameEl = document.getElementById('navbar-username');
     if (nameEl) nameEl.textContent = user.nome || 'Profilo';
 
-    fetch('/api/wallet/saldo', {
+    fetch('/api/v1/wallet/saldo', {
       headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` },
     })
       .then((r) => r.json())
@@ -170,13 +170,13 @@ function updateAuthUI(user) {
 
 /**
  * Aggiorna badge non letti messaggi (RF12).
- * Chiama GET /api/conversazioni/me/non-letti e mostra count nel badge navbar.
+ * Chiama GET /api/v1/conversazioni/me/non-letti e mostra count nel badge navbar.
  */
 function updateUnreadBadge() {
   const token = localStorage.getItem('jwt');
   if (!token) return;
 
-  fetch('/api/conversazioni/me/non-letti', {
+  fetch('/api/v1/conversazioni/me/non-letti', {
     headers: { Authorization: `Bearer ${token}` },
   })
     .then((r) => r.json())

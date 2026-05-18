@@ -94,7 +94,7 @@ async function loadCatalogo() {
   catalogGrid.innerHTML = '';
 
   const query = buildCatalogQuery();
-  const endpoint = query ? `/api/annunci?${query}` : '/api/annunci';
+  const endpoint = query ? `/api/v1/annunci?${query}` : '/api/v1/annunci';
   const response = await api.get(endpoint);
   catalogSpinner.classList.add('d-none');
 

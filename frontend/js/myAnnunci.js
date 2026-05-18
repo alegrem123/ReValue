@@ -137,7 +137,7 @@ async function loadAnnunci() {
   clearAlert();
   setLoading(true);
 
-  const response = await api.get('/api/annunci/me');
+  const response = await api.get('/api/v1/annunci/me');
   setLoading(false);
 
   if (!response.ok) {
@@ -179,7 +179,7 @@ async function handleEditSubmit(event) {
   editSubmit.disabled = true;
   editSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvataggio...';
 
-  const response = await api.put(`/api/annunci/${encodeURIComponent(id)}`, buildEditPayload());
+  const response = await api.put(`/api/v1/annunci/${encodeURIComponent(id)}`, buildEditPayload());
 
   editSubmit.disabled = false;
   editSubmit.textContent = 'Salva modifiche';
@@ -200,7 +200,7 @@ async function deleteAnnuncio(id) {
   if (!window.confirm(`Eliminare "${title}"?`)) return;
 
   clearAlert();
-  const response = await api.delete(`/api/annunci/${encodeURIComponent(id)}`);
+  const response = await api.delete(`/api/v1/annunci/${encodeURIComponent(id)}`);
   if (!response.ok) {
     showAlert(response.error || "Impossibile eliminare l'annuncio.");
     return;

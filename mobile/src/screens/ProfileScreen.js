@@ -16,8 +16,8 @@ export function ProfileScreen({ user, onLogout }) {
     setError('');
 
     const [saldoRes, storicoRes] = await Promise.all([
-      api.get('/api/wallet/saldo'),
-      api.get('/api/wallet/storico?limit=5'),
+      api.get('/api/v1/wallet/saldo'),
+      api.get('/api/v1/wallet/storico?limit=5'),
     ]);
 
     setLoading(false);

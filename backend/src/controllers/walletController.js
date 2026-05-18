@@ -42,7 +42,7 @@ function filtraEPagina(transazioni, query) {
 }
 
 /**
- * GET /api/wallet/me
+ * GET /api/v1/wallet/me
  * Restituisce saldo aggiornato + storico transazioni in un'unica risposta (RF5, RF6, UC10, UC11).
  * Supporta gli stessi filtri e paginazione di /storico.
  *
@@ -75,7 +75,7 @@ async function me(req, res) {
 }
 
 /**
- * GET /api/wallet/saldo
+ * GET /api/v1/wallet/saldo
  * Restituisce solo il saldo aggiornato del wallet (RF5, UC10).
  *
  * @param {import('express').Request} req
@@ -91,7 +91,7 @@ async function saldo(req, res) {
 }
 
 /**
- * GET /api/wallet/storico
+ * GET /api/v1/wallet/storico
  * Restituisce lo storico delle transazioni con paginazione e filtri (RF6, UC11).
  * Ordinate per data decrescente (più recenti prima).
  *

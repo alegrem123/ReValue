@@ -40,7 +40,7 @@ async function createAdminAndLogin() {
   });
 
   const loginRes = await request(app)
-    .post('/api/auth/login')
+    .post('/api/v1/auth/login')
     .send({ email: admin.email, password });
 
   return { admin, token: loginRes.body.token, loginRes };
@@ -49,7 +49,7 @@ async function createAdminAndLogin() {
 describe('Moderation and authentication integration', () => {
   test('utente valido con JWT accede a una route protetta, ma viene bloccato dopo sospensione', async () => {
     const registerRes = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .send({
         nome: 'Mario',
         cognome: 'Rossi',
@@ -61,7 +61,7 @@ describe('Moderation and authentication integration', () => {
     const token = registerRes.body.token;
 
     const firstAccess = await request(app)
-      .get('/api/wallet/saldo')
+      .get('/api/v1/wallet/saldo')
       .set('Authorization', `Bearer ${token}`);
 
     expect(firstAccess.statusCode).toBe(200);
@@ -72,7 +72,7 @@ describe('Moderation and authentication integration', () => {
     );
 
     const secondAccess = await request(app)
-      .get('/api/wallet/saldo')
+      .get('/api/v1/wallet/saldo')
       .set('Authorization', `Bearer ${token}`);
 
     expect(secondAccess.statusCode).toBe(403);
@@ -97,7 +97,7 @@ describe('Moderation and authentication integration', () => {
     });
 
     const res = await request(app)
-      .post(`/api/admin/utenti/${user._id}/riabilita`)
+      .post(`/api/v1/admin/utenti/${user._id}/riabilita`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.statusCode).toBe(200);
@@ -126,7 +126,7 @@ describe('Moderation and authentication integration', () => {
     });
 
     const res = await request(app)
-      .post(`/api/admin/utenti/${user._id}/riabilita`)
+      .post(`/api/v1/admin/utenti/${user._id}/riabilita`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.statusCode).toBe(403);

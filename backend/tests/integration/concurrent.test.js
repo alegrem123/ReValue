@@ -47,7 +47,7 @@ afterAll(async () => {
  */
 async function registraUtente(email, nome) {
   const res = await request(app)
-    .post('/api/auth/register')
+    .post('/api/v1/auth/register')
     .send({ nome, cognome: 'Test', email, password: 'Password123!' });
 
   expect(res.statusCode).toBe(201);
@@ -72,7 +72,7 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
     // Il donatore crea un annuncio con scadenza nel futuro
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const res = await request(app)
-      .post('/api/annunci')
+      .post('/api/v1/annunci')
       .set('Authorization', `Bearer ${tokenDonatore}`)
       .send({
         titolo: 'Tavolo vintage',
@@ -107,12 +107,12 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
       // dell'altra, simulando la concorrenza reale.
       const [res1, res2] = await Promise.all([
         request(app)
-          .post('/api/prenotazioni')
+          .post('/api/v1/prenotazioni')
           .set('Authorization', `Bearer ${tokenAcquirente1}`)
           .send({ annuncioId }),
 
         request(app)
-          .post('/api/prenotazioni')
+          .post('/api/v1/prenotazioni')
           .set('Authorization', `Bearer ${tokenAcquirente2}`)
           .send({ annuncioId }),
       ]);
@@ -151,7 +151,7 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
       // 1. Il donatore crea un NUOVO annuncio
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const resAnnuncio = await request(app)
-        .post('/api/annunci')
+        .post('/api/v1/annunci')
         .set('Authorization', `Bearer ${tokenDonatore}`)
         .send({
           titolo: 'Divano usato',
@@ -183,7 +183,7 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
       // 3. Lanciamo le 10 richieste in parallelo
       const requests = tokens.map(token => 
         request(app)
-          .post('/api/prenotazioni')
+          .post('/api/v1/prenotazioni')
           .set('Authorization', `Bearer ${token}`)
           .send({ annuncioId: nuovoAnnuncioId })
       );
@@ -221,7 +221,7 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
       const tokenTerzo = await registraUtente('acquirente3.conc@test.com', 'Acquirente3');
 
       const res = await request(app)
-        .post('/api/prenotazioni')
+        .post('/api/v1/prenotazioni')
         .set('Authorization', `Bearer ${tokenTerzo}`)
         .send({ annuncioId });
 

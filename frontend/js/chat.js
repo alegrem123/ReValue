@@ -142,7 +142,7 @@ function appendBubble(msg) {
 }
 
 async function loadMessages(initial = false) {
-  const res = await api.get(`/api/conversazioni/${convId}/messaggi?limit=100`);
+  const res = await api.get(`/api/v1/conversazioni/${convId}/messaggi?limit=100`);
   if (!res.ok) {
     if (initial) {
       messagesArea.innerHTML = `<div class="text-danger p-3">Impossibile caricare i messaggi.</div>`;
@@ -168,7 +168,7 @@ async function loadMessages(initial = false) {
 }
 
 async function loadConversazione() {
-  const res = await api.get('/api/conversazioni/me');
+  const res = await api.get('/api/v1/conversazioni/me');
   if (!res.ok) return;
 
   const conv = (res.data || []).find((c) => c._id === convId);
@@ -194,7 +194,7 @@ async function sendMessage() {
   sendBtn.disabled = true;
   msgInput.disabled = true;
 
-  const res = await api.post(`/api/conversazioni/${convId}/messaggi`, { testo });
+  const res = await api.post(`/api/v1/conversazioni/${convId}/messaggi`, { testo });
 
   sendBtn.disabled = false;
   msgInput.disabled = false;

@@ -1,7 +1,7 @@
 /**
  * qr-display.js
  * Pagina QR display per il donatore (UC3).
- * Chiama POST /api/qr/genera, renderizza QR via qrcode.js, mostra countdown scadenza.
+ * Chiama POST /api/v1/qr/genera, renderizza QR via qrcode.js, mostra countdown scadenza.
  */
 
 const qrLoading       = document.getElementById('qr-loading');
@@ -54,7 +54,7 @@ async function generaQR(prenotazioneId) {
   qrContent.classList.add('d-none');
   qrAlert.classList.add('d-none');
 
-  const res = await api.post('/api/qr/genera', { prenotazioneId });
+  const res = await api.post('/api/v1/qr/genera', { prenotazioneId });
 
   qrLoading.classList.add('d-none');
 

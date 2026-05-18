@@ -6,11 +6,15 @@ const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler
 
 const app = express();
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
+const corsOrigin =
+  process.env.NODE_ENV === 'production'
+    ? (process.env.FRONTEND_URL || '').split(',').map((origin) => origin.trim()).filter(Boolean)
+    : true;
 
 // Middleware
 app.use(
   cors({
-    origin: true,
+    origin: corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -39,18 +43,18 @@ const prenotazioniRoutes = require('./src/routes/prenotazioniRoutes');
 const qrRoutes = require('./src/routes/qrRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', utentiRoutes);
-app.use('/api/annunci', annunciRoutes);
-app.use('/api/wallet', walletRoutes);
-app.use('/api/scambi', scambiRoutes);
-app.use('/api/messaggi', messaggiRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/prenotazioni', prenotazioniRoutes);
-app.use('/api/qr', qrRoutes);
-app.use('/api/conversazioni', chatRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', utentiRoutes);
+app.use('/api/v1/annunci', annunciRoutes);
+app.use('/api/v1/wallet', walletRoutes);
+app.use('/api/v1/scambi', scambiRoutes);
+app.use('/api/v1/messaggi', messaggiRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/prenotazioni', prenotazioniRoutes);
+app.use('/api/v1/qr', qrRoutes);
+app.use('/api/v1/conversazioni', chatRoutes);
 
-app.use('/api', notFoundHandler);
+app.use('/api/v1', notFoundHandler);
 app.use(errorHandler);
 
 module.exports = app;

@@ -43,7 +43,7 @@ export function QRDisplayScreen({ prenotazioneId, onBack }) {
     setLoading(true);
     setError('');
     setCodice(null);
-    const res = await api.post('/api/qr/genera', { prenotazioneId });
+    const res = await api.post('/api/v1/qr/genera', { prenotazioneId });
     setLoading(false);
     if (!res.ok) { setError(res.error || 'Impossibile generare il QR.'); return; }
     setCodice(res.data.codice);

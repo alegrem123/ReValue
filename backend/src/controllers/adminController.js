@@ -5,7 +5,7 @@ const Segnalazione = require('../models/segnalazioneModel');
 const Wallet = require('../models/walletModel');
 
 /**
- * GET /api/admin/statistiche
+ * GET /api/v1/admin/statistiche
  * Dashboard con scambi mensili e totale crediti erogati (RF30, UC14).
  *
  * @param {import('express').Request} req
@@ -63,7 +63,7 @@ async function getStatistiche(req, res) {
 }
 
 /**
- * GET /api/admin/segnalazioni
+ * GET /api/v1/admin/segnalazioni
  * Lista tutte le segnalazioni ricevute (UC13).
  *
  * @param {import('express').Request} req
@@ -84,7 +84,7 @@ async function getSegnalazioni(req, res) {
 }
 
 /**
- * POST /api/admin/utenti/:id/ban
+ * POST /api/v1/admin/utenti/:id/ban
  * Banna permanentemente un account fraudolento (RF29, D2 §2.2.2).
  * L'utente bannato non può più accedere (isSospeso = true + ruolo marcato).
  *
@@ -112,7 +112,7 @@ async function bannaUtente(req, res) {
 }
 
 /**
- * POST /api/admin/utenti/:id/sospendi
+ * POST /api/v1/admin/utenti/:id/sospendi
  * Sospende temporaneamente un account (RF29, D2 §2.2.2).
  *
  * @param {import('express').Request} req
@@ -137,7 +137,7 @@ async function sospendiUtente(req, res) {
 }
 
 /**
- * POST /api/admin/utenti/:id/riabilita
+ * POST /api/v1/admin/utenti/:id/riabilita
  * Riabilita un account sospeso, ma non un account bannato.
  *
  * @param {import('express').Request} req
@@ -168,7 +168,7 @@ async function riabilitaUtente(req, res) {
 }
 
 /**
- * PATCH /api/admin/annunci/:id/forza
+ * PATCH /api/v1/admin/annunci/:id/forza
  * Forza lo stato di un annuncio bloccato riportandolo a DISPONIBILE (RF31, D2 §2.2.2).
  *
  * @param {import('express').Request} req
@@ -191,7 +191,7 @@ async function forzaStatoAnnuncio(req, res) {
 }
 
 /**
- * DELETE /api/admin/annunci/:id
+ * DELETE /api/v1/admin/annunci/:id
  * Rimuove (soft-delete) un annuncio non conforme (UC13).
  *
  * @param {import('express').Request} req

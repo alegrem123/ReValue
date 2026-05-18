@@ -108,7 +108,7 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
 }
 
 /**
- * GET /api/annunci
+ * GET /api/v1/annunci
  * Catalogo pubblico — accessibile senza autenticazione (RF4, UC8).
  * Nasconde lat/lng esatte agli utenti non autenticati (RF4: privacy indirizzo).
  * Supporta filtraggio per categoria, materiale, dataScadenza (RF22).
@@ -212,7 +212,7 @@ async function getCatalogo(req, res) {
 }
 
 /**
- * GET /api/annunci/:id
+ * GET /api/v1/annunci/:id
  * Dettaglio singolo annuncio.
  * Indirizzo visibile solo se autenticato.
  *
@@ -253,7 +253,7 @@ async function getAnnuncio(req, res) {
 }
 
 /**
- * POST /api/annunci
+ * POST /api/v1/annunci
  * Crea nuovo annuncio (RF15, RF16). Richiede autenticazione.
  * OCL #5: dataScadenza deve essere nel futuro.
  * OCL #3: utente non sospeso (garantito da authMiddleware + login check).
@@ -293,7 +293,7 @@ async function creaAnnuncio(req, res) {
 }
 
 /**
- * PUT /api/annunci/:id
+ * PUT /api/v1/annunci/:id
  * Modifica annuncio (RF18). Solo il donatore, solo se stato === DISPONIBILE (OCL #8).
  *
  * @param {import('express').Request} req
@@ -342,7 +342,7 @@ async function modificaAnnuncio(req, res) {
 }
 
 /**
- * DELETE /api/annunci/:id
+ * DELETE /api/v1/annunci/:id
  * Soft-delete annuncio (RF18). Solo il donatore, solo se stato === DISPONIBILE (OCL #8).
  * Imposta isAttivo = false senza rimuovere il documento dal DB (D2 §2.3.1).
  *
@@ -377,7 +377,7 @@ async function cancellaAnnuncio(req, res) {
 
 
 /**
- * PATCH /api/annunci/:id/stato
+ * PATCH /api/v1/annunci/:id/stato
  * Cambia stato annuncio: DISPONIBILE→PRENOTATO→RITIRATO/SCADUTO.
  * Solo donatore o admin possono cambiare stato.
  *
@@ -428,7 +428,7 @@ async function cambiaStatoAnnuncio(req, res) {
 }
 
 /**
- * GET /api/annunci/me
+ * GET /api/v1/annunci/me
  * Annunci dell'utente loggato, anche scaduti/ritirati.
  *
  * @param {import('express').Request} req

@@ -27,7 +27,7 @@ export function AuthScreen({ onAuthenticated }) {
     setError('');
     setLoading(true);
 
-    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+    const endpoint = isRegister ? '/api/v1/auth/register' : '/api/v1/auth/login';
     const body = isRegister
       ? form
       : { email: form.email.trim(), password: form.password };

@@ -63,7 +63,7 @@ function handleUnauthorized() {
 /**
  * Core: esegue la fetch con header auth automatico.
  *
- * @param {string} endpoint   — es. '/api/annunci'
+ * @param {string} endpoint   — es. '/api/v1/annunci'
  * @param {Object} [options]
  * @param {'GET'|'POST'|'PUT'|'PATCH'|'DELETE'} [options.method='GET']
  * @param {Object|null} [options.body]    — verrà serializzato in JSON

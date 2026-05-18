@@ -1,12 +1,17 @@
 const { Router } = require('express');
-const { authenticate } = require('../middleware/authMiddleware');
-const { getQR, validaScambio } = require('../controllers/scambiController');
 
 const router = Router();
 
-// Endpoint legacy mantenuti per compatibilita': il flusso ufficiale resta /api/qr.
-router.get('/:prenotazioneId/qr', authenticate, getQR);
+// Endpoint legacy mantenuti per compatibilita': il flusso ufficiale resta /api/v1/qr.
+function deprecatedScambiRoute(req, res) {
+  res.set('Deprecation', 'true');
+  return res.status(410).json({
+    error: 'Endpoint legacy deprecato. Usa /api/v1/qr.',
+  });
+}
 
-router.post('/:prenotazioneId/valida', authenticate, validaScambio);
+router.get('/:prenotazioneId/qr', deprecatedScambiRoute);
+
+router.post('/:prenotazioneId/valida', deprecatedScambiRoute);
 
 module.exports = router;

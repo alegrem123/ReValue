@@ -135,7 +135,7 @@ async function handleSubmit(event) {
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Pubblicazione...';
 
-  const response = await api.post('/api/annunci', buildPayload());
+  const response = await api.post('/api/v1/annunci', buildPayload());
   if (!response.ok) {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Pubblica annuncio';

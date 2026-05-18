@@ -18,7 +18,7 @@ export function AnnuncioDetailScreen({ id, onBack }) {
     async function load() {
       setLoading(true);
       setError('');
-      const response = await api.get(`/api/annunci/${encodeURIComponent(id)}`);
+      const response = await api.get(`/api/v1/annunci/${encodeURIComponent(id)}`);
       setLoading(false);
 
       if (!response.ok) {
@@ -33,7 +33,7 @@ export function AnnuncioDetailScreen({ id, onBack }) {
 
   async function prenota() {
     setBooking(true);
-    const response = await api.post('/api/prenotazioni', { annuncioId: id });
+    const response = await api.post('/api/v1/prenotazioni', { annuncioId: id });
     setBooking(false);
 
     if (!response.ok) {

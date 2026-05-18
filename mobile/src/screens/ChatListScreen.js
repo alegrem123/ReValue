@@ -22,7 +22,7 @@ export function ChatListScreen({ onOpenChat }) {
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
-    const res = await api.get('/api/conversazioni/me');
+    const res = await api.get('/api/v1/conversazioni/me');
     setLoading(false);
     if (!res.ok) { setError(res.error || 'Impossibile caricare le conversazioni.'); return; }
     setConvs(res.data || []);

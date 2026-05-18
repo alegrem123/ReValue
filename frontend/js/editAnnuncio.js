@@ -109,7 +109,7 @@ async function loadAnnuncio() {
     return;
   }
 
-  const response = await api.get(`/api/annunci/${encodeURIComponent(id)}`);
+  const response = await api.get(`/api/v1/annunci/${encodeURIComponent(id)}`);
   if (!response.ok) {
     showAlert(response.error || "Impossibile caricare l'annuncio.");
     return;
@@ -153,7 +153,7 @@ async function handleSubmit(event) {
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvataggio...';
 
-  const response = await api.put(`/api/annunci/${encodeURIComponent(id)}`, buildPayload());
+  const response = await api.put(`/api/v1/annunci/${encodeURIComponent(id)}`, buildPayload());
 
   submitBtn.disabled = false;
   submitBtn.textContent = 'Salva modifiche';

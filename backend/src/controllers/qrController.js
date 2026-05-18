@@ -15,7 +15,7 @@ function generaCodiceQR() {
 }
 
 /**
- * POST /api/qr/genera
+ * POST /api/v1/qr/genera
  * Genera il QR associato alla prenotazione (RF17).
  * Solo il donatore della prenotazione può generarlo.
  *
@@ -79,7 +79,7 @@ async function generaQR(req, res) {
 }
 
 /**
- * POST /api/qr/valida
+ * POST /api/v1/qr/valida
  * Valida il QR Code certificando l'avvenuto scambio fisico (RF27).
  * OCL #14: token non scaduto, prenotazione ATTIVA; post: COMPLETATA.
  *

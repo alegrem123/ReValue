@@ -6,7 +6,7 @@ const {
 } = require('../services/scambioQrService');
 
 /**
- * GET /api/scambi/:prenotazioneId/qr
+ * GET /api/v1/scambi/:prenotazioneId/qr
  * Il donatore visualizza il codice QR da mostrare all'acquirente (UC3 step 1).
  * Solo il donatore dell'annuncio può accedere al codice.
  *
@@ -44,7 +44,7 @@ async function getQR(req, res) {
 }
 
 /**
- * POST /api/scambi/:prenotazioneId/valida
+ * POST /api/v1/scambi/:prenotazioneId/valida
  * L'acquirente scansiona il QR e certifica l'avvenuto scambio fisico (UC3, RF27).
  * Se la validazione ha successo:
  *   - TokenQR.usato = true (OCL #14: non riusabile)
