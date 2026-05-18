@@ -79,7 +79,7 @@ async function loadPublicProfile() {
     return;
   }
 
-  const response = await api.get(`/api/users/${encodeURIComponent(id)}/profilo`, {
+  const response = await api.get(`/api/v1/users/${encodeURIComponent(id)}/profilo`, {
     auth: false,
   });
   if (!response.ok) {

@@ -115,7 +115,7 @@ async function annullaPrenotazione() {
   confirmBtn.disabled = true;
   confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Annullamento...';
 
-  const res = await api.delete(`/api/prenotazioni/${pendingAnnulla}`);
+  const res = await api.delete(`/api/v1/prenotazioni/${pendingAnnulla}`);
 
   confirmBtn.disabled = false;
   confirmBtn.textContent = 'Annulla prenotazione';
@@ -149,7 +149,7 @@ async function loadBookings() {
     return;
   }
 
-  const res = await api.get('/api/prenotazioni/me');
+  const res = await api.get('/api/v1/prenotazioni/me');
   if (!res.ok) {
     bookingsList.innerHTML = '';
     showAlert(res.error || 'Impossibile caricare le prenotazioni.');

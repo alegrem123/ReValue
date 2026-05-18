@@ -1,7 +1,7 @@
 const Conversazione = require('../models/conversazioneModel');
 
 /**
- * GET /api/messaggi/:prenotazioneId
+ * GET /api/v1/messaggi/:prenotazioneId
  * Restituisce lo storico messaggi della conversazione legata alla prenotazione (RF11, UC6).
  * Solo i partecipanti alla prenotazione possono leggere (RF13).
  *
@@ -33,7 +33,7 @@ async function getStorico(req, res) {
 }
 
 /**
- * POST /api/messaggi/:prenotazioneId
+ * POST /api/v1/messaggi/:prenotazioneId
  * Invia un messaggio nella conversazione (RF10, RF14, UC6).
  * Solo i partecipanti possono inviare messaggi (RF13, RF14).
  * RNF9: messaggio persistito nel DB (embedded in Conversazione).
@@ -83,7 +83,7 @@ async function invia(req, res) {
 }
 
 /**
- * PATCH /api/messaggi/:id/letto
+ * PATCH /api/v1/messaggi/:id/letto
  * Marca un messaggio come letto. Solo partecipante della conversazione.
  * `:id` è l'ObjectId del subdocument messaggio.
  */

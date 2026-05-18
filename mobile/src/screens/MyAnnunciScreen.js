@@ -14,7 +14,7 @@ export function MyAnnunciScreen({ onOpenAnnuncio, refreshKey }) {
   const loadAnnunci = useCallback(async () => {
     setError('');
     setLoading(true);
-    const response = await api.get('/api/annunci/me');
+    const response = await api.get('/api/v1/annunci/me');
     setLoading(false);
 
     if (!response.ok) {
@@ -29,7 +29,7 @@ export function MyAnnunciScreen({ onOpenAnnuncio, refreshKey }) {
   }, [loadAnnunci, refreshKey]);
 
   async function deleteAnnuncio(id) {
-    const response = await api.delete(`/api/annunci/${encodeURIComponent(id)}`);
+    const response = await api.delete(`/api/v1/annunci/${encodeURIComponent(id)}`);
     if (!response.ok) {
       Alert.alert('Eliminazione non riuscita', response.error || 'Riprova piu tardi.');
       return;

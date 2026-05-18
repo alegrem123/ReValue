@@ -39,7 +39,7 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
-    const res = await api.get('/api/prenotazioni/me');
+    const res = await api.get('/api/v1/prenotazioni/me');
     setLoading(false);
     if (!res.ok) { setError(res.error || 'Impossibile caricare le prenotazioni.'); return; }
     setBookings(res.data || []);
@@ -54,7 +54,7 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
         text: 'Sì, annulla',
         style: 'destructive',
         onPress: async () => {
-          const res = await api.delete(`/api/prenotazioni/${id}`);
+          const res = await api.delete(`/api/v1/prenotazioni/${id}`);
           if (!res.ok) { Alert.alert('Errore', res.error || 'Impossibile annullare.'); return; }
           setBookings((prev) => prev.map((b) => b._id === id ? { ...b, stato: 'ANNULLATA' } : b));
         },

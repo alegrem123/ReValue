@@ -126,7 +126,7 @@ async function prenotaAnnuncio() {
   confirmBtn.disabled = true;
   confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Prenotazione...';
 
-  const response = await api.post('/api/prenotazioni', {
+  const response = await api.post('/api/v1/prenotazioni', {
     annuncioId: currentAnnuncio._id,
   });
 
@@ -153,7 +153,7 @@ async function loadAnnuncio() {
     return;
   }
 
-  const response = await api.get(`/api/annunci/${encodeURIComponent(id)}`);
+  const response = await api.get(`/api/v1/annunci/${encodeURIComponent(id)}`);
   if (!response.ok) {
     showAlert(response.error || "Impossibile caricare l'annuncio.");
     annuncioTitle.textContent = 'Annuncio non disponibile';

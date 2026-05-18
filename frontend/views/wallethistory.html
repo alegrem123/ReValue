@@ -312,8 +312,8 @@
       const qs      = toQueryString(filters);
 
       const [walletRes, storicoRes] = await Promise.all([
-        api.get('/api/wallet/saldo'),
-        api.get('/api/wallet/storico' + qs),
+        api.get('/api/v1/wallet/saldo'),
+        api.get('/api/v1/wallet/storico' + qs),
       ]);
 
       /* Saldo */

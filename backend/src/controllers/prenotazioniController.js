@@ -11,7 +11,7 @@ const DISDETTA_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 
 /**
- * POST /api/prenotazioni
+ * POST /api/v1/prenotazioni
  * Prenota un oggetto (RF24, UC2).
  * Usa optimistic lock su Annuncio.versione per prevenire doppia prenotazione (OCL #7, OCL #9).
  * Svela indirizzo esatto all'acquirente dopo conferma (RF25).
@@ -88,7 +88,7 @@ async function creaPrenotazione(req, res) {
 }
 
 /**
- * DELETE /api/prenotazioni/:id
+ * DELETE /api/v1/prenotazioni/:id
  * Annulla prenotazione (RF26, OCL #10): solo entro 15 minuti, solo l'acquirente.
  * Riporta l'annuncio a DISPONIBILE e decrementa versione (OCL #11).
  *
@@ -132,7 +132,7 @@ async function annullaPrenotazione(req, res) {
 }
 
 /**
- * GET /api/prenotazioni/me
+ * GET /api/v1/prenotazioni/me
  * Ritorna le prenotazioni dell'utente loggato.
  * Supporta filtro opzionale per stato (?stato=ATTIVA, etc)
  *
@@ -160,7 +160,7 @@ async function getMiePrenotazioni(req, res) {
 }
 
 /**
- * GET /api/prenotazioni/:id
+ * GET /api/v1/prenotazioni/:id
  * Dettaglio prenotazione (solo partecipanti).
  *
  * @param {import('express').Request} req
@@ -192,7 +192,7 @@ async function getPrenotazione(req, res) {
 }
 
 /**
- * POST /api/prenotazioni/:id/no-show
+ * POST /api/v1/prenotazioni/:id/no-show
  * Il donatore segnala il mancato ritiro (RF19).
  * La prenotazione diventa ANNULLATA, l'annuncio torna DISPONIBILE,
  * e l'acquirente subisce un malus. Se i malus raggiungono 3, l'utente viene sospeso.
@@ -251,7 +251,7 @@ async function segnalaMancatoRitiro(req, res) {
 }
 
 /**
- * POST /api/prenotazioni/:id/disdici
+ * POST /api/v1/prenotazioni/:id/disdici
  * Il donatore disdice il ritiro (RF20): entro 3 giorni dalla dataScadenza dell'annuncio.
  * Riporta l'annuncio a DISPONIBILE e annulla la prenotazione.
  *

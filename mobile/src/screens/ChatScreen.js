@@ -33,7 +33,7 @@ export function ChatScreen({ conversazioneId, onBack }) {
   const pollRef = useRef(null);
 
   const load = useCallback(async () => {
-    const res = await api.get(`/api/conversazioni/${conversazioneId}/messaggi?limit=50`);
+    const res = await api.get(`/api/v1/conversazioni/${conversazioneId}/messaggi?limit=50`);
     if (!res.ok) return;
     const lista = res.data?.data?.messaggi || res.data?.messaggi || [];
     setMessaggi(lista);
@@ -56,7 +56,7 @@ export function ChatScreen({ conversazioneId, onBack }) {
   async function invia() {
     if (!testo.trim()) return;
     setSending(true);
-    const res = await api.post(`/api/conversazioni/${conversazioneId}/messaggi`, { testo });
+    const res = await api.post(`/api/v1/conversazioni/${conversazioneId}/messaggi`, { testo });
     setSending(false);
     if (!res.ok) return;
     setTesto('');

@@ -4,7 +4,7 @@ const { getQR, validaScambio } = require('../controllers/scambiController');
 
 const router = Router();
 
-// Endpoint legacy mantenuti per compatibilita': il flusso ufficiale resta /api/qr.
+// Endpoint legacy mantenuti per compatibilita': il flusso ufficiale resta /api/v1/qr.
 router.get('/:prenotazioneId/qr', authenticate, getQR);
 
 router.post('/:prenotazioneId/valida', authenticate, validaScambio);
