@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const Coupon = require('../models/couponModel');
 const Riscatto = require('../models/riscattoModel');
 const walletService = require('../services/walletService');
@@ -78,7 +78,7 @@ async function riscattaCoupon(req, res) {
     const riscatto = await Riscatto.create({
       utente: req.user.id,
       coupon: coupon._id,
-      codiceUnivoco: uuidv4(),
+      codiceUnivoco: randomUUID(),
     });
 
     return res.status(201).json({ riscatto, codiceUnivoco: riscatto.codiceUnivoco });
