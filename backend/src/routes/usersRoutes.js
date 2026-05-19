@@ -5,10 +5,12 @@ const {
   updateProfile,
   getPublicProfile,
 } = require('../controllers/usersController');
+const { getRecensioniUtente } = require('../controllers/recensioniController');
 
 const router = Router();
 
 router.put('/me', authenticate, notSospeso, updateProfile);
 router.get('/:id/profilo', getPublicProfile);
+router.get('/:id/recensioni', getRecensioniUtente);
 
 module.exports = router;
