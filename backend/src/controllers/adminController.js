@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const { applicaMalus } = require('../services/userService');
 const Annuncio = require('../models/annuncioModel');
 const Prenotazione = require('../models/prenotazioneModel');
 const Segnalazione = require('../models/segnalazioneModel');
@@ -105,6 +106,8 @@ async function bannaUtente(req, res) {
     utente.bannato = true;
     await utente.save();
 
+    await applicaMalus(utente._id, 'ban amministrativo').catch(() => {});
+
     return res.status(200).json({ message: `Utente ${utente.email} bannato` });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -129,6 +132,8 @@ async function sospendiUtente(req, res) {
 
     utente.isSospeso = true;
     await utente.save();
+
+    await applicaMalus(utente._id, 'sospensione amministrativa').catch(() => {});
 
     return res.status(200).json({ message: `Utente ${utente.email} sospeso` });
   } catch (err) {
