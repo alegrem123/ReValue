@@ -42,6 +42,7 @@ const adminRoutes = require('./src/routes/adminRoutes');
 const prenotazioniRoutes = require('./src/routes/prenotazioniRoutes');
 const qrRoutes = require('./src/routes/qrRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
+const notificheRoutes = require('./src/routes/notificheRoutes');
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', utentiRoutes);
@@ -53,6 +54,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/prenotazioni', prenotazioniRoutes);
 app.use('/api/v1/qr', qrRoutes);
 app.use('/api/v1/conversazioni', chatRoutes);
+app.use('/api/v1/notifiche', notificheRoutes);
 
 app.use('/api/v1', notFoundHandler);
 app.use(errorHandler);

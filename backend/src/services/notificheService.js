@@ -56,8 +56,35 @@ async function contaNonLette(idUtente) {
   return Notifica.countDocuments({ utente: idUtente, letta: false });
 }
 
+async function marcaLetta(idUtente, idNotifica) {
+  const notifica = await Notifica.findOneAndUpdate(
+    { _id: idNotifica, utente: idUtente },
+    { $set: { letta: true } },
+    { new: true }
+  );
+
+  if (!notifica) {
+    const err = new Error('Notifica non trovata');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return notifica;
+}
+
+async function marcaTutteLette(idUtente) {
+  const result = await Notifica.updateMany(
+    { utente: idUtente, letta: false },
+    { $set: { letta: true } }
+  );
+
+  return result.modifiedCount || 0;
+}
+
 module.exports = {
   creaNotifica,
   getNotifiche,
   contaNonLette,
+  marcaLetta,
+  marcaTutteLette,
 };

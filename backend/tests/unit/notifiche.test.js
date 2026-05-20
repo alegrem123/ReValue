@@ -5,6 +5,8 @@ const {
   creaNotifica,
   getNotifiche,
   contaNonLette,
+  marcaLetta,
+  marcaTutteLette,
 } = require('../../src/services/notificheService');
 
 let mongoServer;
@@ -91,5 +93,33 @@ describe('notificheService', () => {
     await letta.save();
 
     await expect(contaNonLette(userId)).resolves.toBe(2);
+  });
+
+  test('marcaLetta marca solo una notifica appartenente all utente', async () => {
+    const notifica = await creaNotifica(userId, 'messaggio', 'Da leggere');
+
+    const result = await marcaLetta(userId, notifica._id);
+
+    expect(result.letta).toBe(true);
+    const fresh = await Notifica.findById(notifica._id);
+    expect(fresh.letta).toBe(true);
+  });
+
+  test('marcaLetta fallisce se la notifica non appartiene all utente', async () => {
+    const altroUtente = new mongoose.Types.ObjectId();
+    const notifica = await creaNotifica(altroUtente, 'messaggio', 'Altra');
+
+    await expect(marcaLetta(userId, notifica._id)).rejects.toThrow('Notifica non trovata');
+  });
+
+  test('marcaTutteLette aggiorna tutte e solo le notifiche non lette dell utente', async () => {
+    const altroUtente = new mongoose.Types.ObjectId();
+    await creaNotifica(userId, 'messaggio', 'Uno');
+    await creaNotifica(userId, 'scambio', 'Due');
+    await creaNotifica(altroUtente, 'messaggio', 'Altro');
+
+    await expect(marcaTutteLette(userId)).resolves.toBe(2);
+    expect(await Notifica.countDocuments({ utente: userId, letta: false })).toBe(0);
+    expect(await Notifica.countDocuments({ utente: altroUtente, letta: false })).toBe(1);
   });
 });
