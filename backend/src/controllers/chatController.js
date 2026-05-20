@@ -108,17 +108,29 @@ async function getMessaggi(req, res) {
 
 /**
  * POST /api/v1/conversazioni/:id/messaggi
- * Invia un messaggio testuale. Solo autenticato + partecipante (RF10, RF14).
+ * Invia un messaggio testuale (con immagine opzionale base64, max 1 MB).
+ * Solo autenticato + partecipante (RF10, RF14).
  * requireParticipant attacca req.conversazione.
  *
- * Body: { testo: string }
+ * Body: { testo: string, immagine?: string (base64) }
  */
 async function inviaMessaggio(req, res) {
   try {
-    const { testo } = req.body;
+    const { testo, immagine } = req.body;
 
     if (!testo || typeof testo !== 'string' || testo.trim().length === 0) {
       return res.status(400).json({ ok: false, error: 'testo è obbligatorio' });
+    }
+
+    // Validazione immagine base64: max 1 MB (1 048 576 byte ≈ 1 398 101 char base64)
+    const MAX_BASE64_LENGTH = Math.ceil((1024 * 1024 * 4) / 3); // ~1.33 MB in base64
+    if (immagine != null) {
+      if (typeof immagine !== 'string') {
+        return res.status(400).json({ ok: false, error: 'immagine deve essere una stringa base64' });
+      }
+      if (immagine.length > MAX_BASE64_LENGTH) {
+        return res.status(400).json({ ok: false, error: 'immagine supera il limite di 1 MB' });
+      }
     }
 
     const nuovoMessaggio = {
@@ -126,6 +138,7 @@ async function inviaMessaggio(req, res) {
       testo:     testo.trim(),
       timestamp: new Date(),
       letto:     false,
+      immagine:  immagine || null,
     };
 
     req.conversazione.messaggi.push(nuovoMessaggio);
