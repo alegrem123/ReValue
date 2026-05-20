@@ -63,15 +63,27 @@ async function getConversazioniMe(req, res) {
  * Storico messaggi paginato. Solo partecipanti (RF11, RF13).
  * requireParticipant middleware attacca req.conversazione.
  *
- * Query params: page (default 1), limit (default 20)
+ * Query params:
+ *   page  (default 1)
+ *   limit (default 20)
+ *   q     (opzionale) — ricerca testo: $regex su campo testo, $options: 'i'
  */
 async function getMessaggi(req, res) {
   try {
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const q     = req.query.q;
 
-    const messaggi = req.conversazione.messaggi;
-    const total    = messaggi.length;
+    let messaggi = req.conversazione.messaggi;
+
+    // Ricerca testo: $regex su campo testo con $options: 'i'
+    if (q && typeof q === 'string' && q.trim().length > 0) {
+      const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex   = new RegExp(escaped, 'i'); // equivalente a $regex con $options: 'i'
+      messaggi = messaggi.filter((m) => regex.test(m.testo));
+    }
+
+    const total = messaggi.length;
 
     // Messaggi più recenti prima: invertiamo, paginiamo, ri-invertiamo
     const reversed = [...messaggi].reverse();
