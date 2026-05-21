@@ -153,6 +153,66 @@ async function inviaMessaggio(req, res) {
 }
 
 /**
+ * GET /api/v1/conversazioni/:id/messaggi/recenti?since=<timestamp>
+ * Polling ottimizzato: restituisce solo messaggi con timestamp > since (RNF7).
+ * Riduce il payload da O(n) a O(Δt).
+ * Solo partecipanti (RF13). requireParticipant attacca req.conversazione.
+ *
+ * Query params:
+ *   since (obbligatorio) — ISO-8601 o epoch ms, cursore temporale
+ *   page  (default 1)
+ *   limit (default 50, max 100)
+ */
+async function getMessaggiRecenti(req, res) {
+  try {
+    const { since } = req.query;
+
+    if (!since) {
+      return res.status(400).json({
+        ok: false,
+        error: 'query param "since" è obbligatorio (ISO-8601 o epoch ms)',
+      });
+    }
+
+    const sinceDate = new Date(isNaN(since) ? since : Number(since));
+    if (isNaN(sinceDate.getTime())) {
+      return res.status(400).json({
+        ok: false,
+        error: '"since" non è un timestamp valido',
+      });
+    }
+
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+
+    // Filtra solo messaggi con timestamp strettamente maggiore di since
+    const nuovi = (req.conversazione.messaggi || []).filter(
+      (m) => new Date(m.timestamp) > sinceDate
+    );
+
+    const total = nuovi.length;
+
+    // Ordine cronologico: dal più vecchio al più recente (append-friendly per il client)
+    const slice = nuovi.slice((page - 1) * limit, page * limit);
+
+    return res.status(200).json({
+      ok: true,
+      data: {
+        messaggi: slice,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit) || 0,
+        },
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+/**
  * GET /api/v1/conversazioni/me/non-letti
  * Count totale messaggi non letti su tutte le conversazioni dell'utente (RF12).
  * Usato per badge navbar.
@@ -176,4 +236,4 @@ async function getNonLettiCount(req, res) {
   }
 }
 
-module.exports = { getConversazioniMe, getMessaggi, inviaMessaggio, getNonLettiCount };
+module.exports = { getConversazioniMe, getMessaggi, getMessaggiRecenti, inviaMessaggio, getNonLettiCount };

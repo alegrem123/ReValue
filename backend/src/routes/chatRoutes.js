@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { authenticate } = require('../middleware/authMiddleware');
 const { requireParticipant } = require('../middleware/requireParticipant');
-const { getConversazioniMe, getMessaggi, inviaMessaggio, getNonLettiCount } = require('../controllers/chatController');
+const { getConversazioniMe, getMessaggi, getMessaggiRecenti, inviaMessaggio, getNonLettiCount } = require('../controllers/chatController');
 
 const router = Router();
 
@@ -10,6 +10,9 @@ router.get('/me', authenticate, getConversazioniMe);
 
 // GET /api/v1/conversazioni/me/non-letti — count totale non letti per badge UI (RF12)
 router.get('/me/non-letti', authenticate, getNonLettiCount);
+
+// GET /api/v1/conversazioni/:id/messaggi/recenti?since=<timestamp> — polling ottimizzato (RNF7)
+router.get('/:id/messaggi/recenti', authenticate, requireParticipant, getMessaggiRecenti);
 
 // GET /api/v1/conversazioni/:id/messaggi — storico paginato, solo partecipante (RF11, RF13)
 router.get('/:id/messaggi', authenticate, requireParticipant, getMessaggi);
