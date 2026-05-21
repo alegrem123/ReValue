@@ -25,7 +25,6 @@ const couponSchema = new Schema(
       required: [true, 'costoCrediti is required'],
       min: [1, 'costoCrediti must be at least 1'],
     },
-    // OCL #17 — stock 0 = illimitato
     stock: {
       type: Number,
       default: 0,

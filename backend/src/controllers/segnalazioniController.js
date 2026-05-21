@@ -10,6 +10,15 @@ async function createSegnalazione(req, res) {
   try {
     const { segnalato, tipo, motivo, annuncio } = req.body;
 
+    if (!segnalato) {
+      return res.status(400).json({ error: 'segnalato è obbligatorio' });
+    }
+
+    const TIPI_VALIDI = ['descrizione', 'inappropriato', 'altro'];
+    if (!tipo || !TIPI_VALIDI.includes(tipo)) {
+      return res.status(400).json({ error: `tipo deve essere uno di: ${TIPI_VALIDI.join(', ')}` });
+    }
+
     // OCL #18 — motivo non vuoto
     if (!motivo || motivo.trim().length === 0) {
       return res.status(400).json({ error: 'motivo non può essere vuoto (OCL #18)' });
