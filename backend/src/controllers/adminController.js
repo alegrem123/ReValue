@@ -106,7 +106,7 @@ async function bannaUtente(req, res) {
     utente.bannato = true;
     await utente.save();
 
-    await applicaMalus(utente._id, 'ban amministrativo').catch((err) => console.error('applicaMalus failed:', err));
+    await applicaMalus(utente._id).catch((err) => console.error('applicaMalus failed:', err));
 
     return res.status(200).json({ message: `Utente ${utente.email} bannato` });
   } catch (err) {

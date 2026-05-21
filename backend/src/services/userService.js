@@ -1,7 +1,7 @@
 const User = require('../models/userModel');
 
 // OCL #20 — malusCount >= 5 → auto-sospensione (operazione atomica)
-async function applicaMalus(idUtente, _motivo) {
+async function applicaMalus(idUtente) {
   const user = await User.findByIdAndUpdate(
     idUtente,
     [
