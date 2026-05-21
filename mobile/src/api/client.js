@@ -1,14 +1,37 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 const TOKEN_KEY = 'revalue.jwt';
 const USER_KEY = 'revalue.user';
-const DEFAULT_API_BASE_URL = 'http://127.0.0.1:3000';
 
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
+function resolveApiBase() {
+  // In sviluppo: stesso IP del dev server Expo, porta 3000
+  if (__DEV__) {
+    const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
+    if (hostUri) {
+      const host = hostUri.split(':')[0];
+      return `http://${host}:3000`;
+    }
+  }
+  return process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+}
+
+export const API_BASE_URL = resolveApiBase();
 
 export async function getToken() {
   return AsyncStorage.getItem(TOKEN_KEY);
+}
+
+export async function getUserId() {
+  try {
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (!token) return null;
+    let b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return JSON.parse(atob(b64)).id || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function setToken(token) {
@@ -106,6 +129,9 @@ export const api = {
   },
   put(endpoint, body, opts = {}) {
     return apiRequest(endpoint, { ...opts, method: 'PUT', body });
+  },
+  patch(endpoint, body, opts = {}) {
+    return apiRequest(endpoint, { ...opts, method: 'PATCH', body });
   },
   delete(endpoint, opts = {}) {
     return apiRequest(endpoint, { ...opts, method: 'DELETE' });
