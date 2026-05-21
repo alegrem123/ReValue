@@ -1,0 +1,1126 @@
+FORMAT: 1A
+HOST: http://localhost:3000
+
+# RE-VALUE API
+
+Documentazione API Blueprint per la pubblicazione su Apiary.
+
+Questa specifica descrive le API REST implementate nello Sprint 1 e allineate
+alla progettazione D2. Il backend reale espone le route sotto il prefisso
+`/api/v1`. La D3 precedente riporta alcuni endpoint sotto `/api`: per la
+pubblicazione Apiary va considerato autorevole il prefisso versionato
+`/api/v1`.
+
+## Convenzioni
+
+Tutte le richieste e risposte usano `application/json`.
+
+Gli endpoint protetti richiedono header:
+
+    Authorization: Bearer <jwt>
+
+Formato errore prevalente:
+
+    {
+      "error": "Messaggio di errore"
+    }
+
+Alcuni endpoint piu recenti usano:
+
+    {
+      "ok": false,
+      "error": "Messaggio di errore"
+    }
+
+## Stato implementativo D2
+
+- Flusso QR ufficiale: `/api/v1/qr/genera` e `/api/v1/qr/valida`.
+- Flusso legacy compatibile: `/api/v1/scambi/:prenotazioneId/qr` e
+  `/api/v1/scambi/:prenotazioneId/valida`.
+- SPID/SSO, Gestore Email e backend OpenStreetMap restano elementi progettuali:
+  non sono esposti come servizi attivi nello Sprint 1.
+- La posizione esatta degli annunci viene nascosta nel catalogo pubblico e
+  mostrata solo a utenti autorizzati.
+
+# Group Auth
+
+Gestione registrazione, login e logout logico.
+
+## Registrazione [POST /api/v1/auth/register]
+
+Registra un utente, crea il wallet iniziale e restituisce un JWT.
+
++ Request (application/json)
+
+        {
+          "nome": "Mario",
+          "cognome": "Rossi",
+          "email": "mario.rossi@example.com",
+          "password": "Password123"
+        }
+
++ Response 201 (application/json)
+
+        {
+          "token": "jwt-token",
+          "user": {
+            "idUtente": "664f1b7b1f8a2c0012345678",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@example.com",
+            "malusCount": 0,
+            "isSospeso": false,
+            "ruolo": "user",
+            "createdAt": "2026-05-21T10:00:00.000Z"
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Campi obbligatori mancanti"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Email gia registrata"
+        }
+
+## Login [POST /api/v1/auth/login]
+
++ Request (application/json)
+
+        {
+          "email": "mario.rossi@example.com",
+          "password": "Password123"
+        }
+
++ Response 200 (application/json)
+
+        {
+          "token": "jwt-token",
+          "user": {
+            "idUtente": "664f1b7b1f8a2c0012345678",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@example.com",
+            "ruolo": "user",
+            "isSospeso": false
+          }
+        }
+
++ Response 401 (application/json)
+
+        {
+          "error": "Credenziali non valide"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Account sospeso"
+        }
+
+## Logout [POST /api/v1/auth/logout]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Logout effettuato"
+        }
+
+# Group Users
+
+Gestione profilo utente e profilo pubblico con riepilogo recensioni.
+
+## Aggiorna profilo [PUT /api/v1/users/me]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "nome": "Mario",
+              "cognome": "Rossi",
+              "telefono": "+393331234567",
+              "citta": "Milano",
+              "descrizione": "Recupero e dono oggetti usati."
+            }
+
++ Response 200 (application/json)
+
+        {
+          "user": {
+            "idUtente": "664f1b7b1f8a2c0012345678",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "citta": "Milano",
+            "descrizione": "Recupero e dono oggetti usati.",
+            "createdAt": "2026-05-21T10:00:00.000Z"
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Nessun campo aggiornato"
+        }
+
+## Profilo pubblico [GET /api/v1/users/{id}/profilo]
+
++ Parameters
+    + id: `664f1b7b1f8a2c0012345678` (string) - ObjectId o idUtente pubblico.
+
++ Response 200 (application/json)
+
+        {
+          "user": {
+            "idUtente": "664f1b7b1f8a2c0012345678",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "citta": "Milano",
+            "descrizione": "Recupero e dono oggetti usati.",
+            "createdAt": "2026-05-21T10:00:00.000Z"
+          },
+          "recensioni": {
+            "positive": 2,
+            "negative": 0,
+            "totale": 2,
+            "recenti": []
+          }
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Profilo utente non trovato"
+        }
+
+# Group Annunci
+
+Catalogo pubblico, CRUD annunci e cambio stato.
+
+## Catalogo pubblico [GET /api/v1/annunci{?categoria,dimensione,materiale,scadenzaDopo,scadenzaPrima,lat,lng,raggio,ordinamento,page,limit}]
+
+Accessibile anche senza autenticazione. Se l'utente non e autorizzato, la
+risposta non contiene coordinate esatte.
+
++ Parameters
+    + categoria: `arredo` (string, optional)
+    + dimensione: `medio` (string, optional)
+    + materiale: `legno` (string, optional)
+    + scadenzaDopo: `2026-05-21` (string, optional)
+    + scadenzaPrima: `2026-06-30` (string, optional)
+    + lat: `45.4642` (number, optional)
+    + lng: `9.1900` (number, optional)
+    + raggio: `20` (number, optional) - Raggio in km.
+    + ordinamento: `dataScadenza_asc` (string, optional) - Anche `dataScadenza_desc`, `valore_asc`, `valore_desc`.
+    + page: `1` (number, optional)
+    + limit: `10` (number, optional)
+
++ Response 200 (application/json)
+
+        {
+          "data": [
+            {
+              "_id": "665000000000000000000001",
+              "titolo": "Sedia in legno",
+              "stato": "DISPONIBILE",
+              "dataScadenza": "2026-06-01T12:00:00.000Z",
+              "oggetto": {
+                "categoria": "arredo",
+                "descrizione": "Sedia usata in buono stato",
+                "dimensioni": "medio",
+                "materiale": "legno",
+                "foto": []
+              },
+              "donatore": {
+                "_id": "664f1b7b1f8a2c0012345678",
+                "nome": "Mario",
+                "cognome": "Rossi"
+              }
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "limit": 10,
+            "total": 1,
+            "pages": 1
+          }
+        }
+
+## I miei annunci [GET /api/v1/annunci/me]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "665000000000000000000001",
+            "titolo": "Sedia in legno",
+            "stato": "DISPONIBILE",
+            "isAttivo": true
+          }
+        ]
+
+## Dettaglio annuncio [GET /api/v1/annunci/{id}]
+
++ Parameters
+    + id: `665000000000000000000001` (string)
+
++ Response 200 (application/json)
+
+        {
+          "_id": "665000000000000000000001",
+          "titolo": "Sedia in legno",
+          "stato": "DISPONIBILE",
+          "dataScadenza": "2026-06-01T12:00:00.000Z",
+          "oggetto": {
+            "categoria": "arredo",
+            "descrizione": "Sedia usata in buono stato",
+            "dimensioni": "medio",
+            "materiale": "legno",
+            "foto": []
+          }
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Annuncio non trovato"
+        }
+
+## Crea annuncio [POST /api/v1/annunci]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "titolo": "Sedia in legno",
+              "dataScadenza": "2026-06-01T12:00:00.000Z",
+              "latitudine": 45.4642,
+              "longitudine": 9.1900,
+              "oggetto": {
+                "categoria": "arredo",
+                "descrizione": "Sedia usata in buono stato",
+                "dimensioni": "medio",
+                "materiale": "legno",
+                "foto": []
+              }
+            }
+
++ Response 201 (application/json)
+
+        {
+          "_id": "665000000000000000000001",
+          "donatore": "664f1b7b1f8a2c0012345678",
+          "titolo": "Sedia in legno",
+          "stato": "DISPONIBILE",
+          "versione": 0,
+          "isAttivo": true
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "titolo, dataScadenza e oggetto sono obbligatori"
+        }
+
+## Modifica annuncio [PUT /api/v1/annunci/{id}]
+
++ Parameters
+    + id: `665000000000000000000001` (string)
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "titolo": "Sedia in legno restaurata",
+              "oggetto": {
+                "categoria": "arredo",
+                "descrizione": "Sedia restaurata",
+                "dimensioni": "medio",
+                "materiale": "legno",
+                "foto": []
+              }
+            }
+
++ Response 200 (application/json)
+
+        {
+          "_id": "665000000000000000000001",
+          "titolo": "Sedia in legno restaurata",
+          "stato": "DISPONIBILE"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Annuncio non modificabile: stato PRENOTATO"
+        }
+
+## Cancella annuncio [DELETE /api/v1/annunci/{id}]
+
++ Parameters
+    + id: `665000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Annuncio rimosso"
+        }
+
+## Cambia stato annuncio [PATCH /api/v1/annunci/{id}/stato]
+
++ Parameters
+    + id: `665000000000000000000001` (string)
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "stato": "PRENOTATO"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "_id": "665000000000000000000001",
+          "titolo": "Sedia in legno",
+          "stato": "PRENOTATO"
+        }
+
+# Group Prenotazioni
+
+Gestione prenotazione, annullamento, no-show e disdetta.
+
+## Crea prenotazione [POST /api/v1/prenotazioni]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "annuncioId": "665000000000000000000001"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "prenotazione": {
+            "_id": "666000000000000000000001",
+            "annuncio": "665000000000000000000001",
+            "acquirente": "664f1b7b1f8a2c0012345679",
+            "donatore": "664f1b7b1f8a2c0012345678",
+            "stato": "ATTIVA"
+          },
+          "indirizzo": {
+            "latitudine": 45.4642,
+            "longitudine": 9.1900
+          }
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Oggetto gia prenotato"
+        }
+
+## Le mie prenotazioni [GET /api/v1/prenotazioni/me{?stato}]
+
++ Parameters
+    + stato: `ATTIVA` (string, optional) - Valori: `ATTIVA`, `ANNULLATA`, `COMPLETATA`.
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "666000000000000000000001",
+            "stato": "ATTIVA",
+            "annuncio": {
+              "_id": "665000000000000000000001",
+              "titolo": "Sedia in legno",
+              "stato": "PRENOTATO"
+            }
+          }
+        ]
+
+## Dettaglio prenotazione [GET /api/v1/prenotazioni/{id}]
+
++ Parameters
+    + id: `666000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "_id": "666000000000000000000001",
+          "stato": "ATTIVA",
+          "annuncio": {
+            "_id": "665000000000000000000001",
+            "titolo": "Sedia in legno"
+          }
+        }
+
+## Annulla prenotazione [DELETE /api/v1/prenotazioni/{id}]
+
+Consentito all'acquirente entro 15 minuti dalla prenotazione.
+
++ Parameters
+    + id: `666000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Prenotazione annullata"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Finestra di annullamento (15 min) scaduta"
+        }
+
+## Segnala no-show [POST /api/v1/prenotazioni/{id}/no-show]
+
+Il donatore segnala il mancato ritiro da parte dell'acquirente.
+
++ Parameters
+    + id: `666000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Mancato ritiro segnalato con successo"
+        }
+
+## Disdici ritiro [POST /api/v1/prenotazioni/{id}/disdici]
+
+Il donatore disdice il ritiro entro la finestra prevista.
+
++ Parameters
+    + id: `666000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Ritiro disdetto"
+        }
+
+# Group QR
+
+Flusso ufficiale per generazione e validazione QR.
+
+## Genera QR [POST /api/v1/qr/genera]
+
+Solo il donatore della prenotazione puo generare il QR.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "prenotazioneId": "666000000000000000000001"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "codice": "d9f0b5f4c7e3a1...",
+          "scadenza": "2026-05-22T10:00:00.000Z"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Solo il donatore puo generare il QR per questa prenotazione"
+        }
+
+## Valida QR [POST /api/v1/qr/valida]
+
+Solo l'acquirente valida il codice durante il ritiro fisico.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "codice": "d9f0b5f4c7e3a1..."
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Scambio validato con successo",
+          "prenotazione": "666000000000000000000001",
+          "creditiAssegnati": 50
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Codice QR non valido, gia scaduto o non esistente"
+        }
+
+# Group Wallet
+
+Saldo e storico crediti.
+
+## Wallet completo [GET /api/v1/wallet/me{?tipo,from,to,page,limit}]
+
++ Parameters
+    + tipo: `accredito` (string, optional) - Anche `sottrazione`.
+    + from: `2026-05-01` (string, optional)
+    + to: `2026-05-31` (string, optional)
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "bilancio": 50,
+          "storico": {
+            "data": [
+              {
+                "tipo": "accredito",
+                "ammontare": 50,
+                "motivo": "Scambio completato",
+                "data": "2026-05-21T10:00:00.000Z"
+              }
+            ],
+            "totale": 1,
+            "pagina": 1,
+            "totalePagine": 1
+          }
+        }
+
+## Saldo [GET /api/v1/wallet/saldo]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "bilancio": 50
+        }
+
+## Storico [GET /api/v1/wallet/storico{?tipo,from,to,page,limit}]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "data": [],
+          "totale": 0,
+          "pagina": 1,
+          "totalePagine": 1
+        }
+
+# Group Conversazioni
+
+API principale per chat e messaggi tra partecipanti a una prenotazione.
+
+## Le mie conversazioni [GET /api/v1/conversazioni/me]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "667000000000000000000001",
+            "prenotazione": {
+              "_id": "666000000000000000000001",
+              "stato": "ATTIVA"
+            },
+            "partecipanti": [],
+            "ultimoMessaggio": {
+              "testo": "Ci vediamo alle 18?",
+              "mittente": "664f1b7b1f8a2c0012345678",
+              "timestamp": "2026-05-21T10:00:00.000Z"
+            },
+            "nonLetti": 1
+          }
+        ]
+
+## Conteggio non letti [GET /api/v1/conversazioni/me/non-letti]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "nonLetti": 1
+          }
+        }
+
+## Messaggi conversazione [GET /api/v1/conversazioni/{id}/messaggi{?page,limit}]
+
++ Parameters
+    + id: `667000000000000000000001` (string)
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "messaggi": [
+              {
+                "_id": "668000000000000000000001",
+                "mittente": "664f1b7b1f8a2c0012345678",
+                "testo": "Ci vediamo alle 18?",
+                "timestamp": "2026-05-21T10:00:00.000Z",
+                "letto": false
+              }
+            ],
+            "pagination": {
+              "page": 1,
+              "limit": 20,
+              "total": 1,
+              "pages": 1
+            }
+          }
+        }
+
+## Invia messaggio conversazione [POST /api/v1/conversazioni/{id}/messaggi]
+
++ Parameters
+    + id: `667000000000000000000001` (string)
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "testo": "Ci vediamo alle 18?"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "_id": "668000000000000000000001",
+            "mittente": "664f1b7b1f8a2c0012345678",
+            "testo": "Ci vediamo alle 18?",
+            "timestamp": "2026-05-21T10:00:00.000Z",
+            "letto": false
+          }
+        }
+
+# Group Messaggi Legacy
+
+Endpoint compatibili basati su `prenotazioneId`. Il flusso consigliato per la
+UI nuova e quello del gruppo Conversazioni.
+
+## Storico per prenotazione [GET /api/v1/messaggi/{prenotazioneId}]
+
++ Parameters
+    + prenotazioneId: `666000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "668000000000000000000001",
+            "testo": "Ci vediamo alle 18?",
+            "timestamp": "2026-05-21T10:00:00.000Z"
+          }
+        ]
+
+## Invia per prenotazione [POST /api/v1/messaggi/{prenotazioneId}]
+
++ Parameters
+    + prenotazioneId: `666000000000000000000001` (string)
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "testo": "Ci vediamo alle 18?"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "_id": "668000000000000000000001",
+          "testo": "Ci vediamo alle 18?",
+          "timestamp": "2026-05-21T10:00:00.000Z"
+        }
+
+## Marca messaggio letto [PATCH /api/v1/messaggi/{id}/letto]
+
++ Parameters
+    + id: `668000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "_id": "668000000000000000000001",
+            "letto": true
+          }
+        }
+
+# Group Notifiche
+
+Notifiche utente con stato di lettura.
+
+## Le mie notifiche [GET /api/v1/notifiche/me{?letta,page,limit}]
+
++ Parameters
+    + letta: `false` (boolean, optional)
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "notifiche": [],
+            "pagination": {
+              "page": 1,
+              "limit": 20,
+              "total": 0,
+              "pages": 0
+            },
+            "nonLette": 0
+          }
+        }
+
+## Marca tutte lette [PATCH /api/v1/notifiche/me/leggi-tutte]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "aggiornate": 3
+          }
+        }
+
+## Marca notifica letta [PATCH /api/v1/notifiche/{id}/letta]
+
++ Parameters
+    + id: `669000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "_id": "669000000000000000000001",
+            "letta": true
+          }
+        }
+
+# Group Admin
+
+Endpoint riservati al ruolo `admin`.
+
+## Statistiche [GET /api/v1/admin/statistiche]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "scambiMensili": 4,
+          "totaleUtenti": 18,
+          "segnalazioniPendenti": 2,
+          "liquiditaAttuale": 120,
+          "creditiErogatiTotali": 240,
+          "creditiErogatiMese": 40,
+          "totaleCrediti": 120
+        }
+
+## Segnalazioni [GET /api/v1/admin/segnalazioni]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "670000000000000000000001",
+            "tipo": "altro",
+            "motivo": "No-show: acquirente non si e presentato al ritiro"
+          }
+        ]
+
+## Banna utente [POST /api/v1/admin/utenti/{id}/ban]
+
++ Parameters
+    + id: `664f1b7b1f8a2c0012345678` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Utente mario.rossi@example.com bannato"
+        }
+
+## Sospendi utente [POST /api/v1/admin/utenti/{id}/sospendi]
+
++ Parameters
+    + id: `664f1b7b1f8a2c0012345678` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Utente mario.rossi@example.com sospeso"
+        }
+
+## Riabilita utente [POST /api/v1/admin/utenti/{id}/riabilita]
+
++ Parameters
+    + id: `664f1b7b1f8a2c0012345678` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Utente mario.rossi@example.com riabilitato"
+        }
+
+## Forza stato annuncio [PATCH /api/v1/admin/annunci/{id}/forza]
+
++ Parameters
+    + id: `665000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Annuncio ripristinato a DISPONIBILE",
+          "annuncio": {
+            "_id": "665000000000000000000001",
+            "stato": "DISPONIBILE",
+            "isAttivo": true
+          }
+        }
+
+## Rimuovi annuncio [DELETE /api/v1/admin/annunci/{id}]
+
++ Parameters
+    + id: `665000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Annuncio rimosso"
+        }
+
+# Group Scambi Legacy
+
+Endpoint mantenuti per compatibilita. Per nuove integrazioni usare il gruppo QR.
+
+## Recupera QR legacy [GET /api/v1/scambi/{prenotazioneId}/qr]
+
++ Parameters
+    + prenotazioneId: `666000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "codice": "d9f0b5f4c7e3a1...",
+          "scadenza": "2026-05-22T10:00:00.000Z"
+        }
+
++ Response 410 (application/json)
+
+        {
+          "error": "Token QR scaduto"
+        }
+
+## Valida scambio legacy [POST /api/v1/scambi/{prenotazioneId}/valida]
+
++ Parameters
+    + prenotazioneId: `666000000000000000000001` (string)
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "codice": "d9f0b5f4c7e3a1..."
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Scambio confermato",
+          "crediti": 50
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Il codice QR non appartiene alla prenotazione indicata"
+        }
