@@ -7,9 +7,7 @@ Documentazione API Blueprint per la pubblicazione su Apiary.
 
 Questa specifica descrive le API REST implementate nello Sprint 1 e allineate
 alla progettazione D2. Il backend reale espone le route sotto il prefisso
-`/api/v1`. La D3 precedente riporta alcuni endpoint sotto `/api`: per la
-pubblicazione Apiary va considerato autorevole il prefisso versionato
-`/api/v1`.
+`/api/v1`, considerato autorevole anche nella D3 aggiornata.
 
 ## Convenzioni
 
@@ -35,8 +33,8 @@ Alcuni endpoint piu recenti usano:
 ## Stato implementativo D2
 
 - Flusso QR ufficiale: `/api/v1/qr/genera` e `/api/v1/qr/valida`.
-- Flusso legacy compatibile: `/api/v1/scambi/:prenotazioneId/qr` e
-  `/api/v1/scambi/:prenotazioneId/valida`.
+- Flusso legacy deprecato: `/api/v1/scambi/:prenotazioneId/qr` e
+  `/api/v1/scambi/:prenotazioneId/valida` rispondono `410 Gone`.
 - SPID/SSO, Gestore Email e backend OpenStreetMap restano elementi progettuali:
   non sono esposti come servizi attivi nello Sprint 1.
 - La posizione esatta degli annunci viene nascosta nel catalogo pubblico e
@@ -1071,29 +1069,22 @@ Endpoint riservati al ruolo `admin`.
 
 # Group Scambi Legacy
 
-Endpoint mantenuti per compatibilita. Per nuove integrazioni usare il gruppo QR.
+Endpoint mantenuti solo per dichiarare la deprecazione del vecchio flusso.
+Entrambe le route rispondono `410 Gone`, impostano header `Deprecation: true`
+e indirizzano i client verso il gruppo QR.
 
 ## Recupera QR legacy [GET /api/v1/scambi/{prenotazioneId}/qr]
 
 + Parameters
     + prenotazioneId: `666000000000000000000001` (string)
 
-+ Request
++ Response 410 (application/json)
     + Headers
 
-            Authorization: Bearer jwt-token
-
-+ Response 200 (application/json)
+            Deprecation: true
 
         {
-          "codice": "d9f0b5f4c7e3a1...",
-          "scadenza": "2026-05-22T10:00:00.000Z"
-        }
-
-+ Response 410 (application/json)
-
-        {
-          "error": "Token QR scaduto"
+          "error": "Endpoint legacy deprecato. Usa /api/v1/qr."
         }
 
 ## Valida scambio legacy [POST /api/v1/scambi/{prenotazioneId}/valida]
@@ -1102,25 +1093,17 @@ Endpoint mantenuti per compatibilita. Per nuove integrazioni usare il gruppo QR.
     + prenotazioneId: `666000000000000000000001` (string)
 
 + Request (application/json)
-    + Headers
-
-            Authorization: Bearer jwt-token
-
     + Body
 
             {
               "codice": "d9f0b5f4c7e3a1..."
             }
 
-+ Response 200 (application/json)
++ Response 410 (application/json)
+    + Headers
+
+            Deprecation: true
 
         {
-          "message": "Scambio confermato",
-          "crediti": 50
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "Il codice QR non appartiene alla prenotazione indicata"
+          "error": "Endpoint legacy deprecato. Usa /api/v1/qr."
         }
