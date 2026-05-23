@@ -121,6 +121,7 @@ async function loadCatalogo() {
     fragment.appendChild(card);
   });
   catalogGrid.appendChild(fragment);
+  if (typeof window.activateCardReveal === 'function') window.activateCardReveal();
 }
 
 function handleFilterSubmit(event) {

@@ -21,50 +21,28 @@
     crossorigin=""
   />
   <style>
-    :root {
-      --rv-green: #2E7D32;
-      --rv-green-dark: #1B5E20;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .form-header {
-      border-left: 4px solid var(--rv-green);
-    }
-
-    .photo-preview {
-      aspect-ratio: 1;
-      object-fit: cover;
-      width: 100%;
-    }
-
-    .location-map {
-      min-height: 260px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-    }
+    .photo-preview { aspect-ratio: 1; object-fit: cover; width: 100%; }
+    .location-map { min-height: 260px; border: 1px solid var(--rv-border, #DDD8CF); }
   </style>
 </head>
 <body>
   <div id="navbar-container"></div>
 
   <main class="container py-5" style="max-width: 980px;">
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 form-header">
+    <section class="page-hero">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
         <div>
-          <p class="text-uppercase small text-success mb-2">Modifica annuncio</p>
+          <p class="page-hero-eyebrow">Modifica annuncio</p>
           <h1 class="h3 fw-bold mb-2">Aggiorna i dettagli dell'oggetto</h1>
-          <p class="text-muted mb-0">Puoi modificare solo annunci ancora disponibili.</p>
+          <p class="mb-0" style="opacity:0.8">Puoi modificare solo annunci ancora disponibili.</p>
         </div>
-        <a href="my-annunci.html" class="btn btn-outline-success">I miei annunci</a>
+        <a href="my-annunci.html" class="btn btn-outline-light">I miei annunci</a>
       </div>
     </section>
 
     <div id="edit-annuncio-alert" class="alert d-none" role="alert"></div>
 
-    <form id="edit-annuncio-form" class="bg-white rounded-4 p-4 shadow-sm d-none">
+    <form id="edit-annuncio-form" class="card p-4 d-none">
       <input id="edit-annuncio-id" type="hidden" />
       <div class="row g-4">
         <div class="col-lg-7">

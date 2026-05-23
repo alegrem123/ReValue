@@ -15,21 +15,7 @@
     crossorigin="anonymous"
   />
   <style>
-    :root {
-      --rv-green: #2E7D32;
-      --rv-green-dark: #1B5E20;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .page-header {
-      border-left: 4px solid var(--rv-green);
-    }
-
-    .annuncio-thumb {
+.annuncio-thumb {
       width: 96px;
       height: 72px;
       object-fit: cover;
@@ -45,10 +31,10 @@
   <div id="navbar-container"></div>
 
   <main class="container py-5" style="max-width: 1080px;">
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 page-header">
+    <section class="page-hero">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
         <div>
-          <p class="text-uppercase small text-success mb-2">Area personale</p>
+          <p class="page-hero-eyebrow">Area personale</p>
           <h1 class="h3 fw-bold mb-2">I miei annunci</h1>
           <p class="text-muted mb-0">Gestisci gli annunci pubblicati e rimuovi quelli non più disponibili.</p>
         </div>

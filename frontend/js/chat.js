@@ -57,17 +57,40 @@ function isMine(msg) {
 function buildBubble(msg) {
   const mine = isMine(msg);
   const time = formatTime(msg.timestamp);
-  const readTick = mine && msg.letto
-    ? '<span class="read-tick ms-1"><i class="bi bi-check2-all"></i></span>'
-    : '';
+
+  let tick = '';
+  if (mine) {
+    const cls = msg.letto ? 'tick-letto' : 'tick-inviato';
+    tick = `<span class="read-tick ${cls} ms-1"><i class="bi bi-check2-all"></i></span>`;
+  }
 
   return `
-    <div class="bubble-row ${mine ? 'mine' : 'other'}" data-id="${msg._id}">
+    <div class="bubble-row ${mine ? 'mine' : 'other'}" data-id="${msg._id}" data-letto="${msg.letto}">
       <div class="bubble ${mine ? 'mine' : 'other'}">
         <div>${escapeHtml(msg.testo)}</div>
-        <div class="bubble-time">${time}${readTick}</div>
+        <div class="bubble-time">${time}${tick}</div>
       </div>
     </div>`;
+}
+
+function markReceivedAsRead(messaggi) {
+  const unread = messaggi.filter((m) => !isMine(m) && !m.letto && m._id);
+  if (unread.length === 0) return;
+  Promise.all(unread.map((m) => api.patch(`/api/v1/messaggi/${m._id}/letto`, {}))).catch(() => {});
+}
+
+function updateTicksInDom(messaggi) {
+  messaggi.forEach((msg) => {
+    if (!isMine(msg) || !msg.letto) return;
+    const row = messagesArea.querySelector(`[data-id="${msg._id}"]`);
+    if (!row || row.dataset.letto === 'true') return;
+    const tick = row.querySelector('.read-tick');
+    if (tick) {
+      tick.classList.remove('tick-inviato');
+      tick.classList.add('tick-letto');
+    }
+    row.dataset.letto = 'true';
+  });
 }
 
 function escapeHtml(str) {
@@ -155,7 +178,7 @@ async function loadMessages(initial = false) {
   if (initial) {
     renderMessages(messaggi);
   } else {
-    // Polling: aggiungi solo messaggi nuovi
+    // Polling: aggiungi messaggi nuovi e aggiorna tick esistenti
     const newMsgs = messaggi.filter(
       (m) => lastMsgId === null || m._id > lastMsgId
     );
@@ -164,7 +187,11 @@ async function loadMessages(initial = false) {
         appendBubble(m);
       }
     });
+    updateTicksInDom(messaggi);
   }
+
+  // Marca come letti i messaggi ricevuti non ancora letti
+  markReceivedAsRead(messaggi);
 }
 
 async function loadConversazione() {

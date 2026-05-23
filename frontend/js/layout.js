@@ -14,9 +14,10 @@ const homeUrl = isViewsPage ? '../index.html' : 'index.html';
 const viewUrl = (fileName) => (isViewsPage ? fileName : `views/${fileName}`);
 
 const NAVBAR_HTML = `
-<nav class="navbar navbar-expand-lg sticky-top" style="background-color: #2E7D32;">
+<nav class="navbar navbar-expand-lg sticky-top rv-navbar">
   <div class="container">
-    <a class="navbar-brand fw-bold text-white" href="${homeUrl}">
+    <a class="navbar-brand" href="${homeUrl}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFD54F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
       RE-VALUE
     </a>
     <button class="navbar-toggler border-white" type="button"
@@ -78,7 +79,7 @@ const NAVBAR_HTML = `
 </nav>`;
 
 const FOOTER_HTML = `
-<footer style="background-color: #1B5E20;" class="text-white py-4 mt-5">
+<footer class="rv-footer text-white py-5 mt-5">
   <div class="container">
     <div class="row g-3 align-items-center">
       <div class="col-md-4">
@@ -229,6 +230,16 @@ function initLayout() {
  * Chiamato una volta sola da initLayout.
  */
 function injectGlobalStyles() {
+  // Inject global design system CSS
+  if (!document.getElementById('rv-design-system')) {
+    const link = document.createElement('link');
+    link.id = 'rv-design-system';
+    link.rel = 'stylesheet';
+    const depth = window.location.pathname.includes('/views/') ? '../' : '';
+    link.href = `${depth}css/style.css`;
+    document.head.insertBefore(link, document.head.firstChild);
+  }
+
   // Toast container (Bootstrap positioning)
   if (!document.getElementById('rv-toast-container')) {
     const tc = document.createElement('div');
@@ -243,33 +254,6 @@ function injectGlobalStyles() {
     const style = document.createElement('style');
     style.id = 'rv-global-style';
     style.textContent = `
-      /* ── Mobile responsive globals ── */
-
-      /* Touch targets minimi 44px (Apple HIG / WCAG 2.5.5) */
-      .btn, button, [role="button"], a.nav-link {
-        min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .btn-sm { min-height: 36px; }
-
-      /* Card action buttons: stack su xs */
-      @media (max-width: 575.98px) {
-        .card .d-flex.gap-2:not(.flex-nowrap) { flex-direction: column; }
-        .filter-btn { flex: 1 1 40%; }
-        .container { padding-left: 12px; padding-right: 12px; }
-        .modal-footer { flex-direction: column; gap: 8px; }
-        .modal-footer .btn { width: 100%; }
-        h1.h3, h1.display-6 { font-size: 1.4rem; }
-      }
-
-      /* QR image non overflow su schermi piccoli */
-      #qr-canvas, img[style*="260px"] { max-width: 100%; height: auto; }
-
-      /* Chat: fix altezza su browser mobile con barre UI */
-      .chat-wrapper { height: 100svh; height: 100dvh; }
-
       /* Skeleton loader */
       .skeleton {
         background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);

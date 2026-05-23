@@ -15,22 +15,7 @@
     crossorigin="anonymous"
   />
   <style>
-    :root {
-      --rv-green:       #2E7D32;
-      --rv-green-light: #43A047;
-      --rv-green-dark:  #1B5E20;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .page-header {
-      border-left: 4px solid var(--rv-green);
-    }
-
-    #qr-canvas {
+#qr-canvas {
       max-width: 280px;
       width: 100%;
       height: auto;
@@ -64,8 +49,8 @@
   <main class="container py-5">
     <div id="qr-alert" class="alert d-none" role="alert"></div>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 page-header">
-      <p class="text-uppercase small text-success mb-2">Conferma scambio</p>
+    <section class="page-hero">
+      <p class="page-hero-eyebrow">Conferma scambio</p>
       <h1 class="h3 fw-bold mb-1">Mostra questo QR all'acquirente</h1>
       <p class="text-muted mb-0">L'acquirente lo scansiona per certificare il ritiro fisico.</p>
     </section>

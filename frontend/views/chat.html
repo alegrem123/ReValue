@@ -15,19 +15,7 @@
     crossorigin="anonymous"
   />
   <style>
-    :root {
-      --rv-green:      #2E7D32;
-      --rv-green-dark: #1B5E20;
-      --rv-bubble-me:  #2E7D32;
-      --rv-bubble-other: #ffffff;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    /* Layout fisso: header + area messaggi scrollabile + input fisso in fondo */
+/* Layout fisso: header + area messaggi scrollabile + input fisso in fondo */
     .chat-wrapper {
       display: flex;
       flex-direction: column;
@@ -83,31 +71,24 @@
       font-size: 0.95rem;
       line-height: 1.45;
       word-break: break-word;
-    }
-
-    .bubble.mine {
-      background-color: var(--rv-bubble-me);
-      color: #fff;
-      border-bottom-right-radius: 4px;
-    }
-
-    .bubble.other {
-      background-color: var(--rv-bubble-other);
+      background-color: #fff;
       color: #212529;
       border: 1px solid #dee2e6;
-      border-bottom-left-radius: 4px;
     }
+
+    .bubble.mine  { border-bottom-right-radius: 4px; }
+    .bubble.other { border-bottom-left-radius: 4px; }
 
     .bubble-time {
       font-size: 0.72rem;
       margin-top: 3px;
       text-align: right;
+      color: #6c757d;
     }
 
-    .bubble.mine  .bubble-time { color: rgba(255,255,255,0.7); }
-    .bubble.other .bubble-time { color: #6c757d; }
-
-    .bubble.mine .read-tick  { font-size: 0.75rem; }
+    .bubble.mine .read-tick { font-size: 0.75rem; }
+    .tick-inviato           { color: #adb5bd; }
+    .tick-letto             { color: #2E7D32; }
 
     /* Input area */
     .chat-input-bar {

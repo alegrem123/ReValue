@@ -1,0 +1,1643 @@
+FORMAT: 1A
+
+# RE-VALUE API
+
+API REST del progetto RE-VALUE.
+
+HOST: http://localhost:3000
+
+Autenticazione:
+Le route protette richiedono l'header `Authorization: Bearer <JWT>`.
+
+Note:
+- `/api/v1/annunci` e `/api/v1/annunci/{id}` supportano autenticazione opzionale.
+- Se l'utente non è autenticato, `latitudine` e `longitudine` non vengono restituite nel catalogo pubblico.
+- Il flusso ufficiale per il QR è `/api/v1/qr/*`.
+- `/api/v1/scambi/*` è deprecato: risponde `410 Gone` con header `Deprecation: true`.
+- Le route protette ricaricano l'utente dal database a ogni richiesta.
+- Se il token appartiene a un account sospeso, la risposta è `403 Account sospeso`.
+- Se il token appartiene a un utente non più esistente, la risposta è `404 Utente non trovato`.
+
+# Group Authentication
+
+## Register [/api/v1/auth/register]
+
+### Register [POST]
+
++ Request (application/json)
+
+        {
+          "nome": "Mario",
+          "cognome": "Rossi",
+          "email": "mario.rossi@example.com",
+          "password": "Password123!"
+        }
+
++ Response 201 (application/json)
+
+        {
+          "token": "jwt-token",
+          "user": {
+            "idUtente": "6825b53f4b0d6f001234abcd",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@example.com",
+            "malusCount": 0,
+            "isSospeso": false,
+            "ruolo": "user",
+            "telefono": "",
+            "citta": "",
+            "descrizione": "",
+            "createdAt": "2026-05-15T10:00:00.000Z"
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Campi obbligatori mancanti"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Formato email non valido"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "La password deve contenere almeno 8 caratteri"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Email già registrata"
+        }
+
+## Login [/api/v1/auth/login]
+
+### Login [POST]
+
++ Request (application/json)
+
+        {
+          "email": "mario.rossi@example.com",
+          "password": "Password123!"
+        }
+
++ Response 200 (application/json)
+
+        {
+          "token": "jwt-token",
+          "user": {
+            "idUtente": "6825b53f4b0d6f001234abcd",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@example.com",
+            "malusCount": 0,
+            "isSospeso": false,
+            "ruolo": "user",
+            "telefono": "",
+            "citta": "",
+            "descrizione": "",
+            "createdAt": "2026-05-15T10:00:00.000Z"
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Email e password obbligatorie"
+        }
+
++ Response 401 (application/json)
+
+        {
+          "error": "Credenziali non valide"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Account bannato"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Account sospeso"
+        }
+
+## Logout [/api/v1/auth/logout]
+
+### Logout [POST]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Logout effettuato"
+        }
+
++ Response 401 (application/json)
+
+        {
+          "error": "Token mancante"
+        }
+
+# Group Users
+
+## Update My Profile [/api/v1/users/me]
+
+### Update profile [PUT]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "telefono": "+39 3331234567",
+              "citta": "Trento",
+              "descrizione": "Studente fuori sede"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "user": {
+            "idUtente": "6825b53f4b0d6f001234abcd",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "malusCount": 0,
+            "isSospeso": false,
+            "ruolo": "user",
+            "telefono": "+39 3331234567",
+            "citta": "Trento",
+            "descrizione": "Studente fuori sede",
+            "createdAt": "2026-05-15T10:00:00.000Z"
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Nessun campo aggiornato"
+        }
+
++ Response 401 (application/json)
+
+        {
+          "error": "Token mancante"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Account sospeso"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Utente non trovato"
+        }
+
+## Public Profile [/api/v1/users/{id}/profilo]
+
++ Parameters
+    + id: `6825b53f4b0d6f001234abcd` (string, required)
+
+### Get public profile [GET]
+
++ Response 200 (application/json)
+
+        {
+          "user": {
+            "idUtente": "6825b53f4b0d6f001234abcd",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "malusCount": 0,
+            "isSospeso": false,
+            "ruolo": "user",
+            "telefono": "+39 3331234567",
+            "citta": "Trento",
+            "descrizione": "Studente fuori sede",
+            "createdAt": "2026-05-15T10:00:00.000Z"
+          },
+          "recensioni": {
+            "positive": 3,
+            "negative": 1,
+            "totale": 4,
+            "recenti": [
+              {
+                "id": "6825b8f14b0d6f001234bb01",
+                "positiva": true,
+                "testo": "Scambio rapido e preciso",
+                "data": "2026-05-14T18:20:00.000Z",
+                "recensore": {
+                  "nome": "Anna",
+                  "cognome": "Verdi"
+                }
+              }
+            ]
+          }
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Profilo utente non trovato"
+        }
+
+# Group Annunci
+
+## Catalog and Create [/api/v1/annunci]
+
+### Get catalog [GET]
+
+Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDopo`, `scadenzaPrima`, `lat`, `lng`, `raggio`, `ordinamento`, `page`, `limit`.
+
++ Response 200 (application/json)
+
+        {
+          "data": [
+            {
+              "_id": "6825b9d94b0d6f001234cc01",
+              "donatore": {
+                "_id": "6825b53f4b0d6f001234abcd",
+                "nome": "Mario",
+                "cognome": "Rossi"
+              },
+              "titolo": "Divano 2 posti",
+              "stato": "DISPONIBILE",
+              "dataScadenza": "2026-05-20T12:00:00.000Z",
+              "versione": 0,
+              "isAttivo": true,
+              "oggetto": {
+                "categoria": "Arredamento",
+                "descrizione": "Divano usato ma in buono stato",
+                "dimensioni": "grande",
+                "materiale": "tessuto",
+                "foto": [
+                  "https://example.com/divano1.jpg"
+                ]
+              },
+              "createdAt": "2026-05-15T10:30:00.000Z"
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "limit": 10,
+            "total": 1,
+            "pages": 1
+          }
+        }
+
+### Create annuncio [POST]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "titolo": "Divano 2 posti",
+              "dataScadenza": "2026-05-20T12:00:00.000Z",
+              "latitudine": 46.0667,
+              "longitudine": 11.1500,
+              "oggetto": {
+                "categoria": "Arredamento",
+                "descrizione": "Divano usato ma in buono stato",
+                "dimensioni": "grande",
+                "materiale": "tessuto",
+                "foto": [
+                  "https://example.com/divano1.jpg"
+                ]
+              }
+            }
+
++ Response 201 (application/json)
+
+        {
+          "_id": "6825b9d94b0d6f001234cc01",
+          "donatore": "6825b53f4b0d6f001234abcd",
+          "titolo": "Divano 2 posti",
+          "stato": "DISPONIBILE",
+          "dataScadenza": "2026-05-20T12:00:00.000Z",
+          "versione": 0,
+          "isAttivo": true,
+          "latitudine": 46.0667,
+          "longitudine": 11.1500,
+          "oggetto": {
+            "categoria": "Arredamento",
+            "descrizione": "Divano usato ma in buono stato",
+            "dimensioni": "grande",
+            "materiale": "tessuto",
+            "foto": [
+              "https://example.com/divano1.jpg"
+            ]
+          },
+          "createdAt": "2026-05-15T10:30:00.000Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "titolo, dataScadenza e oggetto sono obbligatori"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "dataScadenza deve essere nel futuro (OCL #5)"
+        }
+
+## My Annunci [/api/v1/annunci/me]
+
+### Get my annunci [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "6825b9d94b0d6f001234cc01",
+            "donatore": {
+              "_id": "6825b53f4b0d6f001234abcd",
+              "nome": "Mario",
+              "cognome": "Rossi"
+            },
+            "titolo": "Divano 2 posti",
+            "stato": "DISPONIBILE",
+            "dataScadenza": "2026-05-20T12:00:00.000Z",
+            "versione": 0,
+            "isAttivo": true,
+            "latitudine": 46.0667,
+            "longitudine": 11.1500,
+            "oggetto": {
+              "categoria": "Arredamento",
+              "descrizione": "Divano usato ma in buono stato",
+              "dimensioni": "grande",
+              "materiale": "tessuto",
+              "foto": [
+                "https://example.com/divano1.jpg"
+              ]
+            },
+            "createdAt": "2026-05-15T10:30:00.000Z"
+          }
+        ]
+
++ Response 401 (application/json)
+
+        {
+          "error": "Token mancante"
+        }
+
+## Annuncio Resource [/api/v1/annunci/{id}]
+
++ Parameters
+    + id: `6825b9d94b0d6f001234cc01` (string, required)
+
+### Get annuncio [GET]
+
++ Response 200 (application/json)
+
+        {
+          "_id": "6825b9d94b0d6f001234cc01",
+          "donatore": {
+            "_id": "6825b53f4b0d6f001234abcd",
+            "nome": "Mario",
+            "cognome": "Rossi"
+          },
+          "titolo": "Divano 2 posti",
+          "stato": "DISPONIBILE",
+          "dataScadenza": "2026-05-20T12:00:00.000Z",
+          "versione": 0,
+          "isAttivo": true,
+          "latitudine": 46.0667,
+          "longitudine": 11.1500,
+          "oggetto": {
+            "categoria": "Arredamento",
+            "descrizione": "Divano usato ma in buono stato",
+            "dimensioni": "grande",
+            "materiale": "tessuto",
+            "foto": [
+              "https://example.com/divano1.jpg"
+            ]
+          },
+          "createdAt": "2026-05-15T10:30:00.000Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Annuncio non trovato"
+        }
+
+### Update annuncio [PUT]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "titolo": "Divano 2 posti - aggiornato"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "_id": "6825b9d94b0d6f001234cc01",
+          "donatore": "6825b53f4b0d6f001234abcd",
+          "titolo": "Divano 2 posti - aggiornato",
+          "stato": "DISPONIBILE",
+          "dataScadenza": "2026-05-20T12:00:00.000Z",
+          "versione": 0,
+          "isAttivo": true,
+          "latitudine": 46.0667,
+          "longitudine": 11.1500,
+          "oggetto": {
+            "categoria": "Arredamento",
+            "descrizione": "Divano usato ma in buono stato",
+            "dimensioni": "grande",
+            "materiale": "tessuto",
+            "foto": []
+          },
+          "createdAt": "2026-05-15T10:30:00.000Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "dataScadenza deve essere nel futuro"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Annuncio non trovato"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Annuncio non modificabile: stato PRENOTATO"
+        }
+
+### Delete annuncio [DELETE]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Annuncio rimosso"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Annuncio non trovato"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Annuncio non cancellabile: stato PRENOTATO"
+        }
+
+## Change Stato Annuncio [/api/v1/annunci/{id}/stato]
+
++ Parameters
+    + id: `6825b9d94b0d6f001234cc01` (string, required)
+
+### Change stato [PATCH]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "stato": "SCADUTO"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "_id": "6825b9d94b0d6f001234cc01",
+          "donatore": "6825b53f4b0d6f001234abcd",
+          "titolo": "Divano 2 posti",
+          "stato": "SCADUTO",
+          "dataScadenza": "2026-05-20T12:00:00.000Z",
+          "versione": 0,
+          "isAttivo": true,
+          "latitudine": 46.0667,
+          "longitudine": 11.1500,
+          "oggetto": {
+            "categoria": "Arredamento",
+            "descrizione": "Divano usato ma in buono stato",
+            "dimensioni": "grande",
+            "materiale": "tessuto",
+            "foto": []
+          },
+          "createdAt": "2026-05-15T10:30:00.000Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Stato non valido"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Annuncio non trovato"
+        }
+
+# Group Prenotazioni
+
+## Prenotazioni [/api/v1/prenotazioni]
+
+### Create prenotazione [POST]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "annuncioId": "6825b9d94b0d6f001234cc01"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "prenotazione": {
+            "_id": "6825bc414b0d6f001234dd01",
+            "annuncio": "6825b9d94b0d6f001234cc01",
+            "acquirente": "6825bb884b0d6f001234d001",
+            "donatore": "6825b53f4b0d6f001234abcd",
+            "stato": "ATTIVA",
+            "dataPrenotazione": "2026-05-15T11:00:00.000Z"
+          },
+          "indirizzo": {
+            "latitudine": 46.0667,
+            "longitudine": 11.1500
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "annuncioId is required"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Account sospeso"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Annuncio non trovato"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Non puoi prenotare il tuo stesso annuncio"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Oggetto già prenotato"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Oggetto non più disponibile"
+        }
+
+## My Prenotazioni [/api/v1/prenotazioni/me]
+
+### Get my prenotazioni [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "6825bc414b0d6f001234dd01",
+            "annuncio": {
+              "_id": "6825b9d94b0d6f001234cc01",
+              "titolo": "Divano 2 posti",
+              "stato": "PRENOTATO"
+            },
+            "donatore": {
+              "_id": "6825b53f4b0d6f001234abcd",
+              "nome": "Mario",
+              "cognome": "Rossi"
+            },
+            "acquirente": "6825bb884b0d6f001234d001",
+            "stato": "ATTIVA",
+            "dataPrenotazione": "2026-05-15T11:00:00.000Z"
+          }
+        ]
+
+## Prenotazione Resource [/api/v1/prenotazioni/{id}]
+
++ Parameters
+    + id: `6825bc414b0d6f001234dd01` (string, required)
+
+### Get prenotazione [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "_id": "6825bc414b0d6f001234dd01",
+          "annuncio": {
+            "_id": "6825b9d94b0d6f001234cc01",
+            "titolo": "Scrivania bianca",
+            "descrizione": "Scrivania usata ma in buone condizioni",
+            "categoria": "arredamento",
+            "stato": "PRENOTATO"
+          },
+          "donatore": {
+            "_id": "6825bb884b0d6f001234d001",
+            "nome": "Anna",
+            "cognome": "Verdi",
+            "email": "anna.verdi@example.com"
+          },
+          "acquirente": {
+            "_id": "6825b53f4b0d6f001234abcd",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@example.com"
+          },
+          "stato": "ATTIVA",
+          "dataPrenotazione": "2026-05-15T11:00:00.000Z"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Prenotazione non trovata"
+        }
+
+### Delete prenotazione [DELETE]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Prenotazione annullata"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Prenotazione attiva non trovata"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Finestra di annullamento (15 min) scaduta"
+        }
+
+## No Show [/api/v1/prenotazioni/{id}/no-show]
+
++ Parameters
+    + id: `6825bc414b0d6f001234dd01` (string, required)
+
+### Report no-show [POST]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Mancato ritiro segnalato con successo"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Solo il donatore può segnalare il mancato ritiro"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Prenotazione attiva non trovata"
+        }
+
+## Disdici Prenotazione [/api/v1/prenotazioni/{id}/disdici]
+
++ Parameters
+    + id: `6825bc414b0d6f001234dd01` (string, required)
+
+### Disdici prenotazione [POST]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Ritiro disdetto"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Prenotazione attiva non trovata"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Disdetta consentita solo entro 3 giorni dalla data di ritiro (RF20)"
+        }
+
+# Group QR
+
+## Generate QR [/api/v1/qr/genera]
+
+### Generate QR [POST]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "prenotazioneId": "6825bc414b0d6f001234dd01"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "codice": "4f6b1be2d919c77d7f06885bd4f5fdfec4d5f2e8e5ea2c8b5d0c53f44e5ce001",
+          "scadenza": "2026-05-16T11:00:00.000Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "prenotazioneId is required"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Solo il donatore può generare il QR per questa prenotazione"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Prenotazione non trovata"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Scambio già completato: impossibile rigenerare il QR"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Prenotazione annullata: impossibile generare il QR"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "QR in fase di generazione da un altro processo, riprovare"
+        }
+
+## Validate QR [/api/v1/qr/valida]
+
+### Validate QR [POST]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "codice": "4f6b1be2d919c77d7f06885bd4f5fdfec4d5f2e8e5ea2c8b5d0c53f44e5ce001"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Scambio validato con successo",
+          "prenotazione": "6825bc414b0d6f001234dd01",
+          "creditiAssegnati": 50
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "codice is required"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Scansione non autorizzata. Solo l'acquirente può validare lo scambio."
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Codice QR non valido, già scaduto o non esistente"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Codice QR già utilizzato"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Codice QR scaduto"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Prenotazione annullata: lo scambio non può essere validato"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Scambio già completato: questo QR è stato utilizzato"
+        }
+
+# Group Wallet
+
+## Wallet Me [/api/v1/wallet/me]
+
+### Get wallet summary [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "bilancio": 100,
+          "storico": {
+            "data": [
+              {
+                "_id": "6825beab4b0d6f001234ef01",
+                "tipo": "accredito",
+                "ammontare": 50,
+                "motivo": "Scambio completato (Donatore)",
+                "riferimento": "6825bc414b0d6f001234dd01",
+                "data": "2026-05-15T11:30:00.000Z"
+              }
+            ],
+            "totale": 1,
+            "pagina": 1,
+            "totalePagine": 1
+          }
+        }
+
+## Wallet Saldo [/api/v1/wallet/saldo]
+
+### Get saldo [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "bilancio": 100
+        }
+
+## Wallet Storico [/api/v1/wallet/storico]
+
+### Get storico [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "data": [
+            {
+              "_id": "6825beab4b0d6f001234ef01",
+              "tipo": "accredito",
+              "ammontare": 50,
+              "motivo": "Scambio completato (Donatore)",
+              "riferimento": "6825bc414b0d6f001234dd01",
+              "data": "2026-05-15T11:30:00.000Z"
+            }
+          ],
+          "totale": 1,
+          "pagina": 1,
+          "totalePagine": 1
+        }
+
+# Group Conversazioni
+
+## My Conversations [/api/v1/conversazioni/me]
+
+### Get conversations [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "6825bf2d4b0d6f001234fa01",
+            "prenotazione": {
+              "_id": "6825bc414b0d6f001234dd01",
+              "stato": "ATTIVA",
+              "dataPrenotazione": "2026-05-15T11:00:00.000Z"
+            },
+            "partecipanti": [
+              {
+                "_id": "6825bb884b0d6f001234d001",
+                "nome": "Anna",
+                "cognome": "Verdi"
+              },
+              {
+                "_id": "6825b53f4b0d6f001234abcd",
+                "nome": "Mario",
+                "cognome": "Rossi"
+              }
+            ],
+            "createdAt": "2026-05-15T11:00:02.000Z",
+            "ultimoMessaggio": {
+              "testo": "Ciao, quando ci vediamo?",
+              "mittente": "6825bb884b0d6f001234d001",
+              "timestamp": "2026-05-15T11:15:00.000Z"
+            },
+            "nonLetti": 1
+          }
+        ]
+
+## Unread Count [/api/v1/conversazioni/me/non-letti]
+
+### Get unread count [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "nonLetti": 1
+          }
+        }
+
+## Conversation Messages [/api/v1/conversazioni/{id}/messaggi]
+
++ Parameters
+    + id: `6825bf2d4b0d6f001234fa01` (string, required)
+
+### Get messages [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "messaggi": [
+              {
+                "_id": "6825bf6f4b0d6f001234fa11",
+                "mittente": "6825bb884b0d6f001234d001",
+                "testo": "Ciao, quando ci vediamo?",
+                "timestamp": "2026-05-15T11:15:00.000Z",
+                "letto": false
+              }
+            ],
+            "pagination": {
+              "page": 1,
+              "limit": 20,
+              "total": 1,
+              "pages": 1
+            }
+          }
+        }
+
+### Send message [POST]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "testo": "Ciao, quando ci vediamo?"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "_id": "6825bf6f4b0d6f001234fa11",
+            "mittente": "6825bb884b0d6f001234d001",
+            "testo": "Ciao, quando ci vediamo?",
+            "timestamp": "2026-05-15T11:15:00.000Z",
+            "letto": false
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "ok": false,
+          "error": "testo è obbligatorio"
+        }
+
+# Group Messaggi Legacy
+
+## Messaggi By Prenotazione [/api/v1/messaggi/{prenotazioneId}]
+
++ Parameters
+    + prenotazioneId: `6825bc414b0d6f001234dd01` (string, required)
+
+### Get storico [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "6825bf6f4b0d6f001234fa11",
+            "testo": "Ciao, quando ci vediamo?",
+            "timestamp": "2026-05-15T11:15:00.000Z",
+            "letto": false
+          }
+        ]
+
+### Send legacy message [POST]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "testo": "Va bene per domani pomeriggio?"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "_id": "6825bf9d4b0d6f001234fa21",
+          "mittente": "6825bb884b0d6f001234d001",
+          "testo": "Va bene per domani pomeriggio?",
+          "timestamp": "2026-05-15T11:17:00.000Z",
+          "letto": false
+        }
+
+## Mark Message As Read [/api/v1/messaggi/{id}/letto]
+
++ Parameters
+    + id: `6825bf9d4b0d6f001234fa21` (string, required)
+
+### Mark as read [PATCH]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "_id": "6825bf9d4b0d6f001234fa21",
+            "mittente": "6825bb884b0d6f001234d001",
+            "testo": "Va bene per domani pomeriggio?",
+            "timestamp": "2026-05-15T11:17:00.000Z",
+            "letto": true
+          }
+        }
+
+# Group Admin
+
+## Admin Statistiche [/api/v1/admin/statistiche]
+
+### Get statistics [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "scambiMensili": 4,
+          "totaleUtenti": 18,
+          "segnalazioniPendenti": 2,
+          "totaleCrediti": 400
+        }
+
+## Admin Segnalazioni [/api/v1/admin/segnalazioni]
+
+### Get segnalazioni [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "6825c1ad4b0d6f001234ac01",
+            "tipo": "altro",
+            "motivo": "No-show: acquirente non si è presentato al ritiro",
+            "data": "2026-05-15T12:00:00.000Z"
+          }
+        ]
+
+## Ban Utente [/api/v1/admin/utenti/{id}/ban]
+
++ Parameters
+    + id: `6825bb884b0d6f001234d001` (string, required)
+
+### Ban user [POST]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Utente anna.verdi@example.com bannato"
+        }
+
+## Sospendi Utente [/api/v1/admin/utenti/{id}/sospendi]
+
++ Parameters
+    + id: `6825bb884b0d6f001234d001` (string, required)
+
+### Sospendi user [POST]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Utente anna.verdi@example.com sospeso"
+        }
+
+## Riabilita Utente [/api/v1/admin/utenti/{id}/riabilita]
+
++ Parameters
+    + id: `6825bb884b0d6f001234d001` (string, required)
+
+### Riabilita user [POST]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Utente anna.verdi@example.com riabilitato"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Account non sospeso"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Account bannato non riabilitabile"
+        }
+
+## Forza Stato Annuncio [/api/v1/admin/annunci/{id}/forza]
+
++ Parameters
+    + id: `6825b9d94b0d6f001234cc01` (string, required)
+
+### Forza stato [PATCH]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Annuncio ripristinato a DISPONIBILE",
+          "annuncio": {
+            "_id": "6825b9d94b0d6f001234cc01",
+            "titolo": "Scrivania bianca",
+            "stato": "DISPONIBILE",
+            "isAttivo": true,
+            "versione": 3
+          }
+        }
+
+## Remove Annuncio Admin [/api/v1/admin/annunci/{id}]
+
++ Parameters
+    + id: `6825b9d94b0d6f001234cc01` (string, required)
+
+### Remove annuncio [DELETE]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Annuncio rimosso"
+        }
+
+# Group Premi
+
+## Premi Collection [/api/v1/premi]
+
+### List premi [GET /api/v1/premi{?costoMax,page,limit}]
+
++ Parameters
+    + costoMax: `20` (number, optional) - Filtra coupon con costoCrediti <= costoMax
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "coupon": [
+            {
+              "_id": "6825b9d94b0d6f001234ee01",
+              "titolo": "Caffè gratis",
+              "descrizione": "Un caffè espresso omaggio",
+              "partner": "Costa Coffee",
+              "costoCrediti": 5,
+              "stock": 100,
+              "attivo": true,
+              "immagine": null
+            }
+          ],
+          "totale": 1,
+          "page": 1,
+          "limit": 20
+        }
+
+## Riscatta Coupon [/api/v1/premi/{id}/riscatta]
+
++ Parameters
+    + id: `6825b9d94b0d6f001234ee01` (string, required)
+
+### Riscatta coupon [POST]
+
+UC7 — OCL #17: verifica saldo sufficiente prima del riscatto.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 201 (application/json)
+
+        {
+          "riscatto": {
+            "_id": "6825b9d94b0d6f001234ee02",
+            "utente": "6825b9d94b0d6f001234aa01",
+            "coupon": "6825b9d94b0d6f001234ee01",
+            "codiceUnivoco": "550e8400-e29b-41d4-a716-446655440000",
+            "usato": false,
+            "dataRiscatto": "2026-05-21T10:00:00.000Z"
+          },
+          "codiceUnivoco": "550e8400-e29b-41d4-a716-446655440000"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Saldo insufficiente (OCL #17)"
+        }
+
+## Miei Riscatti [/api/v1/premi/miei]
+
+### Get miei riscatti [GET /api/v1/premi/miei{?page,limit}]
+
++ Parameters
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "riscatti": [
+            {
+              "_id": "6825b9d94b0d6f001234ee02",
+              "coupon": {
+                "_id": "6825b9d94b0d6f001234ee01",
+                "titolo": "Caffè gratis",
+                "partner": "Costa Coffee",
+                "costoCrediti": 5
+              },
+              "codiceUnivoco": "550e8400-e29b-41d4-a716-446655440000",
+              "usato": false,
+              "dataRiscatto": "2026-05-21T10:00:00.000Z"
+            }
+          ],
+          "totale": 1,
+          "page": 1,
+          "limit": 20
+        }
+
+## Marca Riscatto Usato [/api/v1/premi/riscatti/{id}/usato]
+
++ Parameters
+    + id: `6825b9d94b0d6f001234ee02` (string, required)
+
+### Marca usato [PATCH]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "riscatto": {
+            "_id": "6825b9d94b0d6f001234ee02",
+            "usato": true
+          }
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
+# Group Segnalazioni
+
+## Segnalazioni Collection [/api/v1/segnalazioni]
+
+### Create segnalazione [POST]
+
+RF9 — OCL #18: motivo non vuoto. OCL #19: segnalante !== segnalato.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "segnalato": "6825b9d94b0d6f001234aa02",
+              "tipo": "inappropriato",
+              "motivo": "Comportamento scorretto durante lo scambio",
+              "annuncio": "6825b9d94b0d6f001234bb01"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "segnalazione": {
+            "_id": "6825b9d94b0d6f001234ff01",
+            "segnalante": "6825b9d94b0d6f001234aa01",
+            "segnalato": "6825b9d94b0d6f001234aa02",
+            "tipo": "inappropriato",
+            "motivo": "Comportamento scorretto durante lo scambio",
+            "data": "2026-05-21T10:00:00.000Z"
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "motivo non può essere vuoto (OCL #18)"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Non puoi segnalare te stesso (OCL #19)"
+        }
+
+## Mie Segnalazioni [/api/v1/segnalazioni/me]
+
+### Get mie segnalazioni [GET /api/v1/segnalazioni/me{?page,limit}]
+
++ Parameters
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "segnalazioni": [
+            {
+              "_id": "6825b9d94b0d6f001234ff01",
+              "segnalato": {
+                "_id": "6825b9d94b0d6f001234aa02",
+                "nome": "Mario",
+                "email": "mario@test.com"
+              },
+              "tipo": "inappropriato",
+              "motivo": "Comportamento scorretto",
+              "data": "2026-05-21T10:00:00.000Z"
+            }
+          ],
+          "totale": 1,
+          "page": 1,
+          "limit": 20
+        }
+
+# Group Legacy Scambi
+
+## Legacy QR [/api/v1/scambi/{prenotazioneId}/qr]
+
++ Parameters
+    + prenotazioneId: `6825bc414b0d6f001234dd01` (string, required)
+
+### Get QR [GET]
+
++ Response 410 (application/json)
+    + Headers
+
+            Deprecation: true
+
+        {
+          "error": "Endpoint legacy deprecato. Usa /api/v1/qr."
+        }
+
+## Legacy Valida Scambio [/api/v1/scambi/{prenotazioneId}/valida]
+
++ Parameters
+    + prenotazioneId: `6825bc414b0d6f001234dd01` (string, required)
+
+### Validate scambio [POST]
+
++ Response 410 (application/json)
+    + Headers
+
+            Deprecation: true
+
+        {
+          "error": "Endpoint legacy deprecato. Usa /api/v1/qr."
+        }

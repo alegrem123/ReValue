@@ -17,78 +17,27 @@
     />
 
     <style>
-      :root {
-        --rv-green: #2e7d32;
-        --rv-green-light: #43a047;
-        --rv-green-dark: #1b5e20;
-        --rv-accent: #ffc107;
-      }
-
-      body {
-        font-family: 'Segoe UI', system-ui, sans-serif;
-        background-color: #f8f9fa;
-      }
-
-      .register-card {
-        max-width: 520px;
-        margin: 3rem auto;
-      }
-
-      .register-card .card-header {
-        background: linear-gradient(
-          135deg,
-          var(--rv-green-dark) 0%,
-          var(--rv-green-light) 100%
-        );
-        color: #fff;
-      }
-
-      .btn-rv {
-        background-color: var(--rv-green);
-        border-color: var(--rv-green);
-        color: #fff;
-        font-weight: 600;
-      }
-
-      .btn-rv:hover {
-        background-color: var(--rv-green-dark);
-        border-color: var(--rv-green-dark);
-        color: #fff;
-      }
-
-      .btn-rv:disabled {
-        opacity: 0.65;
-      }
-
-      .password-toggle {
-        cursor: pointer;
-      }
-
       .strength-bar {
         height: 4px;
         border-radius: 2px;
-        transition:
-          width 0.3s ease,
-          background-color 0.3s ease;
+        transition: width 0.3s ease, background-color 0.3s ease;
       }
+      .auth-card { max-width: 520px; }
     </style>
   </head>
   <body>
     <div id="navbar-container"></div>
 
-    <main class="container py-4">
-      <div class="register-card">
-        <div class="card shadow-sm border-0">
-          <div class="card-header py-3 text-center rounded-top">
-            <h1 class="h4 mb-0 fw-bold">
-              <i class="bi bi-person-plus me-2"></i>Crea il tuo account
-            </h1>
-            <p class="mb-0 mt-1 small opacity-75">
-              Unisciti alla community RE-VALUE
-            </p>
+    <main>
+      <div class="auth-wrapper">
+        <div class="auth-card">
+          <div class="auth-card-header">
+            <div class="auth-logo">RE-VALUE</div>
+            <h1 class="h4 mb-1 fw-bold">Crea il tuo account</h1>
+            <p class="mb-0 small" style="opacity:0.75">Unisciti alla community</p>
           </div>
 
-          <div class="card-body p-4">
+          <div class="auth-card-body">
             <!-- Alert errore / successo -->
             <div id="alert-box" class="alert d-none mb-3" role="alert"></div>
 
@@ -235,7 +184,7 @@
 
               <!-- Submit -->
               <div class="d-grid">
-                <button type="submit" id="btn-submit" class="btn btn-rv btn-lg">
+                <button type="submit" id="btn-submit" class="btn btn-success btn-lg">
                   <span
                     id="btn-spinner"
                     class="spinner-border spinner-border-sm me-2 d-none"

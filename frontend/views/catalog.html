@@ -22,51 +22,16 @@
     integrity="sha256-p4NxAoJBhIINfQvO1Qbzt1z3VgOcYFhH4p+R1M1pR1Y="
     crossorigin=""
   />
-  <style>
-    :root {
-      --rv-green:       #2E7D32;
-      --rv-green-light: #43A047;
-      --rv-green-dark:  #1B5E20;
-      --rv-accent:      #FFC107;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .catalog-hero {
-      background-color: #2E7D32;
-      color: #fff;
-    }
-
-    .catalog-hero h1 {
-      letter-spacing: -0.03em;
-    }
-
-    .card-img-top {
-      object-fit: cover;
-    }
-
-    .catalog-map {
-      min-height: 360px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-    }
-
-    .filter-panel {
-      border-left: 4px solid var(--rv-green);
-    }
-  </style>
 </head>
 <body>
   <div id="navbar-container"></div>
 
   <main class="container py-5" id="catalog-container">
-    <section class="catalog-hero rounded-4 p-4 mb-4 shadow-sm">
+    <section class="page-hero">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
         <div>
-          <p class="text-uppercase small text-warning mb-2">Catalogo pubblico</p>
-          <h1 class="display-6 fw-bold mb-2">Trova l'oggetto che fa per te</h1>
+          <p class="page-hero-eyebrow">Catalogo pubblico</p>
+          <h1 class="fw-bold mb-2">Trova l'oggetto che fa per te</h1>
           <p class="mb-0 opacity-85">
             Sfoglia gli annunci disponibili e scopri subito nuovi oggetti da scambiare nella tua città.
           </p>
@@ -79,7 +44,7 @@
 
     <div id="catalog-alert" class="alert d-none" role="alert"></div>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 filter-panel">
+    <section class="filter-panel p-4 shadow-sm mb-4">
       <form id="catalog-filters" class="row g-3 align-items-end">
         <div class="col-md-6 col-lg-3">
           <label for="filter-category" class="form-label">Categoria</label>
@@ -135,7 +100,7 @@
       </form>
     </section>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4">
+    <section class="card p-4 mb-4">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
         <div>
           <h2 class="h5 fw-bold mb-1">Mappa annunci</h2>

@@ -1,26 +1,34 @@
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 
-export function Screen({ title, subtitle, children, scroll = true, right }) {
-  const content = (
-    <>
-      <View style={styles.header}>
+/**
+ * variant="plain"    — header bianco, sfondo cream (default)
+ * variant="gradient" — header gradiente verde (come page-hero web)
+ */
+export function Screen({ title, subtitle, children, scroll = true, right, variant = 'plain' }) {
+  const isGradient = variant === 'gradient';
+
+  const header = (
+    <View style={isGradient ? styles.gradientHeader : styles.plainHeader}>
+      <View style={styles.headerInner}>
         <View style={styles.headerText}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          <Text style={isGradient ? styles.gradientTitle : styles.title}>{title}</Text>
+          {subtitle ? (
+            <Text style={isGradient ? styles.gradientSubtitle : styles.subtitle}>{subtitle}</Text>
+          ) : null}
         </View>
         {right}
       </View>
-      {children}
-    </>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.safe}>
+      {header}
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.content}>{content}</ScrollView>
+        <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
       ) : (
-        <View style={styles.content}>{content}</View>
+        <View style={[styles.content, styles.fill]}>{children}</View>
       )}
     </SafeAreaView>
   );
@@ -29,14 +37,19 @@ export function Screen({ title, subtitle, children, scroll = true, right }) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.cream,
+  },
+  fill: {
+    flex: 1,
   },
   content: {
     padding: 16,
     paddingBottom: 96,
     gap: 16,
   },
-  header: {
+
+  // Header condiviso
+  headerInner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
@@ -45,14 +58,42 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
+
+  // Plain
+  plainHeader: {
+    padding: 20,
+    paddingBottom: 12,
+    backgroundColor: colors.cream,
+  },
   title: {
     fontSize: 28,
     fontWeight: '800',
     color: colors.text,
+    letterSpacing: -0.5,
   },
   subtitle: {
     marginTop: 4,
     color: colors.muted,
     lineHeight: 20,
+    fontSize: 14,
+  },
+
+  // Gradient
+  gradientHeader: {
+    padding: 24,
+    paddingBottom: 20,
+    backgroundColor: colors.green,
+  },
+  gradientTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  gradientSubtitle: {
+    marginTop: 4,
+    color: 'rgba(255,255,255,0.82)',
+    lineHeight: 20,
+    fontSize: 14,
   },
 });
