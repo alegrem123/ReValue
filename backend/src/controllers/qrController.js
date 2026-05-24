@@ -112,14 +112,14 @@ async function validaQR(req, res) {
     }
 
     if (token.usato) {
-      return res.status(400).json({ error: 'Codice QR già utilizzato' });
+      return res.status(409).json({ error: 'Codice QR già utilizzato' });
     }
 
     // OCL #14: token non deve essere scaduto (difesa in profondità; il TTL
     // potrebbe non aver ancora eliminato il documento se la scadenza è appena
     // passata e il job di pulizia non è ancora girato).
     if (token.scadenza < new Date()) {
-      return res.status(400).json({ error: 'Codice QR scaduto' });
+      return res.status(410).json({ error: 'Codice QR scaduto' });
     }
 
     const prenotazione = token.prenotazione;

@@ -68,10 +68,10 @@ async function finalizzaScambioAtomico({ tokenId }) {
         throw createScambioError(404, 'Codice QR non valido, già scaduto o non esistente');
       }
       if (token.usato) {
-        throw createScambioError(400, 'Codice QR già utilizzato');
+        throw createScambioError(409, 'Codice QR già utilizzato');
       }
       if (token.scadenza < new Date()) {
-        throw createScambioError(400, 'Codice QR scaduto');
+        throw createScambioError(410, 'Codice QR scaduto');
       }
 
       const prenotazione = token.prenotazione;

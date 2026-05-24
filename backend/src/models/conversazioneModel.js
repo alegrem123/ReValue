@@ -23,6 +23,10 @@ const messaggioSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    immagine: {
+      type: String,
+      default: null, // base64, max 1 MB — validato nel controller
+    },
   },
   { _id: true }
 );
