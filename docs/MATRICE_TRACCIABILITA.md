@@ -58,7 +58,7 @@ Questa matrice collega requisiti funzionali, use case, vincoli OCL e implementaz
 | SPID/SSO | Solo progettato | Autenticazione reale implementata con email/password + JWT |
 | Gestore Email | Solo progettato | Nessun servizio email attivo nello Sprint 1 |
 | OpenStreetMap backend | Solo progettato/parziale | Coordinate e geolocalizzazione lato client presenti; nessun modulo backend dedicato |
-| Specifica Apiary/OpenAPI | Apiary locale presente, OpenAPI non generata | Blueprint in `docs/apiary_blueprint.txt`; resta da pubblicare esternamente o convertire |
+| Specifica Apiary/OpenAPI | Presente localmente | Blueprint in `docs/apiary_blueprint.txt`, OpenAPI in `docs/openapi.yaml`; resta da pubblicare esternamente |
 | Test frontend/mobile | Non presenti | Frontend/mobile prototipali, verifica principale sul backend |
 
 ## Osservazioni per la consegna

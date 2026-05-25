@@ -4,6 +4,7 @@ HOST: http://localhost:3000
 # RE-VALUE API
 
 Documentazione API Blueprint per la pubblicazione su Apiary.
+La specifica equivalente in formato OpenAPI e mantenuta in `docs/openapi.yaml`.
 
 Questa specifica descrive le API REST implementate nello Sprint 1 e allineate
 alla progettazione D2. Il backend reale espone le route sotto il prefisso
