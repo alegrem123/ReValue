@@ -45,6 +45,7 @@ const chatRoutes = require('./src/routes/chatRoutes');
 const premiRoutes = require('./src/routes/premiRoutes');
 const segnalazioniRoutes = require('./src/routes/segnalazioniRoutes');
 const recensioniRoutes = require('./src/routes/recensioniRoutes');
+const notificheRoutes = require('./src/routes/notificheRoutes');
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', utentiRoutes);
@@ -59,6 +60,7 @@ app.use('/api/v1/conversazioni', chatRoutes);
 app.use('/api/v1/premi', premiRoutes);
 app.use('/api/v1/segnalazioni', segnalazioniRoutes);
 app.use('/api/v1/recensioni', recensioniRoutes);
+app.use('/api/v1/notifiche', notificheRoutes);
 
 app.use('/api/v1', notFoundHandler);
 app.use(errorHandler);

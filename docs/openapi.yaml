@@ -1,0 +1,1352 @@
+openapi: 3.0.3
+info:
+  title: RE-VALUE API
+  version: 1.0.0
+  description: |
+    Specifica OpenAPI locale delle API REST implementate nello Sprint 1.
+    Il backend espone le route sotto il prefisso versionato `/api/v1`.
+
+    Note D2/Sprint:
+    - Il flusso QR ufficiale usa `/api/v1/qr/genera` e `/api/v1/qr/valida`.
+    - Gli endpoint `/api/v1/scambi/*` sono legacy deprecati e rispondono `410 Gone`.
+    - SPID/SSO, Gestore Email e backend OpenStreetMap restano progettuali.
+servers:
+  - url: http://localhost:3000
+    description: Ambiente locale
+tags:
+  - name: Auth
+  - name: Users
+  - name: Annunci
+  - name: Prenotazioni
+  - name: QR
+  - name: Wallet
+  - name: Conversazioni
+  - name: Messaggi Legacy
+  - name: Notifiche
+  - name: Admin
+  - name: Scambi Legacy
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Registra un utente e crea il wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Utente registrato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Effettua login e restituisce JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login riuscito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout logico lato client
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/users/me:
+    put:
+      tags: [Users]
+      summary: Aggiorna il profilo dell'utente autenticato
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profilo aggiornato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/PublicUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/{id}/profilo:
+    get:
+      tags: [Users]
+      summary: Legge il profilo pubblico di un utente
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Profilo pubblico
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/PublicUser'
+                  recensioni:
+                    $ref: '#/components/schemas/RecensioniSummary'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/annunci:
+    get:
+      tags: [Annunci]
+      summary: Catalogo pubblico annunci
+      security:
+        - bearerAuth: []
+        - {}
+      parameters:
+        - name: categoria
+          in: query
+          schema: { type: string }
+        - name: dimensione
+          in: query
+          schema: { type: string }
+        - name: materiale
+          in: query
+          schema: { type: string }
+        - name: scadenzaDopo
+          in: query
+          schema: { type: string, format: date }
+        - name: scadenzaPrima
+          in: query
+          schema: { type: string, format: date }
+        - name: lat
+          in: query
+          schema: { type: number }
+        - name: lng
+          in: query
+          schema: { type: number }
+        - name: raggio
+          in: query
+          schema: { type: number }
+        - name: ordinamento
+          in: query
+          schema:
+            type: string
+            enum: [dataScadenza_asc, dataScadenza_desc, valore_asc, valore_desc]
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Catalogo paginato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAnnunci'
+    post:
+      tags: [Annunci]
+      summary: Crea un annuncio
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnuncioInput'
+      responses:
+        '201':
+          description: Annuncio creato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annuncio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/annunci/me:
+    get:
+      tags: [Annunci]
+      summary: Lista gli annunci dell'utente autenticato
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Annunci dell'utente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Annuncio'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/annunci/{id}:
+    get:
+      tags: [Annunci]
+      summary: Dettaglio annuncio
+      security:
+        - bearerAuth: []
+        - {}
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Annuncio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annuncio'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Annunci]
+      summary: Modifica un annuncio
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnuncioInput'
+      responses:
+        '200':
+          description: Annuncio aggiornato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annuncio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Annunci]
+      summary: Cancella logicamente un annuncio
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/annunci/{id}/stato:
+    patch:
+      tags: [Annunci]
+      summary: Cambia stato annuncio
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stato]
+              properties:
+                stato:
+                  $ref: '#/components/schemas/StatoAnnuncio'
+      responses:
+        '200':
+          description: Stato aggiornato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annuncio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/prenotazioni:
+    post:
+      tags: [Prenotazioni]
+      summary: Crea una prenotazione
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [annuncioId]
+              properties:
+                annuncioId:
+                  type: string
+      responses:
+        '201':
+          description: Prenotazione creata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prenotazione:
+                    $ref: '#/components/schemas/Prenotazione'
+                  indirizzo:
+                    $ref: '#/components/schemas/Coordinate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/prenotazioni/me:
+    get:
+      tags: [Prenotazioni]
+      summary: Lista prenotazioni dell'utente
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: stato
+          in: query
+          schema:
+            type: string
+            enum: [ATTIVA, ANNULLATA, COMPLETATA]
+      responses:
+        '200':
+          description: Prenotazioni dell'utente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prenotazione'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/prenotazioni/{id}:
+    get:
+      tags: [Prenotazioni]
+      summary: Dettaglio prenotazione
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Prenotazione
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prenotazione'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Prenotazioni]
+      summary: Annulla prenotazione
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/prenotazioni/{id}/no-show:
+    post:
+      tags: [Prenotazioni]
+      summary: Segnala mancato ritiro
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/prenotazioni/{id}/disdici:
+    post:
+      tags: [Prenotazioni]
+      summary: Disdice il ritiro da parte del donatore
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/qr/genera:
+    post:
+      tags: [QR]
+      summary: Genera QR per prenotazione
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prenotazioneId]
+              properties:
+                prenotazioneId:
+                  type: string
+      responses:
+        '201':
+          description: QR generato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QRResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/qr/valida:
+    post:
+      tags: [QR]
+      summary: Valida QR e completa lo scambio
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [codice]
+              properties:
+                codice:
+                  type: string
+      responses:
+        '200':
+          description: Scambio validato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  prenotazione:
+                    type: string
+                  creditiAssegnati:
+                    type: integer
+                    example: 50
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/wallet/me:
+    get:
+      tags: [Wallet]
+      summary: Saldo e storico wallet
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TipoTransazione'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Wallet completo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bilancio:
+                    type: integer
+                  storico:
+                    $ref: '#/components/schemas/StoricoWallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/wallet/saldo:
+    get:
+      tags: [Wallet]
+      summary: Saldo wallet
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Saldo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bilancio:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/wallet/storico:
+    get:
+      tags: [Wallet]
+      summary: Storico transazioni wallet
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TipoTransazione'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Storico wallet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoricoWallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/conversazioni/me:
+    get:
+      tags: [Conversazioni]
+      summary: Lista conversazioni utente
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Conversazioni
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversazione'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/conversazioni/me/non-letti:
+    get:
+      tags: [Conversazioni]
+      summary: Conteggio messaggi non letti
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Conteggio non letti
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkData'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/conversazioni/{id}/messaggi:
+    get:
+      tags: [Conversazioni]
+      summary: Storico messaggi conversazione
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Messaggi paginati
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkData'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Conversazioni]
+      summary: Invia messaggio in conversazione
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        $ref: '#/components/requestBodies/TestoMessaggio'
+      responses:
+        '201':
+          description: Messaggio creato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkData'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/messaggi/{prenotazioneId}:
+    get:
+      tags: [Messaggi Legacy]
+      summary: Storico messaggi per prenotazione
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: prenotazioneId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Messaggi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Messaggio'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Messaggi Legacy]
+      summary: Invia messaggio per prenotazione
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: prenotazioneId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        $ref: '#/components/requestBodies/TestoMessaggio'
+      responses:
+        '201':
+          description: Messaggio creato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Messaggio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/messaggi/{id}/letto:
+    patch:
+      tags: [Messaggi Legacy]
+      summary: Marca un messaggio come letto
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Messaggio aggiornato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkData'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/notifiche/me:
+    get:
+      tags: [Notifiche]
+      summary: Lista notifiche utente
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: letta
+          in: query
+          schema: { type: boolean }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Notifiche paginabili
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkData'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/notifiche/me/leggi-tutte:
+    patch:
+      tags: [Notifiche]
+      summary: Marca tutte le notifiche come lette
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notifiche aggiornate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkData'
+
+  /api/v1/notifiche/{id}/letta:
+    patch:
+      tags: [Notifiche]
+      summary: Marca una notifica come letta
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Notifica aggiornata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkData'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/statistiche:
+    get:
+      tags: [Admin]
+      summary: Dashboard statistiche admin
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Statistiche piattaforma
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/segnalazioni:
+    get:
+      tags: [Admin]
+      summary: Lista segnalazioni
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Segnalazioni
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/utenti/{id}/ban:
+    post:
+      tags: [Admin]
+      summary: Banna utente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/utenti/{id}/sospendi:
+    post:
+      tags: [Admin]
+      summary: Sospende utente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/utenti/{id}/riabilita:
+    post:
+      tags: [Admin]
+      summary: Riabilita utente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/annunci/{id}/forza:
+    patch:
+      tags: [Admin]
+      summary: Forza stato annuncio a DISPONIBILE
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Annuncio ripristinato
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/annunci/{id}:
+    delete:
+      tags: [Admin]
+      summary: Rimuove annuncio non conforme
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/scambi/{prenotazioneId}/qr:
+    get:
+      tags: [Scambi Legacy]
+      summary: Endpoint legacy deprecato
+      deprecated: true
+      parameters:
+        - name: prenotazioneId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '410':
+          description: Endpoint legacy deprecato
+          headers:
+            Deprecation:
+              schema: { type: string }
+              example: 'true'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/scambi/{prenotazioneId}/valida:
+    post:
+      tags: [Scambi Legacy]
+      summary: Endpoint legacy deprecato
+      deprecated: true
+      parameters:
+        - name: prenotazioneId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                codice:
+                  type: string
+      responses:
+        '410':
+          description: Endpoint legacy deprecato
+          headers:
+            Deprecation:
+              schema: { type: string }
+              example: 'true'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+    TipoTransazione:
+      name: tipo
+      in: query
+      schema:
+        type: string
+        enum: [accredito, sottrazione]
+    From:
+      name: from
+      in: query
+      schema:
+        type: string
+        format: date
+    To:
+      name: to
+      in: query
+      schema:
+        type: string
+        format: date
+
+  requestBodies:
+    TestoMessaggio:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [testo]
+            properties:
+              testo:
+                type: string
+
+  responses:
+    Message:
+      description: Operazione completata
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+    BadRequest:
+      description: Richiesta non valida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Token assente o non valido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Operazione non autorizzata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Risorsa non trovata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Vincolo di dominio non rispettato
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    OkData:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        data:
+          type: object
+          additionalProperties: true
+    RegisterRequest:
+      type: object
+      required: [nome, cognome, email, password]
+      properties:
+        nome:
+          type: string
+        cognome:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      properties:
+        idUtente:
+          type: string
+        nome:
+          type: string
+        cognome:
+          type: string
+        email:
+          type: string
+          format: email
+        ruolo:
+          type: string
+          enum: [user, admin]
+        malusCount:
+          type: integer
+        isSospeso:
+          type: boolean
+        telefono:
+          type: string
+        citta:
+          type: string
+        descrizione:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    PublicUser:
+      type: object
+      properties:
+        idUtente:
+          type: string
+        nome:
+          type: string
+        cognome:
+          type: string
+        citta:
+          type: string
+        descrizione:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    UpdateProfileRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+        cognome:
+          type: string
+        telefono:
+          type: string
+        citta:
+          type: string
+        descrizione:
+          type: string
+    RecensioniSummary:
+      type: object
+      properties:
+        positive:
+          type: integer
+        negative:
+          type: integer
+        totale:
+          type: integer
+        recenti:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    StatoAnnuncio:
+      type: string
+      enum: [DISPONIBILE, PRENOTATO, RITIRATO, SCADUTO]
+    Oggetto:
+      type: object
+      required: [categoria, descrizione]
+      properties:
+        categoria:
+          type: string
+        descrizione:
+          type: string
+        dimensioni:
+          type: string
+        materiale:
+          type: string
+        foto:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+    Coordinate:
+      type: object
+      properties:
+        latitudine:
+          type: number
+        longitudine:
+          type: number
+    AnnuncioInput:
+      type: object
+      required: [titolo, dataScadenza, oggetto]
+      properties:
+        titolo:
+          type: string
+        dataScadenza:
+          type: string
+          format: date-time
+        latitudine:
+          type: number
+        longitudine:
+          type: number
+        oggetto:
+          $ref: '#/components/schemas/Oggetto'
+    Annuncio:
+      allOf:
+        - $ref: '#/components/schemas/AnnuncioInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+            donatore:
+              oneOf:
+                - type: string
+                - type: object
+                  additionalProperties: true
+            stato:
+              $ref: '#/components/schemas/StatoAnnuncio'
+            versione:
+              type: integer
+            isAttivo:
+              type: boolean
+            createdAt:
+              type: string
+              format: date-time
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+    PaginatedAnnunci:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annuncio'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    StatoPrenotazione:
+      type: string
+      enum: [ATTIVA, ANNULLATA, COMPLETATA]
+    Prenotazione:
+      type: object
+      properties:
+        _id:
+          type: string
+        annuncio:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Annuncio'
+        acquirente:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/User'
+        donatore:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/User'
+        stato:
+          $ref: '#/components/schemas/StatoPrenotazione'
+        dataPrenotazione:
+          type: string
+          format: date-time
+        dataCompletamento:
+          type: string
+          format: date-time
+    QRResponse:
+      type: object
+      properties:
+        codice:
+          type: string
+        scadenza:
+          type: string
+          format: date-time
+    Transazione:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum: [accredito, sottrazione]
+        ammontare:
+          type: integer
+        motivo:
+          type: string
+        data:
+          type: string
+          format: date-time
+    StoricoWallet:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transazione'
+        totale:
+          type: integer
+        pagina:
+          type: integer
+        totalePagine:
+          type: integer
+    Messaggio:
+      type: object
+      properties:
+        _id:
+          type: string
+        mittente:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/User'
+        testo:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        letto:
+          type: boolean
+    Conversazione:
+      type: object
+      properties:
+        _id:
+          type: string
+        prenotazione:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Prenotazione'
+        partecipanti:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - $ref: '#/components/schemas/User'
+        ultimoMessaggio:
+          $ref: '#/components/schemas/Messaggio'
+        nonLetti:
+          type: integer

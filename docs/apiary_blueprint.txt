@@ -1,28 +1,53 @@
 FORMAT: 1A
+HOST: http://localhost:3000
 
 # RE-VALUE API
 
-API REST del progetto RE-VALUE.
+Documentazione API Blueprint per la pubblicazione su Apiary.
+La specifica equivalente in formato OpenAPI e mantenuta in `docs/openapi.yaml`.
 
-HOST: http://localhost:3000
+Questa specifica descrive le API REST implementate nello Sprint 1 e allineate
+alla progettazione D2. Il backend reale espone le route sotto il prefisso
+`/api/v1`, considerato autorevole anche nella D3 aggiornata.
 
-Autenticazione:
-Le route protette richiedono l'header `Authorization: Bearer <JWT>`.
+## Convenzioni
 
-Note:
-- `/api/v1/annunci` e `/api/v1/annunci/{id}` supportano autenticazione opzionale.
-- Se l'utente non è autenticato, `latitudine` e `longitudine` non vengono restituite nel catalogo pubblico.
-- Il flusso ufficiale per il QR è `/api/v1/qr/*`.
-- `/api/v1/scambi/*` è deprecato: risponde `410 Gone` con header `Deprecation: true`.
-- Le route protette ricaricano l'utente dal database a ogni richiesta.
-- Se il token appartiene a un account sospeso, la risposta è `403 Account sospeso`.
-- Se il token appartiene a un utente non più esistente, la risposta è `404 Utente non trovato`.
+Tutte le richieste e risposte usano `application/json`.
 
-# Group Authentication
+Gli endpoint protetti richiedono header:
 
-## Register [/api/v1/auth/register]
+    Authorization: Bearer <jwt>
 
-### Register [POST]
+Formato errore prevalente:
+
+    {
+      "error": "Messaggio di errore"
+    }
+
+Alcuni endpoint piu recenti usano:
+
+    {
+      "ok": false,
+      "error": "Messaggio di errore"
+    }
+
+## Stato implementativo D2
+
+- Flusso QR ufficiale: `/api/v1/qr/genera` e `/api/v1/qr/valida`.
+- Flusso legacy deprecato: `/api/v1/scambi/:prenotazioneId/qr` e
+  `/api/v1/scambi/:prenotazioneId/valida` rispondono `410 Gone`.
+- SPID/SSO, Gestore Email e backend OpenStreetMap restano elementi progettuali:
+  non sono esposti come servizi attivi nello Sprint 1.
+- La posizione esatta degli annunci viene nascosta nel catalogo pubblico e
+  mostrata solo a utenti autorizzati.
+
+# Group Auth
+
+Gestione registrazione, login e logout logico.
+
+## Registrazione [POST /api/v1/auth/register]
+
+Registra un utente, crea il wallet iniziale e restituisce un JWT.
 
 + Request (application/json)
 
@@ -30,7 +55,7 @@ Note:
           "nome": "Mario",
           "cognome": "Rossi",
           "email": "mario.rossi@example.com",
-          "password": "Password123!"
+          "password": "Password123"
         }
 
 + Response 201 (application/json)
@@ -38,17 +63,14 @@ Note:
         {
           "token": "jwt-token",
           "user": {
-            "idUtente": "6825b53f4b0d6f001234abcd",
+            "idUtente": "664f1b7b1f8a2c0012345678",
             "nome": "Mario",
             "cognome": "Rossi",
             "email": "mario.rossi@example.com",
             "malusCount": 0,
             "isSospeso": false,
             "ruolo": "user",
-            "telefono": "",
-            "citta": "",
-            "descrizione": "",
-            "createdAt": "2026-05-15T10:00:00.000Z"
+            "createdAt": "2026-05-21T10:00:00.000Z"
           }
         }
 
@@ -58,33 +80,19 @@ Note:
           "error": "Campi obbligatori mancanti"
         }
 
-+ Response 400 (application/json)
-
-        {
-          "error": "Formato email non valido"
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "La password deve contenere almeno 8 caratteri"
-        }
-
 + Response 409 (application/json)
 
         {
-          "error": "Email già registrata"
+          "error": "Email gia registrata"
         }
 
-## Login [/api/v1/auth/login]
-
-### Login [POST]
+## Login [POST /api/v1/auth/login]
 
 + Request (application/json)
 
         {
           "email": "mario.rossi@example.com",
-          "password": "Password123!"
+          "password": "Password123"
         }
 
 + Response 200 (application/json)
@@ -92,24 +100,13 @@ Note:
         {
           "token": "jwt-token",
           "user": {
-            "idUtente": "6825b53f4b0d6f001234abcd",
+            "idUtente": "664f1b7b1f8a2c0012345678",
             "nome": "Mario",
             "cognome": "Rossi",
             "email": "mario.rossi@example.com",
-            "malusCount": 0,
-            "isSospeso": false,
             "ruolo": "user",
-            "telefono": "",
-            "citta": "",
-            "descrizione": "",
-            "createdAt": "2026-05-15T10:00:00.000Z"
+            "isSospeso": false
           }
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "Email e password obbligatorie"
         }
 
 + Response 401 (application/json)
@@ -121,18 +118,10 @@ Note:
 + Response 403 (application/json)
 
         {
-          "error": "Account bannato"
-        }
-
-+ Response 403 (application/json)
-
-        {
           "error": "Account sospeso"
         }
 
-## Logout [/api/v1/auth/logout]
-
-### Logout [POST]
+## Logout [POST /api/v1/auth/logout]
 
 + Request
     + Headers
@@ -145,17 +134,11 @@ Note:
           "message": "Logout effettuato"
         }
 
-+ Response 401 (application/json)
-
-        {
-          "error": "Token mancante"
-        }
-
 # Group Users
 
-## Update My Profile [/api/v1/users/me]
+Gestione profilo utente e profilo pubblico con riepilogo recensioni.
 
-### Update profile [PUT]
+## Aggiorna profilo [PUT /api/v1/users/me]
 
 + Request (application/json)
     + Headers
@@ -165,25 +148,23 @@ Note:
     + Body
 
             {
-              "telefono": "+39 3331234567",
-              "citta": "Trento",
-              "descrizione": "Studente fuori sede"
+              "nome": "Mario",
+              "cognome": "Rossi",
+              "telefono": "+393331234567",
+              "citta": "Milano",
+              "descrizione": "Recupero e dono oggetti usati."
             }
 
 + Response 200 (application/json)
 
         {
           "user": {
-            "idUtente": "6825b53f4b0d6f001234abcd",
+            "idUtente": "664f1b7b1f8a2c0012345678",
             "nome": "Mario",
             "cognome": "Rossi",
-            "malusCount": 0,
-            "isSospeso": false,
-            "ruolo": "user",
-            "telefono": "+39 3331234567",
-            "citta": "Trento",
-            "descrizione": "Studente fuori sede",
-            "createdAt": "2026-05-15T10:00:00.000Z"
+            "citta": "Milano",
+            "descrizione": "Recupero e dono oggetti usati.",
+            "createdAt": "2026-05-21T10:00:00.000Z"
           }
         }
 
@@ -193,62 +174,27 @@ Note:
           "error": "Nessun campo aggiornato"
         }
 
-+ Response 401 (application/json)
-
-        {
-          "error": "Token mancante"
-        }
-
-+ Response 403 (application/json)
-
-        {
-          "error": "Account sospeso"
-        }
-
-+ Response 404 (application/json)
-
-        {
-          "error": "Utente non trovato"
-        }
-
-## Public Profile [/api/v1/users/{id}/profilo]
+## Profilo pubblico [GET /api/v1/users/{id}/profilo]
 
 + Parameters
-    + id: `6825b53f4b0d6f001234abcd` (string, required)
-
-### Get public profile [GET]
+    + id: `664f1b7b1f8a2c0012345678` (string) - ObjectId o idUtente pubblico.
 
 + Response 200 (application/json)
 
         {
           "user": {
-            "idUtente": "6825b53f4b0d6f001234abcd",
+            "idUtente": "664f1b7b1f8a2c0012345678",
             "nome": "Mario",
             "cognome": "Rossi",
-            "malusCount": 0,
-            "isSospeso": false,
-            "ruolo": "user",
-            "telefono": "+39 3331234567",
-            "citta": "Trento",
-            "descrizione": "Studente fuori sede",
-            "createdAt": "2026-05-15T10:00:00.000Z"
+            "citta": "Milano",
+            "descrizione": "Recupero e dono oggetti usati.",
+            "createdAt": "2026-05-21T10:00:00.000Z"
           },
           "recensioni": {
-            "positive": 3,
-            "negative": 1,
-            "totale": 4,
-            "recenti": [
-              {
-                "id": "6825b8f14b0d6f001234bb01",
-                "positiva": true,
-                "testo": "Scambio rapido e preciso",
-                "data": "2026-05-14T18:20:00.000Z",
-                "recensore": {
-                  "nome": "Anna",
-                  "cognome": "Verdi"
-                }
-              }
-            ]
+            "positive": 2,
+            "negative": 0,
+            "totale": 2,
+            "recenti": []
           }
         }
 
@@ -260,38 +206,47 @@ Note:
 
 # Group Annunci
 
-## Catalog and Create [/api/v1/annunci]
+Catalogo pubblico, CRUD annunci e cambio stato.
 
-### Get catalog [GET]
+## Catalogo pubblico [GET /api/v1/annunci{?categoria,dimensione,materiale,scadenzaDopo,scadenzaPrima,lat,lng,raggio,ordinamento,page,limit}]
 
-Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDopo`, `scadenzaPrima`, `lat`, `lng`, `raggio`, `ordinamento`, `page`, `limit`.
+Accessibile anche senza autenticazione. Se l'utente non e autorizzato, la
+risposta non contiene coordinate esatte.
+
++ Parameters
+    + categoria: `arredo` (string, optional)
+    + dimensione: `medio` (string, optional)
+    + materiale: `legno` (string, optional)
+    + scadenzaDopo: `2026-05-21` (string, optional)
+    + scadenzaPrima: `2026-06-30` (string, optional)
+    + lat: `45.4642` (number, optional)
+    + lng: `9.1900` (number, optional)
+    + raggio: `20` (number, optional) - Raggio in km.
+    + ordinamento: `dataScadenza_asc` (string, optional) - Anche `dataScadenza_desc`, `valore_asc`, `valore_desc`.
+    + page: `1` (number, optional)
+    + limit: `10` (number, optional)
 
 + Response 200 (application/json)
 
         {
           "data": [
             {
-              "_id": "6825b9d94b0d6f001234cc01",
+              "_id": "665000000000000000000001",
+              "titolo": "Sedia in legno",
+              "stato": "DISPONIBILE",
+              "dataScadenza": "2026-06-01T12:00:00.000Z",
+              "oggetto": {
+                "categoria": "arredo",
+                "descrizione": "Sedia usata in buono stato",
+                "dimensioni": "medio",
+                "materiale": "legno",
+                "foto": []
+              },
               "donatore": {
-                "_id": "6825b53f4b0d6f001234abcd",
+                "_id": "664f1b7b1f8a2c0012345678",
                 "nome": "Mario",
                 "cognome": "Rossi"
-              },
-              "titolo": "Divano 2 posti",
-              "stato": "DISPONIBILE",
-              "dataScadenza": "2026-05-20T12:00:00.000Z",
-              "versione": 0,
-              "isAttivo": true,
-              "oggetto": {
-                "categoria": "Arredamento",
-                "descrizione": "Divano usato ma in buono stato",
-                "dimensioni": "grande",
-                "materiale": "tessuto",
-                "foto": [
-                  "https://example.com/divano1.jpg"
-                ]
-              },
-              "createdAt": "2026-05-15T10:30:00.000Z"
+              }
             }
           ],
           "pagination": {
@@ -302,70 +257,7 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           }
         }
 
-### Create annuncio [POST]
-
-+ Request (application/json)
-    + Headers
-
-            Authorization: Bearer jwt-token
-
-    + Body
-
-            {
-              "titolo": "Divano 2 posti",
-              "dataScadenza": "2026-05-20T12:00:00.000Z",
-              "latitudine": 46.0667,
-              "longitudine": 11.1500,
-              "oggetto": {
-                "categoria": "Arredamento",
-                "descrizione": "Divano usato ma in buono stato",
-                "dimensioni": "grande",
-                "materiale": "tessuto",
-                "foto": [
-                  "https://example.com/divano1.jpg"
-                ]
-              }
-            }
-
-+ Response 201 (application/json)
-
-        {
-          "_id": "6825b9d94b0d6f001234cc01",
-          "donatore": "6825b53f4b0d6f001234abcd",
-          "titolo": "Divano 2 posti",
-          "stato": "DISPONIBILE",
-          "dataScadenza": "2026-05-20T12:00:00.000Z",
-          "versione": 0,
-          "isAttivo": true,
-          "latitudine": 46.0667,
-          "longitudine": 11.1500,
-          "oggetto": {
-            "categoria": "Arredamento",
-            "descrizione": "Divano usato ma in buono stato",
-            "dimensioni": "grande",
-            "materiale": "tessuto",
-            "foto": [
-              "https://example.com/divano1.jpg"
-            ]
-          },
-          "createdAt": "2026-05-15T10:30:00.000Z"
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "titolo, dataScadenza e oggetto sono obbligatori"
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "dataScadenza deve essere nel futuro (OCL #5)"
-        }
-
-## My Annunci [/api/v1/annunci/me]
-
-### Get my annunci [GET]
+## I miei annunci [GET /api/v1/annunci/me]
 
 + Request
     + Headers
@@ -376,71 +268,32 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
 
         [
           {
-            "_id": "6825b9d94b0d6f001234cc01",
-            "donatore": {
-              "_id": "6825b53f4b0d6f001234abcd",
-              "nome": "Mario",
-              "cognome": "Rossi"
-            },
-            "titolo": "Divano 2 posti",
+            "_id": "665000000000000000000001",
+            "titolo": "Sedia in legno",
             "stato": "DISPONIBILE",
-            "dataScadenza": "2026-05-20T12:00:00.000Z",
-            "versione": 0,
-            "isAttivo": true,
-            "latitudine": 46.0667,
-            "longitudine": 11.1500,
-            "oggetto": {
-              "categoria": "Arredamento",
-              "descrizione": "Divano usato ma in buono stato",
-              "dimensioni": "grande",
-              "materiale": "tessuto",
-              "foto": [
-                "https://example.com/divano1.jpg"
-              ]
-            },
-            "createdAt": "2026-05-15T10:30:00.000Z"
+            "isAttivo": true
           }
         ]
 
-+ Response 401 (application/json)
-
-        {
-          "error": "Token mancante"
-        }
-
-## Annuncio Resource [/api/v1/annunci/{id}]
+## Dettaglio annuncio [GET /api/v1/annunci/{id}]
 
 + Parameters
-    + id: `6825b9d94b0d6f001234cc01` (string, required)
-
-### Get annuncio [GET]
+    + id: `665000000000000000000001` (string)
 
 + Response 200 (application/json)
 
         {
-          "_id": "6825b9d94b0d6f001234cc01",
-          "donatore": {
-            "_id": "6825b53f4b0d6f001234abcd",
-            "nome": "Mario",
-            "cognome": "Rossi"
-          },
-          "titolo": "Divano 2 posti",
+          "_id": "665000000000000000000001",
+          "titolo": "Sedia in legno",
           "stato": "DISPONIBILE",
-          "dataScadenza": "2026-05-20T12:00:00.000Z",
-          "versione": 0,
-          "isAttivo": true,
-          "latitudine": 46.0667,
-          "longitudine": 11.1500,
+          "dataScadenza": "2026-06-01T12:00:00.000Z",
           "oggetto": {
-            "categoria": "Arredamento",
-            "descrizione": "Divano usato ma in buono stato",
-            "dimensioni": "grande",
-            "materiale": "tessuto",
-            "foto": [
-              "https://example.com/divano1.jpg"
-            ]
-          },
-          "createdAt": "2026-05-15T10:30:00.000Z"
+            "categoria": "arredo",
+            "descrizione": "Sedia usata in buono stato",
+            "dimensioni": "medio",
+            "materiale": "legno",
+            "foto": []
+          }
         }
 
 + Response 404 (application/json)
@@ -449,7 +302,7 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "error": "Annuncio non trovato"
         }
 
-### Update annuncio [PUT]
+## Crea annuncio [POST /api/v1/annunci]
 
 + Request (application/json)
     + Headers
@@ -459,35 +312,65 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
     + Body
 
             {
-              "titolo": "Divano 2 posti - aggiornato"
+              "titolo": "Sedia in legno",
+              "dataScadenza": "2026-06-01T12:00:00.000Z",
+              "latitudine": 45.4642,
+              "longitudine": 9.1900,
+              "oggetto": {
+                "categoria": "arredo",
+                "descrizione": "Sedia usata in buono stato",
+                "dimensioni": "medio",
+                "materiale": "legno",
+                "foto": []
+              }
             }
 
-+ Response 200 (application/json)
++ Response 201 (application/json)
 
         {
-          "_id": "6825b9d94b0d6f001234cc01",
-          "donatore": "6825b53f4b0d6f001234abcd",
-          "titolo": "Divano 2 posti - aggiornato",
+          "_id": "665000000000000000000001",
+          "donatore": "664f1b7b1f8a2c0012345678",
+          "titolo": "Sedia in legno",
           "stato": "DISPONIBILE",
-          "dataScadenza": "2026-05-20T12:00:00.000Z",
           "versione": 0,
-          "isAttivo": true,
-          "latitudine": 46.0667,
-          "longitudine": 11.1500,
-          "oggetto": {
-            "categoria": "Arredamento",
-            "descrizione": "Divano usato ma in buono stato",
-            "dimensioni": "grande",
-            "materiale": "tessuto",
-            "foto": []
-          },
-          "createdAt": "2026-05-15T10:30:00.000Z"
+          "isAttivo": true
         }
 
 + Response 400 (application/json)
 
         {
-          "error": "dataScadenza deve essere nel futuro"
+          "error": "titolo, dataScadenza e oggetto sono obbligatori"
+        }
+
+## Modifica annuncio [PUT /api/v1/annunci/{id}]
+
++ Parameters
+    + id: `665000000000000000000001` (string)
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "titolo": "Sedia in legno restaurata",
+              "oggetto": {
+                "categoria": "arredo",
+                "descrizione": "Sedia restaurata",
+                "dimensioni": "medio",
+                "materiale": "legno",
+                "foto": []
+              }
+            }
+
++ Response 200 (application/json)
+
+        {
+          "_id": "665000000000000000000001",
+          "titolo": "Sedia in legno restaurata",
+          "stato": "DISPONIBILE"
         }
 
 + Response 403 (application/json)
@@ -496,19 +379,16 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "error": "Non autorizzato"
         }
 
-+ Response 404 (application/json)
-
-        {
-          "error": "Annuncio non trovato"
-        }
-
 + Response 409 (application/json)
 
         {
           "error": "Annuncio non modificabile: stato PRENOTATO"
         }
 
-### Delete annuncio [DELETE]
+## Cancella annuncio [DELETE /api/v1/annunci/{id}]
+
++ Parameters
+    + id: `665000000000000000000001` (string)
 
 + Request
     + Headers
@@ -521,30 +401,10 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "message": "Annuncio rimosso"
         }
 
-+ Response 403 (application/json)
-
-        {
-          "error": "Non autorizzato"
-        }
-
-+ Response 404 (application/json)
-
-        {
-          "error": "Annuncio non trovato"
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "Annuncio non cancellabile: stato PRENOTATO"
-        }
-
-## Change Stato Annuncio [/api/v1/annunci/{id}/stato]
+## Cambia stato annuncio [PATCH /api/v1/annunci/{id}/stato]
 
 + Parameters
-    + id: `6825b9d94b0d6f001234cc01` (string, required)
-
-### Change stato [PATCH]
+    + id: `665000000000000000000001` (string)
 
 + Request (application/json)
     + Headers
@@ -554,54 +414,22 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
     + Body
 
             {
-              "stato": "SCADUTO"
+              "stato": "PRENOTATO"
             }
 
 + Response 200 (application/json)
 
         {
-          "_id": "6825b9d94b0d6f001234cc01",
-          "donatore": "6825b53f4b0d6f001234abcd",
-          "titolo": "Divano 2 posti",
-          "stato": "SCADUTO",
-          "dataScadenza": "2026-05-20T12:00:00.000Z",
-          "versione": 0,
-          "isAttivo": true,
-          "latitudine": 46.0667,
-          "longitudine": 11.1500,
-          "oggetto": {
-            "categoria": "Arredamento",
-            "descrizione": "Divano usato ma in buono stato",
-            "dimensioni": "grande",
-            "materiale": "tessuto",
-            "foto": []
-          },
-          "createdAt": "2026-05-15T10:30:00.000Z"
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "Stato non valido"
-        }
-
-+ Response 403 (application/json)
-
-        {
-          "error": "Non autorizzato"
-        }
-
-+ Response 404 (application/json)
-
-        {
-          "error": "Annuncio non trovato"
+          "_id": "665000000000000000000001",
+          "titolo": "Sedia in legno",
+          "stato": "PRENOTATO"
         }
 
 # Group Prenotazioni
 
-## Prenotazioni [/api/v1/prenotazioni]
+Gestione prenotazione, annullamento, no-show e disdetta.
 
-### Create prenotazione [POST]
+## Crea prenotazione [POST /api/v1/prenotazioni]
 
 + Request (application/json)
     + Headers
@@ -611,65 +439,35 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
     + Body
 
             {
-              "annuncioId": "6825b9d94b0d6f001234cc01"
+              "annuncioId": "665000000000000000000001"
             }
 
 + Response 201 (application/json)
 
         {
           "prenotazione": {
-            "_id": "6825bc414b0d6f001234dd01",
-            "annuncio": "6825b9d94b0d6f001234cc01",
-            "acquirente": "6825bb884b0d6f001234d001",
-            "donatore": "6825b53f4b0d6f001234abcd",
-            "stato": "ATTIVA",
-            "dataPrenotazione": "2026-05-15T11:00:00.000Z"
+            "_id": "666000000000000000000001",
+            "annuncio": "665000000000000000000001",
+            "acquirente": "664f1b7b1f8a2c0012345679",
+            "donatore": "664f1b7b1f8a2c0012345678",
+            "stato": "ATTIVA"
           },
           "indirizzo": {
-            "latitudine": 46.0667,
-            "longitudine": 11.1500
+            "latitudine": 45.4642,
+            "longitudine": 9.1900
           }
         }
 
-+ Response 400 (application/json)
-
-        {
-          "error": "annuncioId is required"
-        }
-
-+ Response 403 (application/json)
-
-        {
-          "error": "Account sospeso"
-        }
-
-+ Response 404 (application/json)
-
-        {
-          "error": "Annuncio non trovato"
-        }
-
 + Response 409 (application/json)
 
         {
-          "error": "Non puoi prenotare il tuo stesso annuncio"
+          "error": "Oggetto gia prenotato"
         }
 
-+ Response 409 (application/json)
+## Le mie prenotazioni [GET /api/v1/prenotazioni/me{?stato}]
 
-        {
-          "error": "Oggetto già prenotato"
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "Oggetto non più disponibile"
-        }
-
-## My Prenotazioni [/api/v1/prenotazioni/me]
-
-### Get my prenotazioni [GET]
++ Parameters
+    + stato: `ATTIVA` (string, optional) - Valori: `ATTIVA`, `ANNULLATA`, `COMPLETATA`.
 
 + Request
     + Headers
@@ -680,29 +478,20 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
 
         [
           {
-            "_id": "6825bc414b0d6f001234dd01",
-            "annuncio": {
-              "_id": "6825b9d94b0d6f001234cc01",
-              "titolo": "Divano 2 posti",
-              "stato": "PRENOTATO"
-            },
-            "donatore": {
-              "_id": "6825b53f4b0d6f001234abcd",
-              "nome": "Mario",
-              "cognome": "Rossi"
-            },
-            "acquirente": "6825bb884b0d6f001234d001",
+            "_id": "666000000000000000000001",
             "stato": "ATTIVA",
-            "dataPrenotazione": "2026-05-15T11:00:00.000Z"
+            "annuncio": {
+              "_id": "665000000000000000000001",
+              "titolo": "Sedia in legno",
+              "stato": "PRENOTATO"
+            }
           }
         ]
 
-## Prenotazione Resource [/api/v1/prenotazioni/{id}]
+## Dettaglio prenotazione [GET /api/v1/prenotazioni/{id}]
 
 + Parameters
-    + id: `6825bc414b0d6f001234dd01` (string, required)
-
-### Get prenotazione [GET]
+    + id: `666000000000000000000001` (string)
 
 + Request
     + Headers
@@ -712,43 +501,20 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
 + Response 200 (application/json)
 
         {
-          "_id": "6825bc414b0d6f001234dd01",
-          "annuncio": {
-            "_id": "6825b9d94b0d6f001234cc01",
-            "titolo": "Scrivania bianca",
-            "descrizione": "Scrivania usata ma in buone condizioni",
-            "categoria": "arredamento",
-            "stato": "PRENOTATO"
-          },
-          "donatore": {
-            "_id": "6825bb884b0d6f001234d001",
-            "nome": "Anna",
-            "cognome": "Verdi",
-            "email": "anna.verdi@example.com"
-          },
-          "acquirente": {
-            "_id": "6825b53f4b0d6f001234abcd",
-            "nome": "Mario",
-            "cognome": "Rossi",
-            "email": "mario.rossi@example.com"
-          },
+          "_id": "666000000000000000000001",
           "stato": "ATTIVA",
-          "dataPrenotazione": "2026-05-15T11:00:00.000Z"
+          "annuncio": {
+            "_id": "665000000000000000000001",
+            "titolo": "Sedia in legno"
+          }
         }
 
-+ Response 403 (application/json)
+## Annulla prenotazione [DELETE /api/v1/prenotazioni/{id}]
 
-        {
-          "error": "Non autorizzato"
-        }
+Consentito all'acquirente entro 15 minuti dalla prenotazione.
 
-+ Response 404 (application/json)
-
-        {
-          "error": "Prenotazione non trovata"
-        }
-
-### Delete prenotazione [DELETE]
++ Parameters
+    + id: `666000000000000000000001` (string)
 
 + Request
     + Headers
@@ -761,30 +527,18 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "message": "Prenotazione annullata"
         }
 
-+ Response 403 (application/json)
-
-        {
-          "error": "Non autorizzato"
-        }
-
-+ Response 404 (application/json)
-
-        {
-          "error": "Prenotazione attiva non trovata"
-        }
-
 + Response 409 (application/json)
 
         {
           "error": "Finestra di annullamento (15 min) scaduta"
         }
 
-## No Show [/api/v1/prenotazioni/{id}/no-show]
+## Segnala no-show [POST /api/v1/prenotazioni/{id}/no-show]
+
+Il donatore segnala il mancato ritiro da parte dell'acquirente.
 
 + Parameters
-    + id: `6825bc414b0d6f001234dd01` (string, required)
-
-### Report no-show [POST]
+    + id: `666000000000000000000001` (string)
 
 + Request
     + Headers
@@ -797,24 +551,12 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "message": "Mancato ritiro segnalato con successo"
         }
 
-+ Response 403 (application/json)
+## Disdici ritiro [POST /api/v1/prenotazioni/{id}/disdici]
 
-        {
-          "error": "Solo il donatore può segnalare il mancato ritiro"
-        }
-
-+ Response 404 (application/json)
-
-        {
-          "error": "Prenotazione attiva non trovata"
-        }
-
-## Disdici Prenotazione [/api/v1/prenotazioni/{id}/disdici]
+Il donatore disdice il ritiro entro la finestra prevista.
 
 + Parameters
-    + id: `6825bc414b0d6f001234dd01` (string, required)
-
-### Disdici prenotazione [POST]
+    + id: `666000000000000000000001` (string)
 
 + Request
     + Headers
@@ -827,29 +569,13 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "message": "Ritiro disdetto"
         }
 
-+ Response 403 (application/json)
-
-        {
-          "error": "Non autorizzato"
-        }
-
-+ Response 404 (application/json)
-
-        {
-          "error": "Prenotazione attiva non trovata"
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "Disdetta consentita solo entro 3 giorni dalla data di ritiro (RF20)"
-        }
-
 # Group QR
 
-## Generate QR [/api/v1/qr/genera]
+Flusso ufficiale per generazione e validazione QR.
 
-### Generate QR [POST]
+## Genera QR [POST /api/v1/qr/genera]
+
+Solo il donatore della prenotazione puo generare il QR.
 
 + Request (application/json)
     + Headers
@@ -859,55 +585,25 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
     + Body
 
             {
-              "prenotazioneId": "6825bc414b0d6f001234dd01"
+              "prenotazioneId": "666000000000000000000001"
             }
 
 + Response 201 (application/json)
 
         {
-          "codice": "4f6b1be2d919c77d7f06885bd4f5fdfec4d5f2e8e5ea2c8b5d0c53f44e5ce001",
-          "scadenza": "2026-05-16T11:00:00.000Z"
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "prenotazioneId is required"
+          "codice": "d9f0b5f4c7e3a1...",
+          "scadenza": "2026-05-22T10:00:00.000Z"
         }
 
 + Response 403 (application/json)
 
         {
-          "error": "Solo il donatore può generare il QR per questa prenotazione"
+          "error": "Solo il donatore puo generare il QR per questa prenotazione"
         }
 
-+ Response 404 (application/json)
+## Valida QR [POST /api/v1/qr/valida]
 
-        {
-          "error": "Prenotazione non trovata"
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "Scambio già completato: impossibile rigenerare il QR"
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "Prenotazione annullata: impossibile generare il QR"
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "QR in fase di generazione da un altro processo, riprovare"
-        }
-
-## Validate QR [/api/v1/qr/valida]
-
-### Validate QR [POST]
+Solo l'acquirente valida il codice durante il ritiro fisico.
 
 + Request (application/json)
     + Headers
@@ -917,64 +613,35 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
     + Body
 
             {
-              "codice": "4f6b1be2d919c77d7f06885bd4f5fdfec4d5f2e8e5ea2c8b5d0c53f44e5ce001"
+              "codice": "d9f0b5f4c7e3a1..."
             }
 
 + Response 200 (application/json)
 
         {
           "message": "Scambio validato con successo",
-          "prenotazione": "6825bc414b0d6f001234dd01",
+          "prenotazione": "666000000000000000000001",
           "creditiAssegnati": 50
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "codice is required"
-        }
-
-+ Response 403 (application/json)
-
-        {
-          "error": "Scansione non autorizzata. Solo l'acquirente può validare lo scambio."
         }
 
 + Response 404 (application/json)
 
         {
-          "error": "Codice QR non valido, già scaduto o non esistente"
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "Codice QR già utilizzato"
-        }
-
-+ Response 400 (application/json)
-
-        {
-          "error": "Codice QR scaduto"
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "Prenotazione annullata: lo scambio non può essere validato"
-        }
-
-+ Response 409 (application/json)
-
-        {
-          "error": "Scambio già completato: questo QR è stato utilizzato"
+          "error": "Codice QR non valido, gia scaduto o non esistente"
         }
 
 # Group Wallet
 
-## Wallet Me [/api/v1/wallet/me]
+Saldo e storico crediti.
 
-### Get wallet summary [GET]
+## Wallet completo [GET /api/v1/wallet/me{?tipo,from,to,page,limit}]
+
++ Parameters
+    + tipo: `accredito` (string, optional) - Anche `sottrazione`.
+    + from: `2026-05-01` (string, optional)
+    + to: `2026-05-31` (string, optional)
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
 
 + Request
     + Headers
@@ -984,16 +651,14 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
 + Response 200 (application/json)
 
         {
-          "bilancio": 100,
+          "bilancio": 50,
           "storico": {
             "data": [
               {
-                "_id": "6825beab4b0d6f001234ef01",
                 "tipo": "accredito",
                 "ammontare": 50,
-                "motivo": "Scambio completato (Donatore)",
-                "riferimento": "6825bc414b0d6f001234dd01",
-                "data": "2026-05-15T11:30:00.000Z"
+                "motivo": "Scambio completato",
+                "data": "2026-05-21T10:00:00.000Z"
               }
             ],
             "totale": 1,
@@ -1002,9 +667,7 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           }
         }
 
-## Wallet Saldo [/api/v1/wallet/saldo]
-
-### Get saldo [GET]
+## Saldo [GET /api/v1/wallet/saldo]
 
 + Request
     + Headers
@@ -1014,12 +677,10 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
 + Response 200 (application/json)
 
         {
-          "bilancio": 100
+          "bilancio": 50
         }
 
-## Wallet Storico [/api/v1/wallet/storico]
-
-### Get storico [GET]
+## Storico [GET /api/v1/wallet/storico{?tipo,from,to,page,limit}]
 
 + Request
     + Headers
@@ -1029,26 +690,17 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
 + Response 200 (application/json)
 
         {
-          "data": [
-            {
-              "_id": "6825beab4b0d6f001234ef01",
-              "tipo": "accredito",
-              "ammontare": 50,
-              "motivo": "Scambio completato (Donatore)",
-              "riferimento": "6825bc414b0d6f001234dd01",
-              "data": "2026-05-15T11:30:00.000Z"
-            }
-          ],
-          "totale": 1,
+          "data": [],
+          "totale": 0,
           "pagina": 1,
           "totalePagine": 1
         }
 
 # Group Conversazioni
 
-## My Conversations [/api/v1/conversazioni/me]
+API principale per chat e messaggi tra partecipanti a una prenotazione.
 
-### Get conversations [GET]
+## Le mie conversazioni [GET /api/v1/conversazioni/me]
 
 + Request
     + Headers
@@ -1059,37 +711,22 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
 
         [
           {
-            "_id": "6825bf2d4b0d6f001234fa01",
+            "_id": "667000000000000000000001",
             "prenotazione": {
-              "_id": "6825bc414b0d6f001234dd01",
-              "stato": "ATTIVA",
-              "dataPrenotazione": "2026-05-15T11:00:00.000Z"
+              "_id": "666000000000000000000001",
+              "stato": "ATTIVA"
             },
-            "partecipanti": [
-              {
-                "_id": "6825bb884b0d6f001234d001",
-                "nome": "Anna",
-                "cognome": "Verdi"
-              },
-              {
-                "_id": "6825b53f4b0d6f001234abcd",
-                "nome": "Mario",
-                "cognome": "Rossi"
-              }
-            ],
-            "createdAt": "2026-05-15T11:00:02.000Z",
+            "partecipanti": [],
             "ultimoMessaggio": {
-              "testo": "Ciao, quando ci vediamo?",
-              "mittente": "6825bb884b0d6f001234d001",
-              "timestamp": "2026-05-15T11:15:00.000Z"
+              "testo": "Ci vediamo alle 18?",
+              "mittente": "664f1b7b1f8a2c0012345678",
+              "timestamp": "2026-05-21T10:00:00.000Z"
             },
             "nonLetti": 1
           }
         ]
 
-## Unread Count [/api/v1/conversazioni/me/non-letti]
-
-### Get unread count [GET]
+## Conteggio non letti [GET /api/v1/conversazioni/me/non-letti]
 
 + Request
     + Headers
@@ -1105,12 +742,12 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           }
         }
 
-## Conversation Messages [/api/v1/conversazioni/{id}/messaggi]
+## Messaggi conversazione [GET /api/v1/conversazioni/{id}/messaggi{?page,limit}]
 
 + Parameters
-    + id: `6825bf2d4b0d6f001234fa01` (string, required)
-
-### Get messages [GET]
+    + id: `667000000000000000000001` (string)
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
 
 + Request
     + Headers
@@ -1124,10 +761,10 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "data": {
             "messaggi": [
               {
-                "_id": "6825bf6f4b0d6f001234fa11",
-                "mittente": "6825bb884b0d6f001234d001",
-                "testo": "Ciao, quando ci vediamo?",
-                "timestamp": "2026-05-15T11:15:00.000Z",
+                "_id": "668000000000000000000001",
+                "mittente": "664f1b7b1f8a2c0012345678",
+                "testo": "Ci vediamo alle 18?",
+                "timestamp": "2026-05-21T10:00:00.000Z",
                 "letto": false
               }
             ],
@@ -1140,7 +777,10 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           }
         }
 
-### Send message [POST]
+## Invia messaggio conversazione [POST /api/v1/conversazioni/{id}/messaggi]
+
++ Parameters
+    + id: `667000000000000000000001` (string)
 
 + Request (application/json)
     + Headers
@@ -1150,7 +790,7 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
     + Body
 
             {
-              "testo": "Ciao, quando ci vediamo?"
+              "testo": "Ci vediamo alle 18?"
             }
 
 + Response 201 (application/json)
@@ -1158,29 +798,23 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
         {
           "ok": true,
           "data": {
-            "_id": "6825bf6f4b0d6f001234fa11",
-            "mittente": "6825bb884b0d6f001234d001",
-            "testo": "Ciao, quando ci vediamo?",
-            "timestamp": "2026-05-15T11:15:00.000Z",
+            "_id": "668000000000000000000001",
+            "mittente": "664f1b7b1f8a2c0012345678",
+            "testo": "Ci vediamo alle 18?",
+            "timestamp": "2026-05-21T10:00:00.000Z",
             "letto": false
           }
         }
 
-+ Response 400 (application/json)
-
-        {
-          "ok": false,
-          "error": "testo è obbligatorio"
-        }
-
 # Group Messaggi Legacy
 
-## Messaggi By Prenotazione [/api/v1/messaggi/{prenotazioneId}]
+Endpoint compatibili basati su `prenotazioneId`. Il flusso consigliato per la
+UI nuova e quello del gruppo Conversazioni.
+
+## Storico per prenotazione [GET /api/v1/messaggi/{prenotazioneId}]
 
 + Parameters
-    + prenotazioneId: `6825bc414b0d6f001234dd01` (string, required)
-
-### Get storico [GET]
+    + prenotazioneId: `666000000000000000000001` (string)
 
 + Request
     + Headers
@@ -1191,14 +825,16 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
 
         [
           {
-            "_id": "6825bf6f4b0d6f001234fa11",
-            "testo": "Ciao, quando ci vediamo?",
-            "timestamp": "2026-05-15T11:15:00.000Z",
-            "letto": false
+            "_id": "668000000000000000000001",
+            "testo": "Ci vediamo alle 18?",
+            "timestamp": "2026-05-21T10:00:00.000Z"
           }
         ]
 
-### Send legacy message [POST]
+## Invia per prenotazione [POST /api/v1/messaggi/{prenotazioneId}]
+
++ Parameters
+    + prenotazioneId: `666000000000000000000001` (string)
 
 + Request (application/json)
     + Headers
@@ -1208,25 +844,21 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
     + Body
 
             {
-              "testo": "Va bene per domani pomeriggio?"
+              "testo": "Ci vediamo alle 18?"
             }
 
 + Response 201 (application/json)
 
         {
-          "_id": "6825bf9d4b0d6f001234fa21",
-          "mittente": "6825bb884b0d6f001234d001",
-          "testo": "Va bene per domani pomeriggio?",
-          "timestamp": "2026-05-15T11:17:00.000Z",
-          "letto": false
+          "_id": "668000000000000000000001",
+          "testo": "Ci vediamo alle 18?",
+          "timestamp": "2026-05-21T10:00:00.000Z"
         }
 
-## Mark Message As Read [/api/v1/messaggi/{id}/letto]
+## Marca messaggio letto [PATCH /api/v1/messaggi/{id}/letto]
 
 + Parameters
-    + id: `6825bf9d4b0d6f001234fa21` (string, required)
-
-### Mark as read [PATCH]
+    + id: `668000000000000000000001` (string)
 
 + Request
     + Headers
@@ -1238,24 +870,89 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
         {
           "ok": true,
           "data": {
-            "_id": "6825bf9d4b0d6f001234fa21",
-            "mittente": "6825bb884b0d6f001234d001",
-            "testo": "Va bene per domani pomeriggio?",
-            "timestamp": "2026-05-15T11:17:00.000Z",
+            "_id": "668000000000000000000001",
             "letto": true
           }
         }
 
-# Group Admin
+# Group Notifiche
 
-## Admin Statistiche [/api/v1/admin/statistiche]
+Notifiche utente con stato di lettura.
 
-### Get statistics [GET]
+## Le mie notifiche [GET /api/v1/notifiche/me{?letta,page,limit}]
+
++ Parameters
+    + letta: `false` (boolean, optional)
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
 
 + Request
     + Headers
 
             Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "notifiche": [],
+            "pagination": {
+              "page": 1,
+              "limit": 20,
+              "total": 0,
+              "pages": 0
+            },
+            "nonLette": 0
+          }
+        }
+
+## Marca tutte lette [PATCH /api/v1/notifiche/me/leggi-tutte]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "aggiornate": 3
+          }
+        }
+
+## Marca notifica letta [PATCH /api/v1/notifiche/{id}/letta]
+
++ Parameters
+    + id: `669000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "_id": "669000000000000000000001",
+            "letta": true
+          }
+        }
+
+# Group Admin
+
+Endpoint riservati al ruolo `admin`.
+
+## Statistiche [GET /api/v1/admin/statistiche]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
 
 + Response 200 (application/json)
 
@@ -1263,131 +960,107 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "scambiMensili": 4,
           "totaleUtenti": 18,
           "segnalazioniPendenti": 2,
-          "totaleCrediti": 400
+          "liquiditaAttuale": 120,
+          "creditiErogatiTotali": 240,
+          "creditiErogatiMese": 40,
+          "totaleCrediti": 120
         }
 
-## Admin Segnalazioni [/api/v1/admin/segnalazioni]
-
-### Get segnalazioni [GET]
+## Segnalazioni [GET /api/v1/admin/segnalazioni]
 
 + Request
     + Headers
 
-            Authorization: Bearer jwt-token
+            Authorization: Bearer jwt-admin-token
 
 + Response 200 (application/json)
 
         [
           {
-            "_id": "6825c1ad4b0d6f001234ac01",
+            "_id": "670000000000000000000001",
             "tipo": "altro",
-            "motivo": "No-show: acquirente non si è presentato al ritiro",
-            "data": "2026-05-15T12:00:00.000Z"
+            "motivo": "No-show: acquirente non si e presentato al ritiro"
           }
         ]
 
-## Ban Utente [/api/v1/admin/utenti/{id}/ban]
+## Banna utente [POST /api/v1/admin/utenti/{id}/ban]
 
 + Parameters
-    + id: `6825bb884b0d6f001234d001` (string, required)
-
-### Ban user [POST]
+    + id: `664f1b7b1f8a2c0012345678` (string)
 
 + Request
     + Headers
 
-            Authorization: Bearer jwt-token
+            Authorization: Bearer jwt-admin-token
 
 + Response 200 (application/json)
 
         {
-          "message": "Utente anna.verdi@example.com bannato"
+          "message": "Utente mario.rossi@example.com bannato"
         }
 
-## Sospendi Utente [/api/v1/admin/utenti/{id}/sospendi]
+## Sospendi utente [POST /api/v1/admin/utenti/{id}/sospendi]
 
 + Parameters
-    + id: `6825bb884b0d6f001234d001` (string, required)
-
-### Sospendi user [POST]
+    + id: `664f1b7b1f8a2c0012345678` (string)
 
 + Request
     + Headers
 
-            Authorization: Bearer jwt-token
+            Authorization: Bearer jwt-admin-token
 
 + Response 200 (application/json)
 
         {
-          "message": "Utente anna.verdi@example.com sospeso"
+          "message": "Utente mario.rossi@example.com sospeso"
         }
 
-## Riabilita Utente [/api/v1/admin/utenti/{id}/riabilita]
+## Riabilita utente [POST /api/v1/admin/utenti/{id}/riabilita]
 
 + Parameters
-    + id: `6825bb884b0d6f001234d001` (string, required)
-
-### Riabilita user [POST]
+    + id: `664f1b7b1f8a2c0012345678` (string)
 
 + Request
     + Headers
 
-            Authorization: Bearer jwt-token
+            Authorization: Bearer jwt-admin-token
 
 + Response 200 (application/json)
 
         {
-          "message": "Utente anna.verdi@example.com riabilitato"
+          "message": "Utente mario.rossi@example.com riabilitato"
         }
 
-+ Response 400 (application/json)
-
-        {
-          "error": "Account non sospeso"
-        }
-
-+ Response 403 (application/json)
-
-        {
-          "error": "Account bannato non riabilitabile"
-        }
-
-## Forza Stato Annuncio [/api/v1/admin/annunci/{id}/forza]
+## Forza stato annuncio [PATCH /api/v1/admin/annunci/{id}/forza]
 
 + Parameters
-    + id: `6825b9d94b0d6f001234cc01` (string, required)
-
-### Forza stato [PATCH]
+    + id: `665000000000000000000001` (string)
 
 + Request
     + Headers
 
-            Authorization: Bearer jwt-token
+            Authorization: Bearer jwt-admin-token
 
 + Response 200 (application/json)
 
         {
           "message": "Annuncio ripristinato a DISPONIBILE",
           "annuncio": {
-            "_id": "6825b9d94b0d6f001234cc01",
-            "titolo": "Scrivania bianca",
+            "_id": "665000000000000000000001",
             "stato": "DISPONIBILE",
-            "isAttivo": true,
-            "versione": 3
+            "isAttivo": true
           }
         }
 
-## Remove Annuncio Admin [/api/v1/admin/annunci/{id}]
+## Rimuovi annuncio [DELETE /api/v1/admin/annunci/{id}]
 
 + Parameters
-    + id: `6825b9d94b0d6f001234cc01` (string, required)
-
-### Remove annuncio [DELETE]
+    + id: `665000000000000000000001` (string)
 
 + Request
     + Headers
 
-            Authorization: Bearer jwt-token
+            Authorization: Bearer jwt-admin-token
 
 + Response 200 (application/json)
 
@@ -1395,14 +1068,16 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "message": "Annuncio rimosso"
         }
 
-# Group Legacy Scambi
+# Group Scambi Legacy
 
-## Legacy QR [/api/v1/scambi/{prenotazioneId}/qr]
+Endpoint mantenuti solo per dichiarare la deprecazione del vecchio flusso.
+Entrambe le route rispondono `410 Gone`, impostano header `Deprecation: true`
+e indirizzano i client verso il gruppo QR.
+
+## Recupera QR legacy [GET /api/v1/scambi/{prenotazioneId}/qr]
 
 + Parameters
-    + prenotazioneId: `6825bc414b0d6f001234dd01` (string, required)
-
-### Get QR [GET]
+    + prenotazioneId: `666000000000000000000001` (string)
 
 + Response 410 (application/json)
     + Headers
@@ -1413,12 +1088,17 @@ Parametri query supportati: `categoria`, `dimensione`, `materiale`, `scadenzaDop
           "error": "Endpoint legacy deprecato. Usa /api/v1/qr."
         }
 
-## Legacy Valida Scambio [/api/v1/scambi/{prenotazioneId}/valida]
+## Valida scambio legacy [POST /api/v1/scambi/{prenotazioneId}/valida]
 
 + Parameters
-    + prenotazioneId: `6825bc414b0d6f001234dd01` (string, required)
+    + prenotazioneId: `666000000000000000000001` (string)
 
-### Validate scambio [POST]
++ Request (application/json)
+    + Body
+
+            {
+              "codice": "d9f0b5f4c7e3a1..."
+            }
 
 + Response 410 (application/json)
     + Headers

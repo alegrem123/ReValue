@@ -31,9 +31,9 @@ Questa matrice collega requisiti funzionali, use case, vincoli OCL e implementaz
 | RF12 | Chat | Non letti / badge | `chatController.getNonLettiCount`, `frontend/js/layout.js` | Implementato | Supporto UI per badge |
 | RF13 | Chat | Solo partecipanti | `middleware/requireParticipant.js`, controlli nei controller messaggi | Implementato | Importante per sicurezza applicativa |
 | RF14 | Auth | Solo autenticati sulle route protette | `middleware/authMiddleware.js` | Implementato | JWT via header Authorization |
-| RF17 | QR | Generazione QR | `qrController.generaQR`, `qrRoutes.js` | Implementato | Flusso ufficiale: `/api/qr/genera` |
-| RF27 / UC3 | QR/Scambio | Validazione QR e chiusura scambio | `qrController.validaQR`, `services/scambioQrService.js` | Implementato | Flusso ufficiale: `/api/qr/valida` |
-| UC3 | Scambio | Donatore mostra QR, acquirente valida | `qr-display.js`, `qr-scan.js`, schermate mobile QR | Implementato | `/api/scambi` resta legacy/compatibilita |
+| RF17 | QR | Generazione QR | `qrController.generaQR`, `qrRoutes.js` | Implementato | Flusso ufficiale: `/api/v1/qr/genera` |
+| RF27 / UC3 | QR/Scambio | Validazione QR e chiusura scambio | `qrController.validaQR`, `services/scambioQrService.js` | Implementato | Flusso ufficiale: `/api/v1/qr/valida` |
+| UC3 | Scambio | Donatore mostra QR, acquirente valida | `qr-display.js`, `qr-scan.js`, schermate mobile QR | Implementato | `/api/v1/qr` e il flusso ufficiale; `/api/v1/scambi` e legacy deprecato con `410 Gone` |
 | RF29 | Admin | Sospensione/ban account | `adminController.bannaUtente`, `sospendiUtente` | Implementato | Admin non puo bannare altri admin |
 | RF30 / UC14 | Admin | Dashboard statistiche | `adminController.getStatistiche` | Implementato | Restituisce scambi, utenti, segnalazioni, crediti |
 | RF31 | Admin | Gestione annunci da admin | `forzaStatoAnnuncio`, `rimuoviAnnuncio` | Implementato | Moderazione tramite route admin |
@@ -58,12 +58,12 @@ Questa matrice collega requisiti funzionali, use case, vincoli OCL e implementaz
 | SPID/SSO | Solo progettato | Autenticazione reale implementata con email/password + JWT |
 | Gestore Email | Solo progettato | Nessun servizio email attivo nello Sprint 1 |
 | OpenStreetMap backend | Solo progettato/parziale | Coordinate e geolocalizzazione lato client presenti; nessun modulo backend dedicato |
-| Specifica OpenAPI | Non presente | API documentate manualmente nella D3 |
+| Specifica Apiary/OpenAPI | Presente localmente | Blueprint in `docs/apiary_blueprint.txt`, OpenAPI in `docs/openapi.yaml`; resta da pubblicare esternamente |
 | Test frontend/mobile | Non presenti | Frontend/mobile prototipali, verifica principale sul backend |
 
 ## Osservazioni per la consegna
 
 - La tracciabilita e forte sul dominio core: annunci, prenotazioni, QR, wallet e chat.
-- Il flusso QR ufficiale da raccontare e `/api/qr`; `/api/scambi` va indicato come compatibilita legacy.
+- Il flusso QR ufficiale da raccontare e `/api/v1/qr`; `/api/v1/scambi` va indicato come legacy deprecato con risposta `410 Gone`.
 - I moduli esterni non implementati non devono essere descritti come completati.
 - Nell'ambiente locale del team i test automatici aggiornati risultano: 8 suite passate e 74 test passati.
