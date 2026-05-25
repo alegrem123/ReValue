@@ -19,7 +19,8 @@ export function QRScanScreen({ onSuccess, onBack }) {
     setLoading(false);
     if (!res.ok) { setError(res.error || 'Codice non valido o scaduto.'); return; }
     const crediti = res.data?.creditiAssegnati ?? 50;
-    onSuccess(crediti);
+    const prenotazioneId = res.data?.prenotazione ?? null;
+    onSuccess(crediti, prenotazioneId);
   }
 
   return (
