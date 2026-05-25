@@ -15,6 +15,8 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { QRDisplayScreen } from './src/screens/QRDisplayScreen';
 import { QRScanScreen } from './src/screens/QRScanScreen';
 import { SwapSuccessScreen } from './src/screens/SwapSuccessScreen';
+import { PremiScreen } from './src/screens/PremiScreen';
+import { NotificheScreen } from './src/screens/NotificheScreen';
 import { colors } from './src/theme/colors';
 
 const tabs = [
@@ -22,6 +24,7 @@ const tabs = [
   { key: 'create',   label: 'Crea',     icon: 'add-circle-outline',   iconActive: 'add-circle' },
   { key: 'mine',     label: 'Miei',     icon: 'pricetag-outline',     iconActive: 'pricetag' },
   { key: 'bookings', label: 'Prenot.',  icon: 'calendar-outline',     iconActive: 'calendar' },
+  { key: 'premi',    label: 'Premi',    icon: 'gift-outline',         iconActive: 'gift' },
   { key: 'chat',     label: 'Chat',     icon: 'chatbubble-outline',   iconActive: 'chatbubble' },
   { key: 'profile',  label: 'Profilo',  icon: 'person-circle-outline',iconActive: 'person-circle' },
 ];
@@ -65,7 +68,9 @@ export default function App() {
       return (
         <QRScanScreen
           onBack={closeModal}
-          onSuccess={(crediti) => setModal({ name: 'swapSuccess', params: { crediti } })}
+          onSuccess={(crediti, prenotazioneId) =>
+            setModal({ name: 'swapSuccess', params: { crediti, prenotazioneId } })
+          }
         />
       );
     }
@@ -73,9 +78,13 @@ export default function App() {
       return (
         <SwapSuccessScreen
           crediti={modal.params.crediti}
+          prenotazioneId={modal.params.prenotazioneId}
           onDone={() => { closeModal(); setTab('bookings'); }}
         />
       );
+    }
+    if (modal?.name === 'notifiche') {
+      return <NotificheScreen onBack={closeModal} />;
     }
     if (modal?.name === 'chat') {
       return <ChatScreen conversazioneId={modal.params.id} onBack={closeModal} />;
@@ -108,6 +117,9 @@ export default function App() {
         />
       );
     }
+    if (tab === 'premi') {
+      return <PremiScreen />;
+    }
     if (tab === 'profile') {
       return (
         <ProfileScreen
@@ -117,6 +129,7 @@ export default function App() {
             setTab('catalog');
             setModal(null);
           }}
+          onOpenNotifiche={() => setModal({ name: 'notifiche', params: {} })}
         />
       );
     }
