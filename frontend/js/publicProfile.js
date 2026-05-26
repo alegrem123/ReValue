@@ -14,6 +14,7 @@ const reviewTotal = document.getElementById('review-total');
 const reviewPositive = document.getElementById('review-positive');
 const reviewNegative = document.getElementById('review-negative');
 const reviewsContainer = document.getElementById('public-profile-reviews');
+const btnSegnalaUtente = document.getElementById('btn-segnala-utente');
 
 function getProfileId() {
   return new URLSearchParams(window.location.search).get('id');
@@ -78,6 +79,7 @@ async function loadPublicProfile() {
     profileName.textContent = 'Profilo non disponibile';
     return;
   }
+  if (btnSegnalaUtente) btnSegnalaUtente.href = `segnala.html?userId=${encodeURIComponent(id)}`;
 
   const response = await api.get(`/api/v1/users/${encodeURIComponent(id)}/profilo`, {
     auth: false,
