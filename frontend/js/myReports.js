@@ -1,6 +1,6 @@
 // Auth guard
 (function () {
-  if (!localStorage.getItem('rv_token')) {
+  if (!localStorage.getItem('jwt')) {
     window.location.href = 'login.html';
   }
 })();
@@ -50,9 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ? escHtml(`${s.segnalato.nome} (${s.segnalato.email || ''})`)
       : escHtml(s.segnalato?.email || s.segnalato?._id || '—');
     const data     = fmtDate(s.data || s.createdAt);
-    const stato    = s.stato === 'CHIUSA'
-      ? '<span class="badge bg-secondary">CHIUSA</span>'
-      : '<span class="badge bg-warning text-dark">APERTA</span>';
+    const stato    = '<span class="badge bg-secondary">Inviata</span>';
 
     return `
       <tr>

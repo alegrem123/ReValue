@@ -1,6 +1,6 @@
 // Auth guard
 (function () {
-  if (!localStorage.getItem('rv_token')) {
+  if (!localStorage.getItem('jwt')) {
     window.location.href = 'login.html';
   }
 })();
