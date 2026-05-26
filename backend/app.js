@@ -3,6 +3,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
 const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler');
+const { responseFormatter } = require('./src/middleware/responseFormatter');
 
 const app = express();
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
@@ -18,6 +19,7 @@ app.use(
 );
 app.use(express.json({ limit: requestBodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
+app.use(responseFormatter);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('combined'));
@@ -38,6 +40,8 @@ const adminRoutes = require('./src/routes/adminRoutes');
 const prenotazioniRoutes = require('./src/routes/prenotazioniRoutes');
 const qrRoutes = require('./src/routes/qrRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
+const recensioniRoutes = require('./src/routes/recensioniRoutes');
+const segnalazioniRoutes = require('./src/routes/segnalazioniRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', utentiRoutes);
@@ -49,6 +53,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/prenotazioni', prenotazioniRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/conversazioni', chatRoutes);
+app.use('/api/recensioni', recensioniRoutes);
+app.use('/api/segnalazioni', segnalazioniRoutes);
 
 app.use('/api', notFoundHandler);
 app.use(errorHandler);

@@ -11,6 +11,10 @@ const Prenotazione = require('../../src/models/prenotazioneModel');
 
 let mongoServer;
 
+function payload(res) {
+  return res.body?.data ?? res.body;
+}
+
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const uri = mongoServer.getUri();
@@ -38,9 +42,9 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
         cognome: 'Rossi',
         email: 'donatore@test.com',
         password: 'password123'
-      });
+    });
     expect(resDonatore.statusCode).toBe(201);
-    tokenDonatore = resDonatore.body.token;
+    tokenDonatore = payload(resDonatore).token;
 
     // Registra l'Acquirente
     const resAcquirente = await request(app)
@@ -50,9 +54,9 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
         cognome: 'Verdi',
         email: 'acquirente@test.com',
         password: 'password123'
-      });
+    });
     expect(resAcquirente.statusCode).toBe(201);
-    tokenAcquirente = resAcquirente.body.token;
+    tokenAcquirente = payload(resAcquirente).token;
   });
 
   test('2. Donatore crea un annuncio', async () => {
@@ -75,7 +79,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
       
     expect(resAnnuncio.statusCode).toBe(201);
     // Supponendo che il controller ritorni l'annuncio creato
-    annuncioId = resAnnuncio.body._id || resAnnuncio.body.annuncio?._id;
+    annuncioId = payload(resAnnuncio)._id || payload(resAnnuncio).annuncio?._id;
 
     // Fallback: se la response è strutturata diversamente, leggiamolo dal DB
     if (!annuncioId) {
@@ -94,8 +98,8 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
       });
       
     expect(resPrenota.statusCode).toBe(201);
-    expect(resPrenota.body.prenotazione).toBeDefined();
-    prenotazioneId = resPrenota.body.prenotazione._id;
+    expect(payload(resPrenota).prenotazione).toBeDefined();
+    prenotazioneId = payload(resPrenota).prenotazione._id;
   });
 
   test('4. Donatore genera il QR Code', async () => {
@@ -107,8 +111,8 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
       });
       
     expect(resQR.statusCode).toBe(201);
-    expect(resQR.body.codice).toBeDefined();
-    qrCode = resQR.body.codice;
+    expect(payload(resQR).codice).toBeDefined();
+    qrCode = payload(resQR).codice;
   });
 
   test('5. Acquirente valida il QR Code (Scambio Completato)', async () => {
@@ -120,7 +124,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
       });
       
     expect(resValida.statusCode).toBe(200);
-    expect(resValida.body.message).toBe('Scambio validato con successo');
+    expect(payload(resValida).message).toBe('Scambio validato con successo');
 
     // Verifica su DB che lo stato sia aggiornato
     const prenotaDb = await Prenotazione.findById(prenotazioneId);
@@ -136,13 +140,13 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
       .set('Authorization', `Bearer ${tokenDonatore}`);
     
     expect(resWalletD.statusCode).toBe(200);
-    expect(resWalletD.body.bilancio).toBe(50); // Valore di base assegnato in qrController.js
+    expect(payload(resWalletD).bilancio).toBe(50); // Valore di base assegnato in qrController.js
     
     const resWalletA = await request(app)
       .get('/api/wallet/me')
       .set('Authorization', `Bearer ${tokenAcquirente}`);
       
     expect(resWalletA.statusCode).toBe(200);
-    expect(resWalletA.body.bilancio).toBe(50);
+    expect(payload(resWalletA).bilancio).toBe(50);
   });
 });

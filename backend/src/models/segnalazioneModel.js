@@ -42,7 +42,13 @@ const segnalazioneSchema = new Schema(
   }
 );
 
-// OCL #19: segnalante !== segnalato — enforced a livello di service
+// OCL #19: segnalante !== segnalato
+segnalazioneSchema.pre('validate', function validateDifferentUsers(next) {
+  if (this.segnalante && this.segnalato && this.segnalante.toString() === this.segnalato.toString()) {
+    this.invalidate('segnalato', 'segnalante e segnalato devono essere diversi');
+  }
+  next();
+});
 segnalazioneSchema.index({ segnalato: 1 });
 segnalazioneSchema.index({ annuncio: 1 });
 

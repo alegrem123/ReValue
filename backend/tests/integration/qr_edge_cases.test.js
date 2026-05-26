@@ -26,6 +26,14 @@ const Annuncio = require('../../src/models/annuncioModel');
 
 let mongoServer;
 
+function payload(res) {
+  return res.body?.data ?? res.body;
+}
+
+function message(res) {
+  return res.body?.message ?? res.body?.error;
+}
+
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
 beforeAll(async () => {
@@ -45,7 +53,7 @@ async function registra(email, nome) {
     .post('/api/auth/register')
     .send({ nome, cognome: 'Test', email, password: 'Password123!' });
   expect(res.statusCode).toBe(201);
-  return res.body.token;
+  return payload(res).token;
 }
 
 async function creaAnnuncio(token) {
@@ -66,7 +74,7 @@ async function creaAnnuncio(token) {
       },
     });
   expect(res.statusCode).toBe(201);
-  const id = res.body._id ?? res.body.annuncio?._id;
+  const id = payload(res)._id ?? payload(res).annuncio?._id;
   if (id) return id;
   const doc = await Annuncio.findOne({ titolo: 'Lampada da terra' });
   return doc._id.toString();
@@ -78,7 +86,7 @@ async function prenota(token, annuncioId) {
     .set('Authorization', `Bearer ${token}`)
     .send({ annuncioId });
   expect(res.statusCode).toBe(201);
-  return res.body.prenotazione._id;
+  return payload(res).prenotazione._id;
 }
 
 async function generaQRToken(tokenDonatore, prenotazioneId) {
@@ -87,7 +95,7 @@ async function generaQRToken(tokenDonatore, prenotazioneId) {
     .set('Authorization', `Bearer ${tokenDonatore}`)
     .send({ prenotazioneId });
   expect(res.statusCode).toBe(201);
-  return res.body.codice;
+  return payload(res).codice;
 }
 
 // ── Suite ────────────────────────────────────────────────────────────────────
@@ -119,7 +127,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
         .send({ codice: qrCode });
 
       expect(res.statusCode).toBe(400);
-      expect(res.body.error).toMatch(/utilizzato/i);
+      expect(message(res)).toMatch(/utilizzato/i);
     });
   });
 
@@ -150,7 +158,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
         .send({ prenotazioneId: prenId });
 
       expect(res.statusCode).toBe(409);
-      expect(res.body.error).toMatch(/completato/i);
+      expect(message(res)).toMatch(/completato/i);
     });
   });
 
@@ -179,7 +187,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
         .send({ prenotazioneId: prenId });
 
       expect(res.statusCode).toBe(409);
-      expect(res.body.error).toMatch(/annullata/i);
+      expect(message(res)).toMatch(/annullata/i);
     });
   });
 
@@ -212,7 +220,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
         .send({ codice: tokenDoc.codice });
 
       expect(res.statusCode).toBe(400);
-      expect(res.body.error).toMatch(/scaduto/i);
+      expect(message(res)).toMatch(/scaduto/i);
 
       // Cleanup
       await TokenQR.deleteOne({ _id: tokenDoc._id });
@@ -250,7 +258,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
         .send({ codice: tokenDoc.codice });
 
       expect(res.statusCode).toBe(409);
-      expect(res.body.error).toMatch(/annullata/i);
+      expect(message(res)).toMatch(/annullata/i);
 
       // Cleanup
       await TokenQR.deleteOne({ _id: tokenDoc._id });

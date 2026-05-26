@@ -11,6 +11,10 @@ const Wallet = require('../../src/models/walletModel');
 
 let mongoServer;
 
+function payload(res) {
+  return res.body?.data ?? res.body;
+}
+
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   await mongoose.connect(mongoServer.getUri());
@@ -38,10 +42,10 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
         cognome: 'Gremes',
         email: 'catalog-flow@test.com',
         password: 'password123',
-      });
+    });
 
     expect(register.statusCode).toBe(201);
-    const token = register.body.token;
+    const token = payload(register).token;
     expect(token).toBeDefined();
 
     const dataScadenza = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -63,29 +67,29 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
       });
 
     expect(create.statusCode).toBe(201);
-    expect(create.body.titolo).toBe('Scrivania da studio');
-    expect(create.body.oggetto.foto).toHaveLength(1);
-    const annuncioId = create.body._id;
+    expect(payload(create).titolo).toBe('Scrivania da studio');
+    expect(payload(create).oggetto.foto).toHaveLength(1);
+    const annuncioId = payload(create)._id;
 
     const publicCatalog = await request(app).get('/api/annunci?categoria=Mobili&limit=20');
     expect(publicCatalog.statusCode).toBe(200);
-    expect(publicCatalog.body.data).toHaveLength(1);
-    expect(publicCatalog.body.data[0]._id).toBe(annuncioId);
-    expect(publicCatalog.body.data[0].latitudine).toBeUndefined();
-    expect(publicCatalog.body.data[0].longitudine).toBeUndefined();
+    expect(payload(publicCatalog).data).toHaveLength(1);
+    expect(payload(publicCatalog).data[0]._id).toBe(annuncioId);
+    expect(payload(publicCatalog).data[0].latitudine).toBeUndefined();
+    expect(payload(publicCatalog).data[0].longitudine).toBeUndefined();
 
     const privateCatalog = await request(app)
       .get('/api/annunci?categoria=Mobili&limit=20')
       .set('Authorization', `Bearer ${token}`);
     expect(privateCatalog.statusCode).toBe(200);
-    expect(privateCatalog.body.data[0].latitudine).toBe(46.0667);
-    expect(privateCatalog.body.data[0].longitudine).toBe(11.1211);
+    expect(payload(privateCatalog).data[0].latitudine).toBe(46.0667);
+    expect(payload(privateCatalog).data[0].longitudine).toBe(11.1211);
 
     const detail = await request(app)
       .get(`/api/annunci/${annuncioId}`)
       .set('Authorization', `Bearer ${token}`);
     expect(detail.statusCode).toBe(200);
-    expect(detail.body.oggetto.descrizione).toContain('Scrivania');
+    expect(payload(detail).oggetto.descrizione).toContain('Scrivania');
 
     const updatedDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
     const update = await request(app)
@@ -106,15 +110,15 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
       });
 
     expect(update.statusCode).toBe(200);
-    expect(update.body.titolo).toBe('Scrivania da studio aggiornata');
-    expect(update.body.oggetto.dimensioni).toBe('grande');
+    expect(payload(update).titolo).toBe('Scrivania da studio aggiornata');
+    expect(payload(update).oggetto.dimensioni).toBe('grande');
 
     const mine = await request(app)
       .get('/api/annunci/me')
       .set('Authorization', `Bearer ${token}`);
     expect(mine.statusCode).toBe(200);
-    expect(mine.body).toHaveLength(1);
-    expect(mine.body[0]._id).toBe(annuncioId);
+    expect(payload(mine)).toHaveLength(1);
+    expect(payload(mine)[0]._id).toBe(annuncioId);
 
     const remove = await request(app)
       .delete(`/api/annunci/${annuncioId}`)
@@ -123,6 +127,6 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
 
     const afterDelete = await request(app).get('/api/annunci?categoria=Mobili&limit=20');
     expect(afterDelete.statusCode).toBe(200);
-    expect(afterDelete.body.data).toHaveLength(0);
+    expect(payload(afterDelete).data).toHaveLength(0);
   });
 });

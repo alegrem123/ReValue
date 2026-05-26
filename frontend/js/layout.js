@@ -158,8 +158,9 @@ function updateAuthUI(user) {
     })
       .then((r) => r.json())
       .then((data) => {
+        const payload = data?.ok ? data.data : data;
         const el = document.getElementById('navbar-balance');
-        if (el) el.textContent = data.bilancio ?? 0;
+        if (el) el.textContent = payload?.bilancio ?? 0;
       })
       .catch(() => {});
   } else {
@@ -181,9 +182,10 @@ function updateUnreadBadge() {
   })
     .then((r) => r.json())
     .then((data) => {
+      const payload = data?.ok ? data.data : data;
       const badge = document.getElementById('unread-badge');
       if (!badge) return;
-      const count = data?.data?.nonLetti ?? data?.nonLetti ?? 0;
+      const count = payload?.data?.nonLetti ?? payload?.nonLetti ?? 0;
       if (count > 0) {
         badge.textContent = count > 99 ? '99+' : count;
         badge.classList.remove('d-none');

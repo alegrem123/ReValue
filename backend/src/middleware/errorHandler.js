@@ -13,10 +13,8 @@ function toErrorCode(err, statusCode) {
 function notFoundHandler(req, res) {
   return res.status(404).json({
     ok: false,
-    error: {
-      code: 'NOT_FOUND',
-      message: `Route ${req.method} ${req.originalUrl} non trovata`,
-    },
+    error: 'NOT_FOUND',
+    message: `Route ${req.method} ${req.originalUrl} non trovata`,
   });
 }
 
@@ -27,10 +25,8 @@ function errorHandler(err, _req, res, _next) {
 
   return res.status(safeStatusCode).json({
     ok: false,
-    error: {
-      code: toErrorCode(err, safeStatusCode),
-      message,
-    },
+    error: toErrorCode(err, safeStatusCode),
+    message,
   });
 }
 

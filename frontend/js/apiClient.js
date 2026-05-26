@@ -114,11 +114,16 @@ async function request(
     }
   }
 
-  const error = !res.ok
-    ? data?.error || data?.message || `Errore ${res.status}`
+  const normalized = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'ok')
+    ? data
+    : null;
+  const ok = normalized ? normalized.ok && res.ok : res.ok;
+  const payload = normalized && normalized.ok ? normalized.data : data;
+  const error = !ok
+    ? normalized?.message || data?.message || data?.error || `Errore ${res.status}`
     : null;
 
-  return { ok: res.ok, data, status: res.status, error };
+  return { ok, data: payload, status: res.status, error };
 }
 
 /* ── Shorthand per ogni metodo HTTP ─────────────────────────────────── */

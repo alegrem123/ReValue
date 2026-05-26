@@ -89,11 +89,17 @@ export async function apiRequest(endpoint, { method = 'GET', body, auth = true }
     await clearSession();
   }
 
+  const normalized = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'ok')
+    ? data
+    : null;
+  const ok = normalized ? normalized.ok && response.ok : response.ok;
+  const payload = normalized && normalized.ok ? normalized.data : data;
+
   return {
-    ok: response.ok,
+    ok,
     status: response.status,
-    data,
-    error: response.ok ? null : data?.error || data?.message || `Errore ${response.status}`,
+    data: payload,
+    error: ok ? null : normalized?.message || data?.message || data?.error || `Errore ${response.status}`,
   };
 }
 
