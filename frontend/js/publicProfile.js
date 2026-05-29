@@ -24,6 +24,7 @@ const reviewsContainer = document.getElementById('public-profile-reviews');
 const reviewCountLabel = document.getElementById('review-count-label');
 const loadMoreWrapper = document.getElementById('load-more-wrapper');
 const btnLoadMore = document.getElementById('btn-load-more-reviews');
+const reputationBadge = document.getElementById('reputation-badge');
 
 /** Stato paginazione recensioni */
 let currentPage = 1;
@@ -83,6 +84,49 @@ function renderCounters(riepilogo) {
     reviewCountLabel.textContent = tot;
     reviewCountLabel.classList.remove('d-none');
   }
+
+  // Badge reputazione (RF8)
+  renderReputationBadge(pos, neg);
+}
+
+/**
+ * Calcola e renderizza il badge reputazione nell'header profilo.
+ * Verde se positiva > 80%, giallo se 50–80%, rosso sotto 50%.
+ * Se non ci sono recensioni, mostra badge neutro.
+ *
+ * @param {number} positive
+ * @param {number} negative
+ */
+function renderReputationBadge(positive, negative) {
+  const total = positive + negative;
+
+  let label, icon, colorClass;
+
+  if (total === 0) {
+    label = 'Nessuna recensione';
+    icon = 'bi-dash-circle';
+    colorClass = 'reputation-badge--neutral';
+  } else {
+    const pct = (positive / total) * 100;
+
+    if (pct > 80) {
+      label = `${Math.round(pct)}% positiva`;
+      icon = 'bi-shield-fill-check';
+      colorClass = 'reputation-badge--green';
+    } else if (pct >= 50) {
+      label = `${Math.round(pct)}% positiva`;
+      icon = 'bi-shield-fill-exclamation';
+      colorClass = 'reputation-badge--yellow';
+    } else {
+      label = `${Math.round(pct)}% positiva`;
+      icon = 'bi-shield-fill-x';
+      colorClass = 'reputation-badge--red';
+    }
+  }
+
+  reputationBadge.className = `reputation-badge ${colorClass}`;
+  reputationBadge.innerHTML = `<i class="bi ${icon}"></i> ${label}`;
+  reputationBadge.classList.remove('d-none');
 }
 
 /**
