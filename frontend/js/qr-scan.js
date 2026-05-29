@@ -43,7 +43,8 @@ async function validaCodice(codice) {
   }
 
   const crediti = res.data?.creditiAssegnati ?? res.creditiAssegnati ?? 50;
-  window.location.href = `swap-success.html?crediti=${crediti}`;
+  const prenotazioneId = res.data?.prenotazione ?? '';
+  window.location.href = `swap-success.html?crediti=${crediti}&prenotazioneId=${prenotazioneId}`;
 }
 
 function stopScanner() {
