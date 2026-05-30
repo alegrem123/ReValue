@@ -26,7 +26,7 @@ const API_BASE = (function () {
 
   // Produzione: Render Static Site → backend su servizio separato
   // Aggiornare con URL effettivo dopo deploy backend su Render
-  return 'https://revalue-backend.onrender.com';
+  return 'https://revalue-backend-84jb.onrender.com';
 })();
 
 function frontendViewUrl(fileName) {
