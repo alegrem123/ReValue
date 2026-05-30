@@ -19,6 +19,9 @@ let convId      = null;
 let myId        = null;
 let pollTimer   = null;
 let lastMsgId   = null; // per rilevare nuovi messaggi senza re-render totale
+let searchQuery = '';   // query corrente di ricerca
+let searchIdx   = -1;   // indice risultato attivo
+let searchTotal = 0;    // totale risultati trovati
 
 function getQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -54,7 +57,7 @@ function isMine(msg) {
   return mid?.toString() === myId;
 }
 
-function buildBubble(msg) {
+function buildBubble(msg, highlightQ = '') {
   const mine = isMine(msg);
   const time = formatTime(msg.timestamp);
 
@@ -64,10 +67,14 @@ function buildBubble(msg) {
     tick = `<span class="read-tick ${cls} ms-1"><i class="bi bi-check2-all"></i></span>`;
   }
 
+  const testoHtml = highlightQ
+    ? highlightText(escapeHtml(msg.testo), highlightQ)
+    : escapeHtml(msg.testo);
+
   return `
     <div class="bubble-row ${mine ? 'mine' : 'other'}" data-id="${msg._id}" data-letto="${msg.letto}">
       <div class="bubble ${mine ? 'mine' : 'other'}">
-        <div>${escapeHtml(msg.testo)}</div>
+        <div>${testoHtml}</div>
         <div class="bubble-time">${time}${tick}</div>
       </div>
     </div>`;
@@ -243,6 +250,164 @@ async function sendMessage() {
   }
 }
 
+/* ── Ricerca nei messaggi ─────────────────────────────────────────── */
+
+const searchToggle = document.getElementById('search-toggle');
+const searchBar    = document.getElementById('search-bar');
+const searchInput  = document.getElementById('search-input');
+const searchNav    = document.getElementById('search-nav');
+const searchCount  = document.getElementById('search-count');
+const searchPrev   = document.getElementById('search-prev');
+const searchNext   = document.getElementById('search-next');
+const searchClose  = document.getElementById('search-close');
+
+let searchDebounce = null;
+
+/**
+ * Evidenzia tutte le occorrenze di `query` nel testo già HTML-escaped.
+ * Restituisce HTML con <mark class="search-hl"> attorno ai match.
+ */
+function highlightText(escapedHtml, query) {
+  if (!query) return escapedHtml;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  return escapedHtml.replace(regex, '<mark class="search-hl">$1</mark>');
+}
+
+/**
+ * Esegue la ricerca: fetch GET .../messaggi?q=X&limit=100,
+ * renderizza con highlight, aggiorna contatore e navigazione.
+ */
+async function performSearch(query) {
+  searchQuery = query.trim();
+  searchIdx = -1;
+  searchTotal = 0;
+
+  if (!searchQuery) {
+    // Nessuna query → ripristina vista normale
+    searchNav.style.display = 'none';
+    await loadMessages(true);
+    return;
+  }
+
+  const endpoint = `/api/v1/conversazioni/${convId}/messaggi?q=${encodeURIComponent(searchQuery)}&limit=100`;
+  const res = await api.get(endpoint);
+  if (!res.ok) {
+    showAlert('Errore durante la ricerca.', 'danger');
+    return;
+  }
+
+  const messaggi = res.data?.data?.messaggi || res.data?.messaggi || [];
+
+  if (messaggi.length === 0) {
+    messagesArea.innerHTML = `
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-search display-6 d-block mb-2"></i>
+        Nessun risultato per "<strong>${escapeHtml(searchQuery)}</strong>"
+      </div>`;
+    searchNav.style.display = 'flex';
+    searchCount.textContent = '0 / 0';
+    searchPrev.disabled = true;
+    searchNext.disabled = true;
+    return;
+  }
+
+  // Renderizza messaggi con highlight
+  const groups = groupByDate(messaggi);
+  messagesArea.innerHTML = groups.map((item) => {
+    if (item.type === 'divider') {
+      return `<div class="date-divider">${item.label}</div>`;
+    }
+    return buildBubble(item.msg, searchQuery);
+  }).join('');
+
+  // Conta match totali (mark tags)
+  const marks = messagesArea.querySelectorAll('mark.search-hl');
+  searchTotal = marks.length;
+
+  // Mostra navigazione
+  searchNav.style.display = 'flex';
+  searchPrev.disabled = searchTotal <= 1;
+  searchNext.disabled = searchTotal <= 1;
+
+  // Seleziona primo risultato
+  if (searchTotal > 0) {
+    searchIdx = 0;
+    updateSearchHighlight();
+  } else {
+    searchCount.textContent = '0 / 0';
+  }
+}
+
+/**
+ * Aggiorna il contatore e lo scroll al risultato attivo.
+ */
+function updateSearchHighlight() {
+  const marks = messagesArea.querySelectorAll('mark.search-hl');
+  marks.forEach((m) => m.classList.remove('active'));
+
+  if (marks.length > 0 && searchIdx >= 0 && searchIdx < marks.length) {
+    const active = marks[searchIdx];
+    active.classList.add('active');
+    active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    searchCount.textContent = `${searchIdx + 1} / ${searchTotal}`;
+  }
+}
+
+/**
+ * Naviga al risultato successivo o precedente.
+ */
+function navigateSearch(direction) {
+  if (searchTotal === 0) return;
+  searchIdx = (searchIdx + direction + searchTotal) % searchTotal;
+  updateSearchHighlight();
+}
+
+/**
+ * Chiude la barra di ricerca e ripristina la vista completa.
+ */
+function clearSearch() {
+  searchQuery = '';
+  searchIdx = -1;
+  searchTotal = 0;
+  searchInput.value = '';
+  searchBar.classList.remove('open');
+  searchNav.style.display = 'none';
+  loadMessages(true);
+}
+
+function initSearch() {
+  searchToggle.addEventListener('click', () => {
+    searchBar.classList.toggle('open');
+    if (searchBar.classList.contains('open')) {
+      searchInput.focus();
+    } else {
+      clearSearch();
+    }
+  });
+
+  searchClose.addEventListener('click', clearSearch);
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => performSearch(searchInput.value), 350);
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(searchDebounce);
+      performSearch(searchInput.value);
+    }
+    if (e.key === 'Escape') {
+      clearSearch();
+    }
+  });
+
+  searchPrev.addEventListener('click', () => navigateSearch(-1));
+  searchNext.addEventListener('click', () => navigateSearch(1));
+}
+
 function initInput() {
   msgInput.addEventListener('input', () => {
     sendBtn.disabled = msgInput.value.trim().length === 0;
@@ -279,6 +444,7 @@ async function init() {
     myId = payload.id;
   } catch { /* non critico */ }
 
+  initSearch();
   initInput();
   await Promise.all([loadConversazione(), loadMessages(true)]);
 

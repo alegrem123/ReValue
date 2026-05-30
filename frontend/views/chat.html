@@ -149,6 +149,109 @@
       z-index: 9999;
       min-width: 280px;
     }
+
+    /* ── Search bar ──────────────────────────────────────────── */
+    #search-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      color: #495057;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+      cursor: pointer;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    #search-toggle:hover {
+      background: var(--rv-green-xlight, #E8F5E9);
+      color: var(--rv-green, #2E7D32);
+    }
+
+    .search-bar {
+      display: none;
+      background: #fff;
+      border-bottom: 1px solid #dee2e6;
+      padding: 8px 12px;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+      animation: slideDown 0.2s ease;
+    }
+    .search-bar.open { display: flex; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    #search-input {
+      flex: 1;
+      border: 1px solid #dee2e6;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #search-input:focus {
+      border-color: var(--rv-green, #2E7D32);
+      box-shadow: 0 0 0 2px rgba(46,125,50,.12);
+    }
+
+    .search-nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .search-nav button {
+      background: transparent;
+      border: none;
+      color: #495057;
+      font-size: 1rem;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .search-nav button:hover { background: #e9ecef; }
+    .search-nav button:disabled { opacity: 0.3; cursor: default; }
+
+    #search-count {
+      font-size: 0.78rem;
+      color: #6c757d;
+      white-space: nowrap;
+      min-width: 48px;
+      text-align: center;
+    }
+
+    #search-close {
+      background: transparent;
+      border: none;
+      color: #6c757d;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+    #search-close:hover { background: #e9ecef; color: #dc3545; }
+
+    /* Evidenziazione risultati ricerca */
+    mark.search-hl {
+      background: #FFF176;
+      color: inherit;
+      padding: 1px 2px;
+      border-radius: 3px;
+    }
+    mark.search-hl.active {
+      background: #FFB300;
+      outline: 2px solid #FF8F00;
+    }
   </style>
 </head>
 <body>
@@ -167,6 +270,33 @@
         <div class="fw-bold" id="header-name">Caricamento...</div>
         <div class="text-muted small" id="header-sub"></div>
       </div>
+      <button id="search-toggle" aria-label="Cerca nei messaggi" title="Cerca nei messaggi">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+
+    <!-- Barra di ricerca espandibile -->
+    <div class="search-bar" id="search-bar">
+      <i class="bi bi-search text-muted" style="font-size:.9rem"></i>
+      <input
+        id="search-input"
+        type="search"
+        placeholder="Cerca nei messaggi..."
+        aria-label="Cerca nei messaggi"
+        autocomplete="off"
+      />
+      <div class="search-nav" id="search-nav" style="display:none">
+        <span id="search-count"></span>
+        <button id="search-prev" aria-label="Risultato precedente" disabled>
+          <i class="bi bi-chevron-up"></i>
+        </button>
+        <button id="search-next" aria-label="Risultato successivo" disabled>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+      </div>
+      <button id="search-close" aria-label="Chiudi ricerca" title="Chiudi ricerca">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
     <!-- Area messaggi -->
