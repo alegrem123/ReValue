@@ -463,6 +463,30 @@ paths:
       responses:
         '200':
           description: Utente bannato
+  /api/v1/admin/utenti/{id}/sospendi:
+    post:
+      summary: Sospende temporaneamente un utente
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Utente sospeso
+  /api/v1/admin/utenti/{id}/riabilita:
+    post:
+      summary: Riabilita un utente sospeso
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Utente riabilitato
   /api/v1/admin/annunci/{id}/forza:
     patch:
       summary: Forza lo stato di un annuncio

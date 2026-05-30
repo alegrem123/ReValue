@@ -290,7 +290,7 @@ async function forzaStatoAnnuncio(req, res) {
 
     const annuncio = await Annuncio.findByIdAndUpdate(
       req.params.id,
-      { $set: { stato, isAttivo: true }, $inc: { versione: 1 } },
+      { $set: { stato }, $inc: { versione: 1 } },
       { new: true }
     );
 

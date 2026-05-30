@@ -195,6 +195,46 @@ describe('D3 follow-up', () => {
     });
   });
 
+  test('admin dashboard E2E: sospendi e riabilita utente', async () => {
+    const adminToken = await createAdminToken();
+    await register('admin-e2e-user@test.com', 'AdminE2E');
+
+    const utente = await User.findOne({ email: 'admin-e2e-user@test.com' });
+    expect(utente).toBeDefined();
+    expect(utente.isSospeso).toBe(false);
+
+    const stats = await request(app)
+      .get('/api/v1/admin/statistiche')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(stats.statusCode).toBe(200);
+    expect(payload(stats).totaleUtenti).toBeGreaterThanOrEqual(1);
+
+    const sospendi = await request(app)
+      .post(`/api/v1/admin/utenti/${utente._id}/sospendi`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(sospendi.statusCode).toBe(200);
+
+    const sospeso = await User.findById(utente._id).lean();
+    expect(sospeso.isSospeso).toBe(true);
+
+    const riabilita = await request(app)
+      .post(`/api/v1/admin/utenti/${utente._id}/riabilita`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(riabilita.statusCode).toBe(200);
+
+    const riabilitato = await User.findById(utente._id).lean();
+    expect(riabilitato.isSospeso).toBe(false);
+
+    const users = await request(app)
+      .get('/api/v1/admin/users?search=admin-e2e-user')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(users.statusCode).toBe(200);
+    expect(payload(users).users[0]).toMatchObject({
+      email: 'admin-e2e-user@test.com',
+      isSospeso: false,
+    });
+  });
+
   test('admin dashboard: gestione annunci e segnalazioni', async () => {
     const adminToken = await createAdminToken();
     const tokenD = await register('admin-annuncio-d@test.com', 'DonatoreAdmin');
@@ -250,5 +290,13 @@ describe('D3 follow-up', () => {
 
     const removedAnnuncio = await Annuncio.findById(annuncioId);
     expect(removedAnnuncio.isAttivo).toBe(false);
+
+    const forceRemoved = await request(app)
+      .patch(`/api/v1/admin/annunci/${annuncioId}/forza`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ stato: 'DISPONIBILE' });
+    expect(forceRemoved.statusCode).toBe(200);
+    expect(payload(forceRemoved).annuncio.stato).toBe('DISPONIBILE');
+    expect(payload(forceRemoved).annuncio.isAttivo).toBe(false);
   });
 });
