@@ -8,10 +8,27 @@ const { responseFormatter } = require('./src/middleware/responseFormatter');
 const app = express();
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
 
+function buildCorsOrigin() {
+  if (process.env.NODE_ENV !== 'production') return true;
+
+  const allowedOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('Origin non consentita da CORS'));
+  };
+}
+
 // Middleware
 app.use(
   cors({
-    origin: true,
+    origin: buildCorsOrigin(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -43,18 +60,22 @@ const chatRoutes = require('./src/routes/chatRoutes');
 const recensioniRoutes = require('./src/routes/recensioniRoutes');
 const segnalazioniRoutes = require('./src/routes/segnalazioniRoutes');
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', utentiRoutes);
-app.use('/api/annunci', annunciRoutes);
-app.use('/api/wallet', walletRoutes);
-app.use('/api/scambi', scambiRoutes);
-app.use('/api/messaggi', messaggiRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/prenotazioni', prenotazioniRoutes);
-app.use('/api/qr', qrRoutes);
-app.use('/api/conversazioni', chatRoutes);
-app.use('/api/recensioni', recensioniRoutes);
-app.use('/api/segnalazioni', segnalazioniRoutes);
+const apiV1 = express.Router();
+
+apiV1.use('/auth', authRoutes);
+apiV1.use('/users', utentiRoutes);
+apiV1.use('/annunci', annunciRoutes);
+apiV1.use('/wallet', walletRoutes);
+apiV1.use('/scambi', scambiRoutes);
+apiV1.use('/messaggi', messaggiRoutes);
+apiV1.use('/admin', adminRoutes);
+apiV1.use('/prenotazioni', prenotazioniRoutes);
+apiV1.use('/qr', qrRoutes);
+apiV1.use('/conversazioni', chatRoutes);
+apiV1.use('/recensioni', recensioniRoutes);
+apiV1.use('/segnalazioni', segnalazioniRoutes);
+
+app.use('/api/v1', apiV1);
 
 app.use('/api', notFoundHandler);
 app.use(errorHandler);

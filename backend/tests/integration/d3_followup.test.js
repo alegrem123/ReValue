@@ -7,6 +7,9 @@ process.env.JWT_SECRET = 'test-secret-key-for-integration-tests';
 const app = require('../../app');
 const Annuncio = require('../../src/models/annuncioModel');
 const Segnalazione = require('../../src/models/segnalazioneModel');
+const User = require('../../src/models/userModel');
+const { signToken } = require('../../src/utils/jwt');
+const { hashPassword } = require('../../src/utils/password');
 
 let mongoServer;
 
@@ -30,16 +33,28 @@ function message(res) {
 
 async function register(email, nome) {
   const res = await request(app)
-    .post('/api/auth/register')
+    .post('/api/v1/auth/register')
     .send({ nome, cognome: 'Test', email, password: 'Password123!' });
   expect(res.statusCode).toBe(201);
   expect(res.body.ok).toBe(true);
   return payload(res).token;
 }
 
+async function createAdminToken() {
+  const admin = await User.create({
+    idUtente: new mongoose.Types.ObjectId().toString(),
+    nome: 'Admin',
+    cognome: 'Dashboard',
+    email: `admin-${Date.now()}@test.com`,
+    passwordHash: await hashPassword('Password123!'),
+    ruolo: 'admin',
+  });
+  return signToken({ id: admin._id, ruolo: 'admin', nome: admin.nome });
+}
+
 async function createAnnuncio(token, titolo = 'Oggetto followup') {
   const res = await request(app)
-    .post('/api/annunci')
+    .post('/api/v1/annunci')
     .set('Authorization', `Bearer ${token}`)
     .send({
       titolo,
@@ -59,7 +74,7 @@ async function createAnnuncio(token, titolo = 'Oggetto followup') {
 
 async function prenota(token, annuncioId) {
   const res = await request(app)
-    .post('/api/prenotazioni')
+    .post('/api/v1/prenotazioni')
     .set('Authorization', `Bearer ${token}`)
     .send({ annuncioId });
   expect(res.statusCode).toBe(201);
@@ -68,13 +83,13 @@ async function prenota(token, annuncioId) {
 
 async function completaScambio(tokenDonatore, tokenAcquirente, prenotazioneId) {
   const qr = await request(app)
-    .post('/api/qr/genera')
+    .post('/api/v1/qr/genera')
     .set('Authorization', `Bearer ${tokenDonatore}`)
     .send({ prenotazioneId });
   expect(qr.statusCode).toBe(201);
 
   const validazione = await request(app)
-    .post('/api/qr/valida')
+    .post('/api/v1/qr/valida')
     .set('Authorization', `Bearer ${tokenAcquirente}`)
     .send({ codice: payload(qr).codice });
   expect(validazione.statusCode).toBe(200);
@@ -82,12 +97,12 @@ async function completaScambio(tokenDonatore, tokenAcquirente, prenotazioneId) {
 
 describe('D3 follow-up', () => {
   test('risposte API uniformi su successo ed errore', async () => {
-    const ok = await request(app).get('/api/annunci?limit=1');
+    const ok = await request(app).get('/api/v1/annunci?limit=1');
     expect(ok.statusCode).toBe(200);
     expect(ok.body).toMatchObject({ ok: true });
     expect(ok.body.data).toBeDefined();
 
-    const ko = await request(app).get('/api/wallet/saldo');
+    const ko = await request(app).get('/api/v1/wallet/saldo');
     expect(ko.statusCode).toBe(401);
     expect(ko.body).toMatchObject({
       ok: false,
@@ -103,7 +118,7 @@ describe('D3 follow-up', () => {
     const prenotazioneId = await prenota(tokenA, annuncioId);
 
     const prima = await request(app)
-      .post('/api/recensioni')
+      .post('/api/v1/recensioni')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({ prenotazioneId, positiva: true, testo: 'Troppo presto' });
     expect(prima.statusCode).toBe(409);
@@ -112,14 +127,14 @@ describe('D3 follow-up', () => {
     await completaScambio(tokenD, tokenA, prenotazioneId);
 
     const recensione = await request(app)
-      .post('/api/recensioni')
+      .post('/api/v1/recensioni')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({ prenotazioneId, positiva: true, testo: 'Tutto ok' });
     expect(recensione.statusCode).toBe(201);
     expect(payload(recensione).positiva).toBe(true);
 
     const annuncio = await Annuncio.findById(annuncioId);
-    const profilo = await request(app).get(`/api/users/${annuncio.donatore}/profilo`);
+    const profilo = await request(app).get(`/api/v1/users/${annuncio.donatore}/profilo`);
     expect(profilo.statusCode).toBe(200);
     expect(payload(profilo).recensioni.positive).toBe(1);
   });
@@ -131,14 +146,14 @@ describe('D3 follow-up', () => {
     const annuncio = await Annuncio.findById(annuncioId);
 
     const self = await request(app)
-      .post('/api/segnalazioni')
+      .post('/api/v1/segnalazioni')
       .set('Authorization', `Bearer ${tokenD}`)
       .send({ segnalatoId: annuncio.donatore, motivo: 'self report' });
     expect(self.statusCode).toBe(409);
     expect(message(self)).toMatch(/te stesso/i);
 
     const report = await request(app)
-      .post('/api/segnalazioni')
+      .post('/api/v1/segnalazioni')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({ annuncioId, tipo: 'inappropriato', motivo: 'Foto non coerenti' });
     expect(report.statusCode).toBe(201);
@@ -147,9 +162,36 @@ describe('D3 follow-up', () => {
     await expect(Segnalazione.countDocuments()).resolves.toBe(1);
   });
 
-  test('endpoint legacy /api/scambi espone header di deprecazione', async () => {
-    const res = await request(app).get('/api/scambi/non-valid-id/qr');
+  test('endpoint legacy /api/v1/scambi espone header di deprecazione', async () => {
+    const res = await request(app).get('/api/v1/scambi/non-valid-id/qr');
+    expect(res.statusCode).toBe(410);
     expect(res.headers.deprecation).toBe('true');
     expect(res.headers.sunset).toBeDefined();
+  });
+
+  test('admin dashboard: statistiche e lista utenti su /api/v1', async () => {
+    const adminToken = await createAdminToken();
+    await register('admin-list-user@test.com', 'Lista');
+
+    const stats = await request(app)
+      .get('/api/v1/admin/statistiche')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(stats.statusCode).toBe(200);
+    expect(payload(stats)).toEqual(expect.objectContaining({
+      scambiMensili: expect.any(Number),
+      totaleUtenti: expect.any(Number),
+      totaleCrediti: expect.any(Number),
+      storicoMensile: expect.any(Array),
+    }));
+
+    const users = await request(app)
+      .get('/api/v1/admin/users?search=admin-list-user')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(users.statusCode).toBe(200);
+    expect(payload(users).users).toHaveLength(1);
+    expect(payload(users).users[0]).toMatchObject({
+      email: 'admin-list-user@test.com',
+      ruolo: 'user',
+    });
   });
 });

@@ -36,7 +36,7 @@ beforeEach(async () => {
 describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
   test('crea annuncio con foto/base64 e posizione, lo vede nel catalogo, lo modifica e lo elimina', async () => {
     const register = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .send({
         nome: 'Alessandro',
         cognome: 'Gremes',
@@ -50,7 +50,7 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
 
     const dataScadenza = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const create = await request(app)
-      .post('/api/annunci')
+      .post('/api/v1/annunci')
       .set('Authorization', `Bearer ${token}`)
       .send({
         titolo: 'Scrivania da studio',
@@ -71,7 +71,7 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
     expect(payload(create).oggetto.foto).toHaveLength(1);
     const annuncioId = payload(create)._id;
 
-    const publicCatalog = await request(app).get('/api/annunci?categoria=Mobili&limit=20');
+    const publicCatalog = await request(app).get('/api/v1/annunci?categoria=Mobili&limit=20');
     expect(publicCatalog.statusCode).toBe(200);
     expect(payload(publicCatalog).data).toHaveLength(1);
     expect(payload(publicCatalog).data[0]._id).toBe(annuncioId);
@@ -79,21 +79,21 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
     expect(payload(publicCatalog).data[0].longitudine).toBeUndefined();
 
     const privateCatalog = await request(app)
-      .get('/api/annunci?categoria=Mobili&limit=20')
+      .get('/api/v1/annunci?categoria=Mobili&limit=20')
       .set('Authorization', `Bearer ${token}`);
     expect(privateCatalog.statusCode).toBe(200);
     expect(payload(privateCatalog).data[0].latitudine).toBe(46.0667);
     expect(payload(privateCatalog).data[0].longitudine).toBe(11.1211);
 
     const detail = await request(app)
-      .get(`/api/annunci/${annuncioId}`)
+      .get(`/api/v1/annunci/${annuncioId}`)
       .set('Authorization', `Bearer ${token}`);
     expect(detail.statusCode).toBe(200);
     expect(payload(detail).oggetto.descrizione).toContain('Scrivania');
 
     const updatedDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
     const update = await request(app)
-      .put(`/api/annunci/${annuncioId}`)
+      .put(`/api/v1/annunci/${annuncioId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({
         titolo: 'Scrivania da studio aggiornata',
@@ -114,18 +114,18 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
     expect(payload(update).oggetto.dimensioni).toBe('grande');
 
     const mine = await request(app)
-      .get('/api/annunci/me')
+      .get('/api/v1/annunci/me')
       .set('Authorization', `Bearer ${token}`);
     expect(mine.statusCode).toBe(200);
     expect(payload(mine)).toHaveLength(1);
     expect(payload(mine)[0]._id).toBe(annuncioId);
 
     const remove = await request(app)
-      .delete(`/api/annunci/${annuncioId}`)
+      .delete(`/api/v1/annunci/${annuncioId}`)
       .set('Authorization', `Bearer ${token}`);
     expect(remove.statusCode).toBe(200);
 
-    const afterDelete = await request(app).get('/api/annunci?categoria=Mobili&limit=20');
+    const afterDelete = await request(app).get('/api/v1/annunci?categoria=Mobili&limit=20');
     expect(afterDelete.statusCode).toBe(200);
     expect(payload(afterDelete).data).toHaveLength(0);
   });

@@ -23,6 +23,7 @@ describe('mobile smoke', () => {
 
   it('il client mobile normalizza le risposte API standard', () => {
     const source = readFileSync(join(root, 'src/api/client.js'), 'utf8');
+    assert.match(source, /API_PREFIX = '\/api\/v1'/);
     assert.match(source, /Object\.prototype\.hasOwnProperty\.call\(data, 'ok'\)/);
     assert.match(source, /normalized\?\.message/);
   });

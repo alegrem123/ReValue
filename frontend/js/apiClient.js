@@ -19,6 +19,15 @@ const API_BASE = (function () {
   return '';
 })();
 
+const API_PREFIX = '/api/v1';
+
+function normalizeEndpoint(endpoint) {
+  if (endpoint.startsWith(`${API_PREFIX}/`)) return endpoint;
+  if (endpoint === '/api') return API_PREFIX;
+  if (endpoint.startsWith('/api/')) return `${API_PREFIX}${endpoint.slice(4)}`;
+  return endpoint;
+}
+
 function frontendViewUrl(fileName) {
   return window.location.pathname.includes('/views/')
     ? fileName
@@ -89,7 +98,7 @@ async function request(
 
   let res;
   try {
-    res = await fetch(API_BASE + endpoint, init);
+    res = await fetch(API_BASE + normalizeEndpoint(endpoint), init);
   } catch (networkErr) {
     return {
       ok: false,

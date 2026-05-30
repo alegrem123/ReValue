@@ -107,7 +107,7 @@ components:
         motivo:
           type: string
 paths:
-  /api/auth/register:
+  /api/v1/auth/register:
     post:
       security: []
       summary: Registra un utente e crea il wallet
@@ -120,7 +120,7 @@ paths:
       responses:
         '201':
           description: Utente registrato
-  /api/auth/login:
+  /api/v1/auth/login:
     post:
       security: []
       summary: Autentica un utente
@@ -133,7 +133,7 @@ paths:
       responses:
         '200':
           description: JWT e profilo utente
-  /api/users/me:
+  /api/v1/users/me:
     get:
       summary: Profilo dell'utente autenticato
       responses:
@@ -144,7 +144,7 @@ paths:
       responses:
         '200':
           description: Profilo aggiornato
-  /api/users/{id}/profilo:
+  /api/v1/users/{id}/profilo:
     get:
       security: []
       summary: Profilo pubblico con riepilogo recensioni
@@ -157,7 +157,7 @@ paths:
       responses:
         '200':
           description: Profilo pubblico
-  /api/annunci:
+  /api/v1/annunci:
     get:
       security: []
       summary: Catalogo pubblico annunci con filtri
@@ -192,13 +192,13 @@ paths:
       responses:
         '201':
           description: Annuncio creato
-  /api/annunci/me:
+  /api/v1/annunci/me:
     get:
       summary: Annunci dell'utente autenticato
       responses:
         '200':
           description: Lista annunci personali
-  /api/annunci/{id}:
+  /api/v1/annunci/{id}:
     get:
       security: []
       summary: Dettaglio annuncio
@@ -233,19 +233,19 @@ paths:
       responses:
         '200':
           description: Annuncio rimosso
-  /api/prenotazioni:
+  /api/v1/prenotazioni:
     post:
       summary: Prenota un annuncio disponibile
       responses:
         '201':
           description: Prenotazione creata
-  /api/prenotazioni/me:
+  /api/v1/prenotazioni/me:
     get:
       summary: Prenotazioni dell'utente autenticato
       responses:
         '200':
           description: Lista prenotazioni
-  /api/prenotazioni/{id}:
+  /api/v1/prenotazioni/{id}:
     get:
       summary: Dettaglio prenotazione
       parameters:
@@ -268,7 +268,7 @@ paths:
       responses:
         '200':
           description: Prenotazione annullata
-  /api/prenotazioni/{id}/no-show:
+  /api/v1/prenotazioni/{id}/no-show:
     post:
       summary: Segnala mancato ritiro
       parameters:
@@ -280,7 +280,7 @@ paths:
       responses:
         '200':
           description: Mancato ritiro registrato
-  /api/prenotazioni/{id}/disdici:
+  /api/v1/prenotazioni/{id}/disdici:
     post:
       summary: Disdice il ritiro lato donatore
       parameters:
@@ -292,43 +292,43 @@ paths:
       responses:
         '200':
           description: Ritiro disdetto
-  /api/qr/genera:
+  /api/v1/qr/genera:
     post:
       summary: Genera QR ufficiale per prenotazione
       responses:
         '201':
           description: Token QR
-  /api/qr/valida:
+  /api/v1/qr/valida:
     post:
       summary: Valida QR ufficiale e completa lo scambio
       responses:
         '200':
           description: Scambio completato
-  /api/wallet/me:
+  /api/v1/wallet/me:
     get:
       summary: Saldo e storico wallet
       responses:
         '200':
           description: Wallet
-  /api/wallet/saldo:
+  /api/v1/wallet/saldo:
     get:
       summary: Solo saldo wallet
       responses:
         '200':
           description: Saldo
-  /api/wallet/storico:
+  /api/v1/wallet/storico:
     get:
       summary: Storico wallet paginato
       responses:
         '200':
           description: Storico
-  /api/conversazioni/me:
+  /api/v1/conversazioni/me:
     get:
       summary: Conversazioni dell'utente
       responses:
         '200':
           description: Lista conversazioni
-  /api/conversazioni/{id}/messaggi:
+  /api/v1/conversazioni/{id}/messaggi:
     get:
       summary: Storico messaggi
       parameters:
@@ -351,7 +351,7 @@ paths:
       responses:
         '201':
           description: Messaggio inviato
-  /api/recensioni:
+  /api/v1/recensioni:
     post:
       summary: Lascia una recensione dopo uno scambio completato
       requestBody:
@@ -363,7 +363,7 @@ paths:
       responses:
         '201':
           description: Recensione creata
-  /api/segnalazioni:
+  /api/v1/segnalazioni:
     post:
       summary: Segnala un utente o un annuncio
       requestBody:
@@ -375,19 +375,40 @@ paths:
       responses:
         '201':
           description: Segnalazione creata
-  /api/admin/statistiche:
+  /api/v1/admin/statistiche:
     get:
       summary: Statistiche admin
       responses:
         '200':
           description: Statistiche aggregate
-  /api/admin/segnalazioni:
+  /api/v1/admin/users:
+    get:
+      summary: Lista utenti per dashboard admin
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista utenti paginata
+  /api/v1/admin/segnalazioni:
     get:
       summary: Lista segnalazioni admin
       responses:
         '200':
           description: Segnalazioni
-  /api/admin/utenti/{id}/ban:
+  /api/v1/admin/utenti/{id}/ban:
     post:
       summary: Banna utente
       parameters:
@@ -399,10 +420,10 @@ paths:
       responses:
         '200':
           description: Utente bannato
-  /api/scambi/{prenotazioneId}/qr:
+  /api/v1/scambi/{prenotazioneId}/qr:
     get:
       deprecated: true
-      summary: Endpoint legacy sostituito da /api/qr/genera
+      summary: Endpoint legacy sostituito da /api/v1/qr/genera
       parameters:
         - in: path
           name: prenotazioneId
@@ -410,12 +431,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Token QR legacy
-  /api/scambi/{prenotazioneId}/valida:
+        '410':
+          description: Endpoint legacy deprecato
+  /api/v1/scambi/{prenotazioneId}/valida:
     post:
       deprecated: true
-      summary: Endpoint legacy sostituito da /api/qr/valida
+      summary: Endpoint legacy sostituito da /api/v1/qr/valida
       parameters:
         - in: path
           name: prenotazioneId
@@ -423,5 +444,5 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Scambio completato via endpoint legacy
+        '410':
+          description: Endpoint legacy deprecato

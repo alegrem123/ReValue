@@ -6,6 +6,14 @@ const DEFAULT_API_BASE_URL = 'http://127.0.0.1:3000';
 
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
+const API_PREFIX = '/api/v1';
+
+function normalizeEndpoint(endpoint) {
+  if (endpoint.startsWith(`${API_PREFIX}/`)) return endpoint;
+  if (endpoint === '/api') return API_PREFIX;
+  if (endpoint.startsWith('/api/')) return `${API_PREFIX}${endpoint.slice(4)}`;
+  return endpoint;
+}
 
 export async function getToken() {
   return AsyncStorage.getItem(TOKEN_KEY);
@@ -61,7 +69,7 @@ export async function apiRequest(endpoint, { method = 'GET', body, auth = true }
 
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
       method,
       headers,
       body: hasBody ? JSON.stringify(body) : undefined,

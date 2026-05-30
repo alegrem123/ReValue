@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { authenticate, requireAdmin } = require('../middleware/authMiddleware');
 const {
   getStatistiche,
+  listUsers,
   getSegnalazioni,
   bannaUtente,
   sospendiUtente,
@@ -17,6 +18,9 @@ router.use(authenticate, requireAdmin);
 
 // RF30/UC14: dashboard statistiche
 router.get('/statistiche', getStatistiche);
+
+// RF29: lista utenti per dashboard admin
+router.get('/users', listUsers);
 
 // UC13: gestione segnalazioni
 router.get('/segnalazioni', getSegnalazioni);

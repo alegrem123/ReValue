@@ -17,11 +17,25 @@ async function getStatistiche(req, res) {
     inizioMese.setDate(1);
     inizioMese.setHours(0, 0, 0, 0);
 
-    const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets] = await Promise.all([
+    const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets, storicoMensile] = await Promise.all([
       Prenotazione.countDocuments({ stato: 'COMPLETATA', dataPrenotazione: { $gte: inizioMese } }),
       User.countDocuments({ ruolo: 'user' }),
       Segnalazione.countDocuments(),
       Wallet.aggregate([{ $group: { _id: null, totaleCrediti: { $sum: '$bilancio' } } }]),
+      Prenotazione.aggregate([
+        { $match: { stato: 'COMPLETATA' } },
+        {
+          $group: {
+            _id: {
+              anno: { $year: '$dataPrenotazione' },
+              mese: { $month: '$dataPrenotazione' },
+            },
+            totale: { $sum: 1 },
+          },
+        },
+        { $sort: { '_id.anno': 1, '_id.mese': 1 } },
+        { $limit: 12 },
+      ]),
     ]);
 
     const totaleCrediti = wallets[0]?.totaleCrediti ?? 0;
@@ -31,6 +45,57 @@ async function getStatistiche(req, res) {
       totaleUtenti,
       segnalazioniPendenti,
       totaleCrediti,
+      storicoMensile: storicoMensile.map((item) => ({
+        anno: item._id.anno,
+        mese: item._id.mese,
+        totale: item.totale,
+      })),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * GET /api/v1/admin/users
+ * Lista utenti paginata con search per nome/email (RF29).
+ */
+async function listUsers(req, res) {
+  try {
+    const { search = '', page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = { ruolo: 'user' };
+    const normalizedSearch = String(search).trim();
+    if (normalizedSearch) {
+      const pattern = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [
+        { email: pattern },
+        { nome: pattern },
+        { cognome: pattern },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .select('idUtente nome cognome email malusCount isSospeso bannato ruolo createdAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      User.countDocuments(query),
+    ]);
+
+    return res.status(200).json({
+      users,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -181,6 +246,7 @@ async function rimuoviAnnuncio(req, res) {
 
 module.exports = {
   getStatistiche,
+  listUsers,
   getSegnalazioni,
   bannaUtente,
   sospendiUtente,

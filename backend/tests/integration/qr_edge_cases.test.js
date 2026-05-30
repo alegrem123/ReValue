@@ -50,7 +50,7 @@ afterAll(async () => {
 
 async function registra(email, nome) {
   const res = await request(app)
-    .post('/api/auth/register')
+    .post('/api/v1/auth/register')
     .send({ nome, cognome: 'Test', email, password: 'Password123!' });
   expect(res.statusCode).toBe(201);
   return payload(res).token;
@@ -59,7 +59,7 @@ async function registra(email, nome) {
 async function creaAnnuncio(token) {
   const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const res = await request(app)
-    .post('/api/annunci')
+    .post('/api/v1/annunci')
     .set('Authorization', `Bearer ${token}`)
     .send({
       titolo: 'Lampada da terra',
@@ -82,7 +82,7 @@ async function creaAnnuncio(token) {
 
 async function prenota(token, annuncioId) {
   const res = await request(app)
-    .post('/api/prenotazioni')
+    .post('/api/v1/prenotazioni')
     .set('Authorization', `Bearer ${token}`)
     .send({ annuncioId });
   expect(res.statusCode).toBe(201);
@@ -91,7 +91,7 @@ async function prenota(token, annuncioId) {
 
 async function generaQRToken(tokenDonatore, prenotazioneId) {
   const res = await request(app)
-    .post('/api/qr/genera')
+    .post('/api/v1/qr/genera')
     .set('Authorization', `Bearer ${tokenDonatore}`)
     .send({ prenotazioneId });
   expect(res.statusCode).toBe(201);
@@ -114,7 +114,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
       qrCode = await generaQRToken(tokenD, prenId);
 
       const res = await request(app)
-        .post('/api/qr/valida')
+        .post('/api/v1/qr/valida')
         .set('Authorization', `Bearer ${tokenA}`)
         .send({ codice: qrCode });
       expect(res.statusCode).toBe(200);
@@ -122,7 +122,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
 
     test('ritorna 400 con messaggio "gia utilizzato"', async () => {
       const res = await request(app)
-        .post('/api/qr/valida')
+        .post('/api/v1/qr/valida')
         .set('Authorization', `Bearer ${tokenA}`)
         .send({ codice: qrCode });
 
@@ -145,7 +145,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
 
       // Completa lo scambio tramite validazione QR
       const res = await request(app)
-        .post('/api/qr/valida')
+        .post('/api/v1/qr/valida')
         .set('Authorization', `Bearer ${tokenA}`)
         .send({ codice: qrCode });
       expect(res.statusCode).toBe(200);
@@ -153,7 +153,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
 
     test('ritorna 409 con messaggio "completato" (non 404)', async () => {
       const res = await request(app)
-        .post('/api/qr/genera')
+        .post('/api/v1/qr/genera')
         .set('Authorization', `Bearer ${tokenD}`)
         .send({ prenotazioneId: prenId });
 
@@ -175,14 +175,14 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
 
       // L'acquirente annulla entro 15 minuti
       const res = await request(app)
-        .delete(`/api/prenotazioni/${prenId}`)
+        .delete(`/api/v1/prenotazioni/${prenId}`)
         .set('Authorization', `Bearer ${tokenA}`);
       expect(res.statusCode).toBe(200);
     });
 
     test('ritorna 409 con messaggio "annullata" (non 404)', async () => {
       const res = await request(app)
-        .post('/api/qr/genera')
+        .post('/api/v1/qr/genera')
         .set('Authorization', `Bearer ${tokenD}`)
         .send({ prenotazioneId: prenId });
 
@@ -215,7 +215,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
       });
 
       const res = await request(app)
-        .post('/api/qr/valida')
+        .post('/api/v1/qr/valida')
         .set('Authorization', `Bearer ${tokenA}`)
         .send({ codice: tokenDoc.codice });
 
@@ -253,7 +253,7 @@ describe('QR Edge Cases – test di regressione bug fix', () => {
       await Prenotazione.findByIdAndUpdate(prenId, { stato: 'ANNULLATA' });
 
       const res = await request(app)
-        .post('/api/qr/valida')
+        .post('/api/v1/qr/valida')
         .set('Authorization', `Bearer ${tokenA}`)
         .send({ codice: tokenDoc.codice });
 
