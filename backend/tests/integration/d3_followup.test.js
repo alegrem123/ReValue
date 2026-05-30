@@ -194,4 +194,61 @@ describe('D3 follow-up', () => {
       ruolo: 'user',
     });
   });
+
+  test('admin dashboard: gestione annunci e segnalazioni', async () => {
+    const adminToken = await createAdminToken();
+    const tokenD = await register('admin-annuncio-d@test.com', 'DonatoreAdmin');
+    const tokenA = await register('admin-annuncio-a@test.com', 'SegnalanteAdmin');
+    const annuncioId = await createAnnuncio(tokenD, 'Annuncio admin');
+
+    const annunci = await request(app)
+      .get('/api/v1/admin/annunci?stato=DISPONIBILE')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(annunci.statusCode).toBe(200);
+    expect(payload(annunci).annunci.some((item) => item._id === annuncioId)).toBe(true);
+
+    const forza = await request(app)
+      .patch(`/api/v1/admin/annunci/${annuncioId}/forza`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ stato: 'SCADUTO' });
+    expect(forza.statusCode).toBe(200);
+    expect(payload(forza).annuncio.stato).toBe('SCADUTO');
+
+    const report = await request(app)
+      .post('/api/v1/segnalazioni')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ annuncioId, tipo: 'altro', motivo: 'Contenuto non corretto' });
+    expect(report.statusCode).toBe(201);
+
+    const reports = await request(app)
+      .get('/api/v1/admin/segnalazioni')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(reports.statusCode).toBe(200);
+    const listedReport = payload(reports).find((item) => item._id === payload(report)._id);
+    expect(listedReport).toMatchObject({
+      motivo: 'Contenuto non corretto',
+      segnalante: { email: 'admin-annuncio-a@test.com' },
+      segnalato: { email: 'admin-annuncio-d@test.com' },
+    });
+
+    const malus = await request(app)
+      .post(`/api/v1/admin/segnalazioni/${payload(report)._id}/malus`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(malus.statusCode).toBe(200);
+    expect(payload(malus).utente.malusCount).toBe(1);
+    expect(payload(malus).segnalazione.malusApplicato).toBe(true);
+
+    const duplicateMalus = await request(app)
+      .post(`/api/v1/admin/segnalazioni/${payload(report)._id}/malus`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(duplicateMalus.statusCode).toBe(409);
+
+    const remove = await request(app)
+      .delete(`/api/v1/admin/annunci/${annuncioId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(remove.statusCode).toBe(200);
+
+    const removedAnnuncio = await Annuncio.findById(annuncioId);
+    expect(removedAnnuncio.isAttivo).toBe(false);
+  });
 });

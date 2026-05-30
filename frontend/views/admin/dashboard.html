@@ -102,11 +102,59 @@
         </section>
 
         <section class="tab-pane fade" id="annunci-panel" role="tabpanel" aria-labelledby="annunci-tab">
-          <div class="bg-white border rounded p-4 text-muted">Tab annunci pianificata per il 28 maggio.</div>
+          <div class="bg-white border rounded p-3 mb-3">
+            <form id="annunci-filter-form" class="row g-2 align-items-end">
+              <div class="col-md-8">
+                <label for="annunci-stato-filter" class="form-label">Stato</label>
+                <select id="annunci-stato-filter" class="form-select">
+                  <option value="">Tutti</option>
+                  <option value="DISPONIBILE">Disponibile</option>
+                  <option value="PRENOTATO">Prenotato</option>
+                  <option value="SCADUTO">Scaduto</option>
+                  <option value="RITIRATO">Ritirato</option>
+                </select>
+              </div>
+              <div class="col-md-4 d-grid">
+                <button class="btn btn-success" type="submit">
+                  <i class="bi bi-arrow-clockwise me-1"></i>Aggiorna
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="table-responsive bg-white border rounded">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Annuncio</th>
+                  <th>Donatore</th>
+                  <th>Stato</th>
+                  <th>Scadenza</th>
+                  <th>Attivo</th>
+                  <th class="text-end">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="annunci-table-body"></tbody>
+            </table>
+          </div>
+          <div id="annunci-pagination" class="d-flex justify-content-between align-items-center mt-3"></div>
         </section>
 
         <section class="tab-pane fade" id="segnalazioni-panel" role="tabpanel" aria-labelledby="segnalazioni-tab">
-          <div class="bg-white border rounded p-4 text-muted">Tab segnalazioni pianificata per il 28 maggio.</div>
+          <div class="table-responsive bg-white border rounded">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Segnalante</th>
+                  <th>Segnalato</th>
+                  <th>Motivo</th>
+                  <th>Annuncio</th>
+                  <th>Data</th>
+                  <th class="text-end">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="segnalazioni-table-body"></tbody>
+            </table>
+          </div>
         </section>
       </div>
     </main>
@@ -127,10 +175,44 @@
       </div>
     </div>
 
+    <div class="modal fade" id="confirm-annuncio-modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="confirm-annuncio-title">Conferma</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+          </div>
+          <div class="modal-body" id="confirm-annuncio-body"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+            <button type="button" class="btn btn-danger" id="confirm-annuncio-action">Conferma</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="confirm-segnalazione-modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="confirm-segnalazione-title">Conferma</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+          </div>
+          <div class="modal-body" id="confirm-segnalazione-body"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+            <button type="button" class="btn btn-danger" id="confirm-segnalazione-action">Conferma</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="../../js/admin/shared.js"></script>
     <script src="../../js/admin/stats.js"></script>
     <script src="../../js/admin/users.js"></script>
+    <script src="../../js/admin/annunci.js"></script>
+    <script src="../../js/admin/segnalazioni.js"></script>
   </body>
 </html>

@@ -106,6 +106,13 @@ components:
           enum: [descrizione, inappropriato, altro]
         motivo:
           type: string
+    ForceAnnuncioStatoBody:
+      type: object
+      required: [stato]
+      properties:
+        stato:
+          type: string
+          enum: [DISPONIBILE, SCADUTO, RITIRATO]
 paths:
   /api/v1/auth/register:
     post:
@@ -402,12 +409,48 @@ paths:
       responses:
         '200':
           description: Lista utenti paginata
+  /api/v1/admin/annunci:
+    get:
+      summary: Lista annunci per dashboard admin
+      parameters:
+        - in: query
+          name: stato
+          schema:
+            type: string
+            enum: [DISPONIBILE, PRENOTATO, RITIRATO, SCADUTO]
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista annunci paginata
   /api/v1/admin/segnalazioni:
     get:
       summary: Lista segnalazioni admin
       responses:
         '200':
           description: Segnalazioni
+  /api/v1/admin/segnalazioni/{id}/malus:
+    post:
+      summary: Applica un malus all'utente segnalato
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Malus applicato
+        '409':
+          description: Malus gia applicato
   /api/v1/admin/utenti/{id}/ban:
     post:
       summary: Banna utente
@@ -420,6 +463,36 @@ paths:
       responses:
         '200':
           description: Utente bannato
+  /api/v1/admin/annunci/{id}/forza:
+    patch:
+      summary: Forza lo stato di un annuncio
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForceAnnuncioStatoBody'
+      responses:
+        '200':
+          description: Stato annuncio aggiornato
+  /api/v1/admin/annunci/{id}:
+    delete:
+      summary: Rimuove logicamente un annuncio
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Annuncio rimosso
   /api/v1/scambi/{prenotazioneId}/qr:
     get:
       deprecated: true

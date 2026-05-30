@@ -36,6 +36,10 @@ const segnalazioneSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    malusApplicato: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     versionKey: false,

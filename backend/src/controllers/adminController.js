@@ -103,6 +103,46 @@ async function listUsers(req, res) {
 }
 
 /**
+ * GET /api/v1/admin/annunci
+ * Lista annunci per dashboard admin con paginazione e filtro stato (RF31).
+ */
+async function listAnnunci(req, res) {
+  try {
+    const { stato, page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = {};
+    if (stato && ['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
+      query.stato = stato;
+    }
+
+    const [annunci, total] = await Promise.all([
+      Annuncio.find(query)
+        .populate('donatore', 'nome cognome email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Annuncio.countDocuments(query),
+    ]);
+
+    return res.status(200).json({
+      annunci,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+/**
  * GET /api/admin/segnalazioni
  * Lista tutte le segnalazioni ricevute (UC13).
  *
@@ -118,6 +158,40 @@ async function getSegnalazioni(req, res) {
       .populate('annuncio', 'titolo stato');
 
     return res.status(200).json(segnalazioni);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * POST /api/v1/admin/segnalazioni/:id/malus
+ * Applica un malus all'utente segnalato, una sola volta per segnalazione (RF29).
+ */
+async function applicaMalusSegnalazione(req, res) {
+  try {
+    const segnalazione = await Segnalazione.findById(req.params.id);
+    if (!segnalazione) return res.status(404).json({ error: 'Segnalazione non trovata' });
+
+    if (segnalazione.malusApplicato) {
+      return res.status(409).json({ error: 'Malus già applicato per questa segnalazione' });
+    }
+
+    const utente = await User.findByIdAndUpdate(
+      segnalazione.segnalato,
+      { $inc: { malusCount: 1 } },
+      { new: true }
+    ).select('idUtente nome cognome email malusCount isSospeso bannato ruolo');
+
+    if (!utente) return res.status(404).json({ error: 'Utente segnalato non trovato' });
+
+    segnalazione.malusApplicato = true;
+    await segnalazione.save();
+
+    return res.status(200).json({
+      message: `Malus applicato a ${utente.email}`,
+      segnalazione,
+      utente,
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -200,22 +274,29 @@ async function riabilitaUtente(req, res) {
 
 /**
  * PATCH /api/admin/annunci/:id/forza
- * Forza lo stato di un annuncio bloccato riportandolo a DISPONIBILE (RF31, D2 §2.2.2).
+ * Forza lo stato di un annuncio (RF31, D2 §2.2.2).
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
 async function forzaStatoAnnuncio(req, res) {
   try {
+    const { stato = 'DISPONIBILE' } = req.body || {};
+    const statiForzabili = ['DISPONIBILE', 'SCADUTO', 'RITIRATO'];
+
+    if (!statiForzabili.includes(stato)) {
+      return res.status(400).json({ error: 'Stato forzabile non valido' });
+    }
+
     const annuncio = await Annuncio.findByIdAndUpdate(
       req.params.id,
-      { $set: { stato: 'DISPONIBILE', isAttivo: true }, $inc: { versione: 1 } },
+      { $set: { stato, isAttivo: true }, $inc: { versione: 1 } },
       { new: true }
     );
 
     if (!annuncio) return res.status(404).json({ error: 'Annuncio non trovato' });
 
-    return res.status(200).json({ message: 'Annuncio ripristinato a DISPONIBILE', annuncio });
+    return res.status(200).json({ message: `Annuncio forzato a ${stato}`, annuncio });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -247,7 +328,9 @@ async function rimuoviAnnuncio(req, res) {
 module.exports = {
   getStatistiche,
   listUsers,
+  listAnnunci,
   getSegnalazioni,
+  applicaMalusSegnalazione,
   bannaUtente,
   sospendiUtente,
   riabilitaUtente,
