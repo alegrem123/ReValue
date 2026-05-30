@@ -1,5 +1,7 @@
 # RE-VALUE
 
+[![CI](https://github.com/alegrem123/ReValue/actions/workflows/ci.yml/badge.svg)](https://github.com/alegrem123/ReValue/actions/workflows/ci.yml)
+
 Progetto Ingegneria del Software, Università di Trento A.A. 2025/2026 — Gruppo 21.
 
 ## 👥 Team
