@@ -134,6 +134,101 @@
 
     #send-btn:disabled { opacity: 0.4; cursor: default; }
 
+    /* Bottone allegato clip */
+    #attach-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      color: #6c757d;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    #attach-btn:hover {
+      background: var(--rv-green-xlight, #E8F5E9);
+      color: var(--rv-green, #2E7D32);
+    }
+
+    /* Anteprima immagine allegata */
+    .img-preview-strip {
+      display: none;
+      background: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+      padding: 8px 16px;
+      flex-shrink: 0;
+    }
+    .img-preview-strip.visible { display: flex; align-items: center; gap: 10px; }
+
+    .img-preview-strip .preview-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid #dee2e6;
+    }
+
+    .img-preview-strip .preview-name {
+      flex: 1;
+      font-size: 0.82rem;
+      color: #495057;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .img-preview-strip .preview-size {
+      font-size: 0.75rem;
+      color: #6c757d;
+    }
+
+    #preview-remove {
+      background: transparent;
+      border: none;
+      color: #dc3545;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    #preview-remove:hover { background: #f8d7da; }
+
+    /* Immagine dentro la bolla */
+    .bubble-img {
+      max-width: 100%;
+      max-height: 240px;
+      border-radius: 12px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .bubble-img:hover { transform: scale(1.02); }
+
+    /* Lightbox overlay per ingrandire immagine */
+    .img-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0,0,0,.85);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+    .img-lightbox.open { display: flex; }
+    .img-lightbox img {
+      max-width: 92vw;
+      max-height: 92vh;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+
     .date-divider {
       text-align: center;
       color: #6c757d;
@@ -306,8 +401,24 @@
       </div>
     </div>
 
+    <!-- Anteprima immagine allegata -->
+    <div class="img-preview-strip" id="img-preview">
+      <img class="preview-thumb" id="preview-thumb" src="" alt="Anteprima" />
+      <div>
+        <div class="preview-name" id="preview-name"></div>
+        <div class="preview-size" id="preview-size"></div>
+      </div>
+      <button id="preview-remove" aria-label="Rimuovi allegato" title="Rimuovi allegato">
+        <i class="bi bi-x-circle-fill"></i>
+      </button>
+    </div>
+
     <!-- Input -->
     <div class="chat-input-bar">
+      <input type="file" id="file-input" accept="image/*" hidden />
+      <button id="attach-btn" aria-label="Allega immagine" title="Allega immagine">
+        <i class="bi bi-paperclip"></i>
+      </button>
       <textarea
         id="msg-input"
         rows="1"
@@ -317,6 +428,11 @@
       <button id="send-btn" disabled aria-label="Invia">
         <i class="bi bi-send-fill"></i>
       </button>
+    </div>
+
+    <!-- Lightbox immagine -->
+    <div class="img-lightbox" id="img-lightbox">
+      <img id="lightbox-img" src="" alt="Immagine ingrandita" />
     </div>
 
   </div>

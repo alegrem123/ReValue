@@ -22,6 +22,7 @@ let lastMsgId   = null; // per rilevare nuovi messaggi senza re-render totale
 let searchQuery = '';   // query corrente di ricerca
 let searchIdx   = -1;   // indice risultato attivo
 let searchTotal = 0;    // totale risultati trovati
+let pendingImage = null; // { base64, name, size } immagine in attesa di invio
 
 function getQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -71,9 +72,16 @@ function buildBubble(msg, highlightQ = '') {
     ? highlightText(escapeHtml(msg.testo), highlightQ)
     : escapeHtml(msg.testo);
 
+  // Immagine allegata (base64)
+  let imgHtml = '';
+  if (msg.immagine) {
+    imgHtml = `<img class="bubble-img" src="${msg.immagine}" alt="Immagine allegata" loading="lazy" onclick="openLightbox(this.src)" />`;
+  }
+
   return `
     <div class="bubble-row ${mine ? 'mine' : 'other'}" data-id="${msg._id}" data-letto="${msg.letto}">
       <div class="bubble ${mine ? 'mine' : 'other'}">
+        ${imgHtml}
         <div>${testoHtml}</div>
         <div class="bubble-time">${time}${tick}</div>
       </div>
@@ -223,12 +231,17 @@ async function loadConversazione() {
 
 async function sendMessage() {
   const testo = msgInput.value.trim();
-  if (!testo) return;
+  if (!testo && !pendingImage) return;
 
   sendBtn.disabled = true;
   msgInput.disabled = true;
 
-  const res = await api.post(`/api/v1/conversazioni/${convId}/messaggi`, { testo });
+  const body = { testo: testo || '📷 Immagine' };
+  if (pendingImage) {
+    body.immagine = pendingImage.base64;
+  }
+
+  const res = await api.post(`/api/v1/conversazioni/${convId}/messaggi`, body);
 
   sendBtn.disabled = false;
   msgInput.disabled = false;
@@ -241,7 +254,8 @@ async function sendMessage() {
 
   msgInput.value = '';
   msgInput.style.height = 'auto';
-  sendBtn.disabled = true;
+  clearPendingImage();
+  updateSendBtnState();
 
   // Messaggio inviato → aggiungi bolla immediatamente
   const salvato = res.data?.data || res.data;
@@ -408,9 +422,129 @@ function initSearch() {
   searchNext.addEventListener('click', () => navigateSearch(1));
 }
 
+/* ── Allegato immagine ────────────────────────────────────────────── */
+
+const MAX_IMG_SIZE = 1024 * 1024; // 1 MB
+
+const fileInput      = document.getElementById('file-input');
+const attachBtn      = document.getElementById('attach-btn');
+const imgPreview     = document.getElementById('img-preview');
+const previewThumb   = document.getElementById('preview-thumb');
+const previewName    = document.getElementById('preview-name');
+const previewSize    = document.getElementById('preview-size');
+const previewRemove  = document.getElementById('preview-remove');
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+/**
+ * Aggiorna lo stato del bottone Invia: abilitato se c'è testo O immagine.
+ */
+function updateSendBtnState() {
+  sendBtn.disabled = msgInput.value.trim().length === 0 && !pendingImage;
+}
+
+/**
+ * Gestisce la selezione di un file immagine.
+ * Legge con FileReader API, valida dimensione < 1 MB, mostra anteprima.
+ */
+function handleFileSelect(file) {
+  if (!file) return;
+
+  // Verifica tipo
+  if (!file.type.startsWith('image/')) {
+    showAlert('Il file selezionato non è un\'immagine.', 'warning');
+    return;
+  }
+
+  // Verifica dimensione < 1 MB
+  if (file.size > MAX_IMG_SIZE) {
+    showAlert(`L'immagine supera il limite di 1 MB (${formatFileSize(file.size)}).`, 'warning');
+    fileInput.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const base64 = e.target.result; // data:image/...;base64,...
+
+    pendingImage = { base64, name: file.name, size: file.size };
+
+    // Mostra anteprima
+    previewThumb.src = base64;
+    previewName.textContent = file.name;
+    previewSize.textContent = formatFileSize(file.size);
+    imgPreview.classList.add('visible');
+
+    updateSendBtnState();
+  };
+  reader.onerror = () => {
+    showAlert('Errore nella lettura del file.', 'danger');
+  };
+  reader.readAsDataURL(file);
+}
+
+/**
+ * Rimuove l'immagine pendente e nasconde l'anteprima.
+ */
+function clearPendingImage() {
+  pendingImage = null;
+  fileInput.value = '';
+  previewThumb.src = '';
+  previewName.textContent = '';
+  previewSize.textContent = '';
+  imgPreview.classList.remove('visible');
+}
+
+function initAttachment() {
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+      handleFileSelect(fileInput.files[0]);
+    }
+  });
+
+  previewRemove.addEventListener('click', () => {
+    clearPendingImage();
+    updateSendBtnState();
+  });
+}
+
+/* ── Lightbox immagine ─────────────────────────────────────────────── */
+
+const lightbox    = document.getElementById('img-lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+
+/**
+ * Apre il lightbox full-screen con l'immagine specificata.
+ * Funzione globale richiamata dall'onclick inline nel bubble.
+ */
+window.openLightbox = function (src) {
+  lightboxImg.src = src;
+  lightbox.classList.add('open');
+};
+
+function initLightbox() {
+  lightbox.addEventListener('click', () => {
+    lightbox.classList.remove('open');
+    lightboxImg.src = '';
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && lightbox.classList.contains('open')) {
+      lightbox.classList.remove('open');
+      lightboxImg.src = '';
+    }
+  });
+}
+
 function initInput() {
   msgInput.addEventListener('input', () => {
-    sendBtn.disabled = msgInput.value.trim().length === 0;
+    updateSendBtnState();
     // Auto-resize textarea
     msgInput.style.height = 'auto';
     msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
@@ -445,6 +579,8 @@ async function init() {
   } catch { /* non critico */ }
 
   initSearch();
+  initAttachment();
+  initLightbox();
   initInput();
   await Promise.all([loadConversazione(), loadMessages(true)]);
 
