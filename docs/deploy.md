@@ -83,7 +83,7 @@ Aprire `https://revalue-frontend.onrender.com/views/login.html` → pagina caric
 | Servizio | URL |
 |----------|-----|
 | Backend | `https://revalue-backend-84jb.onrender.com` |
-| Frontend | *(aggiornare dopo deploy frontend)* |
+| Frontend | `https://revalue-frontend.onrender.com` |
 
 ---
 
