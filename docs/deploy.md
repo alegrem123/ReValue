@@ -87,12 +87,16 @@ Aprire `https://revalue-frontend.onrender.com/views/login.html` → pagina caric
 
 ---
 
-## 4. Smoke Test (Sab 30)
+## 4. Smoke Test — Risultati (31-05-2026)
 
-Flussi da verificare su URL produzione:
+Eseguito manualmente su `https://revalue-frontend.onrender.com`.
 
-- [ ] Registrazione nuovo utente
-- [ ] Login + JWT restituito
-- [ ] Creazione annuncio
-- [ ] Prenotazione annuncio
-- [ ] Visualizzazione crediti utente
+| # | Flusso | Esito | Note |
+|---|--------|-------|------|
+| 1 | Registrazione nuovo utente | PASS | — |
+| 2 | Login + JWT restituito | PASS | JWT presente in localStorage |
+| 3 | Creazione annuncio | PASS | Redirect a `annuncio.html` anziché `my-annunci.html` (comportamento accettabile) |
+| 4 | Prenotazione annuncio | PASS | — |
+| 5 | Visualizzazione crediti utente | PASS | Saldo visibile; crediti iniziali 50pt non mostrati per utenti nuovi (seed non eseguito in produzione) |
+
+**Tutti i flussi principali operativi in produzione.**
