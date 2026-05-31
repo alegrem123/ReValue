@@ -1,5 +1,7 @@
 # RE-VALUE
 
+[![CI](https://github.com/alegrem123/ReValue/actions/workflows/ci.yml/badge.svg)](https://github.com/alegrem123/ReValue/actions/workflows/ci.yml)
+
 Piattaforma di scambio e donazione di beni usati tra privati.  
 Progetto accademico — Gruppo 21, Ingegneria del Software, UniTN A.A. 2025/2026.
 
@@ -21,7 +23,7 @@ ReValue/
 
 | Tool | Versione minima |
 |------|-----------------|
-| Node.js | 18.18.2 consigliata (vedi `.nvmrc`) |
+| Node.js | 20.x (LTS) |
 | npm | 9.x |
 | Expo CLI | `npx expo` (incluso con Expo SDK 54) |
 | MongoDB Atlas | account con cluster attivo |
