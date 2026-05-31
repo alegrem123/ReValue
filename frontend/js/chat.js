@@ -23,6 +23,7 @@ let searchQuery = '';   // query corrente di ricerca
 let searchIdx   = -1;   // indice risultato attivo
 let searchTotal = 0;    // totale risultati trovati
 let pendingImage = null; // { base64, name, size } immagine in attesa di invio
+let typingDebounce = null; // timer debounce per segnale "sta scrivendo"
 
 function getQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -210,6 +211,17 @@ async function loadMessages(initial = false) {
         appendBubble(m);
       }
     });
+
+    // Indicatore "sta scrivendo" dall'altro partecipante
+    const isTyping = res.data?.data?.typing === true;
+    if (messaggi.length > 0) {
+      // L'altro ha inviato un messaggio → non sta più scrivendo
+      hideTypingIndicator();
+    } else if (isTyping) {
+      showTypingIndicator();
+    } else {
+      hideTypingIndicator();
+    }
   }
 
   // Marca come letti i messaggi ricevuti non ancora letti
@@ -549,12 +561,39 @@ function initLightbox() {
   });
 }
 
+/* ── Indicatore "sta scrivendo" ─────────────────────────────────────── */
+
+const typingIndicator = document.getElementById('typing-indicator');
+
+/**
+ * Invia segnale "sta scrivendo" al backend con debounce(2s).
+ * Fire-and-forget: non blocca l'UI in caso di errore.
+ */
+function sendTypingSignal() {
+  clearTimeout(typingDebounce);
+  typingDebounce = setTimeout(() => {
+    api.post(`/api/v1/conversazioni/${convId}/typing`, {}).catch(() => {});
+  }, 300); // piccolo ritardo per evitare flood ad ogni tasto
+}
+
+function showTypingIndicator() {
+  if (typingIndicator) typingIndicator.classList.add('visible');
+}
+
+function hideTypingIndicator() {
+  if (typingIndicator) typingIndicator.classList.remove('visible');
+}
+
 function initInput() {
   msgInput.addEventListener('input', () => {
     updateSendBtnState();
     // Auto-resize textarea
     msgInput.style.height = 'auto';
     msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
+    // Segnala "sta scrivendo" con debounce
+    if (msgInput.value.trim().length > 0) {
+      sendTypingSignal();
+    }
   });
 
   msgInput.addEventListener('keydown', (e) => {

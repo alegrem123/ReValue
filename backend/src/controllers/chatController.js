@@ -216,6 +216,18 @@ async function getMessaggiRecenti(req, res) {
     // Ordine cronologico: dal più vecchio al più recente (append-friendly per il client)
     const slice = nuovi.slice((page - 1) * limit, page * limit);
 
+    // Typing: controlla se l'altro partecipante sta scrivendo (entro 3s)
+    const TYPING_TTL = 3000;
+    const now = Date.now();
+    let typingUser = null;
+    if (req.conversazione.typing) {
+      for (const [uid, ts] of req.conversazione.typing.entries()) {
+        if (uid !== req.user.id && (now - new Date(ts).getTime()) < TYPING_TTL) {
+          typingUser = uid;
+        }
+      }
+    }
+
     return res.status(200).json({
       ok: true,
       data: {
@@ -226,6 +238,7 @@ async function getMessaggiRecenti(req, res) {
           total,
           pages: Math.ceil(total / limit) || 0,
         },
+        typing: typingUser !== null,
       },
     });
   } catch (err) {
@@ -257,4 +270,20 @@ async function getNonLettiCount(req, res) {
   }
 }
 
-module.exports = { getConversazioniMe, getMessaggi, getMessaggiRecenti, inviaMessaggio, getNonLettiCount };
+/**
+ * POST /api/v1/conversazioni/:id/typing
+ * Segnala che l'utente corrente sta scrivendo.
+ * Aggiorna il campo typing[userId] con il timestamp corrente.
+ * requireParticipant attacca req.conversazione.
+ */
+async function setTyping(req, res) {
+  try {
+    req.conversazione.typing.set(req.user.id, new Date());
+    await req.conversazione.save();
+    return res.status(204).end();
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+module.exports = { getConversazioniMe, getMessaggi, getMessaggiRecenti, inviaMessaggio, getNonLettiCount, setTyping };

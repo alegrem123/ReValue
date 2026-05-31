@@ -50,6 +50,12 @@ const conversazioneSchema = new Schema(
       type: [messaggioSchema],
       default: [],
     },
+    // Mappa userId → timestamp ultimo evento "sta scrivendo" (transiente, TTL ~3s)
+    typing: {
+      type: Map,
+      of: Date,
+      default: {},
+    },
   },
   {
     timestamps: { createdAt: 'createdAt', updatedAt: false },

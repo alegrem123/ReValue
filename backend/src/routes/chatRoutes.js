@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { authenticate } = require('../middleware/authMiddleware');
 const { requireParticipant } = require('../middleware/requireParticipant');
-const { getConversazioniMe, getMessaggi, getMessaggiRecenti, inviaMessaggio, getNonLettiCount } = require('../controllers/chatController');
+const { getConversazioniMe, getMessaggi, getMessaggiRecenti, inviaMessaggio, getNonLettiCount, setTyping } = require('../controllers/chatController');
 
 const router = Router();
 
@@ -19,5 +19,8 @@ router.get('/:id/messaggi', authenticate, requireParticipant, getMessaggi);
 
 // POST /api/v1/conversazioni/:id/messaggi — invia messaggio, solo autenticato + partecipante (RF10, RF14)
 router.post('/:id/messaggi', authenticate, requireParticipant, inviaMessaggio);
+
+// POST /api/v1/conversazioni/:id/typing — segnala "sta scrivendo" (indicatore UI)
+router.post('/:id/typing', authenticate, requireParticipant, setTyping);
 
 module.exports = router;
