@@ -1,5 +1,6 @@
 const Segnalazione = require('../models/segnalazioneModel');
-// const notificheService = require('../services/notificheService'); // TODO: decommentare quando AG mergia notificheService
+const notificheService = require('../services/notificheService');
+const User = require('../models/userModel');
 
 /**
  * POST /api/v1/segnalazioni
@@ -37,8 +38,10 @@ async function createSegnalazione(req, res) {
       ...(annuncio && { annuncio }),
     });
 
-    // TODO: notifica admin — decommentare quando notificheService disponibile
-    // await notificheService.creaNotifica(adminId, 'segnalazione', `Nuova segnalazione da ${req.user.id}`, `/api/v1/admin/segnalazioni`);
+    const admin = await User.findOne({ ruolo: 'admin' }).select('_id').lean();
+    if (admin) {
+      await notificheService.creaNotifica(admin._id, 'segnalazione', `Nuova segnalazione da ${req.user.id}`, `/api/v1/admin/segnalazioni`);
+    }
 
     return res.status(201).json({ segnalazione });
   } catch (err) {
