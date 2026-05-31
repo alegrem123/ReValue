@@ -18,7 +18,7 @@ const chatAlert    = document.getElementById('chat-alert');
 let convId      = null;
 let myId        = null;
 let pollTimer   = null;
-let lastMsgId   = null; // per rilevare nuovi messaggi senza re-render totale
+let lastTs      = null; // ultimo timestamp visto — cursore per polling ottimizzato (RNF7)
 let searchQuery = '';   // query corrente di ricerca
 let searchIdx   = -1;   // indice risultato attivo
 let searchTotal = 0;    // totale risultati trovati
@@ -153,9 +153,9 @@ function renderMessages(messaggi) {
   // Scroll in fondo
   messagesArea.scrollTop = messagesArea.scrollHeight;
 
-  // Aggiorna lastMsgId
+  // Aggiorna lastTs con il timestamp dell'ultimo messaggio
   if (messaggi.length > 0) {
-    lastMsgId = messaggi[messaggi.length - 1]._id;
+    lastTs = messaggi[messaggi.length - 1].timestamp;
   }
 }
 
@@ -176,11 +176,22 @@ function appendBubble(msg) {
   messagesArea.appendChild(div.firstElementChild);
 
   if (wasAtBottom) messagesArea.scrollTop = messagesArea.scrollHeight;
-  lastMsgId = msg._id;
+  if (msg.timestamp) lastTs = msg.timestamp;
 }
 
 async function loadMessages(initial = false) {
-  const res = await api.get(`/api/v1/conversazioni/${convId}/messaggi?limit=100`);
+  let res;
+
+  if (initial || !lastTs) {
+    // Caricamento iniziale: tutti i messaggi
+    res = await api.get(`/api/v1/conversazioni/${convId}/messaggi?limit=100`);
+  } else {
+    // Polling ottimizzato: solo messaggi dopo lastTs (RNF7, O(Δt))
+    res = await api.get(
+      `/api/v1/conversazioni/${convId}/messaggi/recenti?since=${encodeURIComponent(lastTs)}`
+    );
+  }
+
   if (!res.ok) {
     if (initial) {
       messagesArea.innerHTML = `<div class="text-danger p-3">Impossibile caricare i messaggi.</div>`;
@@ -193,16 +204,12 @@ async function loadMessages(initial = false) {
   if (initial) {
     renderMessages(messaggi);
   } else {
-    // Polling: aggiungi messaggi nuovi e aggiorna tick esistenti
-    const newMsgs = messaggi.filter(
-      (m) => lastMsgId === null || m._id > lastMsgId
-    );
-    newMsgs.forEach((m) => {
+    // Polling: appendi solo messaggi nuovi
+    messaggi.forEach((m) => {
       if (!messagesArea.querySelector(`[data-id="${m._id}"]`)) {
         appendBubble(m);
       }
     });
-    updateTicksInDom(messaggi);
   }
 
   // Marca come letti i messaggi ricevuti non ancora letti
@@ -584,7 +591,7 @@ async function init() {
   initInput();
   await Promise.all([loadConversazione(), loadMessages(true)]);
 
-  // Polling ogni 5s (RNF7)
+  // Polling ottimizzato ogni 5s — usa /recenti?since= per payload O(Δt) (RNF7)
   pollTimer = setInterval(() => loadMessages(false), POLL_INTERVAL);
 }
 
