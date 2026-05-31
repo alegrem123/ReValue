@@ -191,8 +191,6 @@ describe('Integration Recensioni: OCL #21 — recensione solo su scambio complet
     expect(res.body.error).toBe('Hai già lasciato una recensione per questo scambio');
   });
 
-  // ---------- Caso 4: Recensione da utente non partecipante → 403 ----------
-
   test('8. Recensione da utente non partecipante → 403', async () => {
     const res = await request(app)
       .post('/api/v1/recensioni')
@@ -205,5 +203,66 @@ describe('Integration Recensioni: OCL #21 — recensione solo su scambio complet
 
     expect(res.statusCode).toBe(403);
     expect(res.body.error).toBe('Solo i partecipanti dello scambio possono recensire');
+  });
+
+  test('9. Recensione bilaterale: Donatore (B) lascia recensione negativa ad Acquirente (A) → 201', async () => {
+    const res = await request(app)
+      .post('/api/v1/recensioni')
+      .set('Authorization', `Bearer ${tokenDonatore}`)
+      .send({
+        prenotazioneId,
+        positiva: false,
+        testo: 'Acquirente un po in ritardo ma scambio concluso',
+      });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.positiva).toBe(false);
+    expect(res.body.testo).toBe('Acquirente un po in ritardo ma scambio concluso');
+    expect(res.body.prenotazione).toBe(prenotazioneId);
+  });
+
+  test('10. Verifica recensioni e contatori per A e B', async () => {
+    const User = require('../../src/models/userModel');
+    const donatore = await User.findOne({ email: 'donatore-rec@test.com' });
+    const acquirente = await User.findOne({ email: 'acquirente-rec@test.com' });
+
+    expect(donatore).toBeDefined();
+    expect(acquirente).toBeDefined();
+
+    // 10a. Verifica recensioni ricevute da Donatore (B) - ha ricevuto 1 recensione positiva da A
+    const resB = await request(app)
+      .get(`/api/v1/users/${donatore._id}/recensioni`);
+    expect(resB.statusCode).toBe(200);
+    expect(resB.body.data).toHaveLength(1);
+    expect(resB.body.data[0].positiva).toBe(true);
+    expect(resB.body.data[0].testo).toBe('Donatore puntuale e gentile');
+    expect(resB.body.riepilogo.positive).toBe(1);
+    expect(resB.body.riepilogo.negative).toBe(0);
+
+    // 10b. Verifica profilo pubblico di Donatore (B)
+    const resBProf = await request(app)
+      .get(`/api/v1/users/${donatore._id}/profilo`);
+    expect(resBProf.statusCode).toBe(200);
+    expect(resBProf.body.recensioni.positive).toBe(1);
+    expect(resBProf.body.recensioni.negative).toBe(0);
+    expect(resBProf.body.recensioni.totale).toBe(1);
+
+    // 10c. Verifica recensioni ricevute da Acquirente (A) - ha ricevuto 1 recensione negativa da B
+    const resA = await request(app)
+      .get(`/api/v1/users/${acquirente._id}/recensioni`);
+    expect(resA.statusCode).toBe(200);
+    expect(resA.body.data).toHaveLength(1);
+    expect(resA.body.data[0].positiva).toBe(false);
+    expect(resA.body.data[0].testo).toBe('Acquirente un po in ritardo ma scambio concluso');
+    expect(resA.body.riepilogo.positive).toBe(0);
+    expect(resA.body.riepilogo.negative).toBe(1);
+
+    // 10d. Verifica profilo pubblico di Acquirente (A)
+    const resAProf = await request(app)
+      .get(`/api/v1/users/${acquirente._id}/profilo`);
+    expect(resAProf.statusCode).toBe(200);
+    expect(resAProf.body.recensioni.positive).toBe(0);
+    expect(resAProf.body.recensioni.negative).toBe(1);
+    expect(resAProf.body.recensioni.totale).toBe(1);
   });
 });
