@@ -850,7 +850,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [DISPONIBILE, PRENOTATO, RITIRATO, SCADUTO]
+            enum: [DISPONIBILE, PRENOTATO, CEDUTO, SCADUTO]
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Limit'
       responses:
@@ -973,7 +973,7 @@ paths:
               properties:
                 stato:
                   type: string
-                  enum: [DISPONIBILE, SCADUTO, RITIRATO]
+                  enum: [DISPONIBILE, SCADUTO, CEDUTO]
       responses:
         '200':
           description: Stato annuncio aggiornato

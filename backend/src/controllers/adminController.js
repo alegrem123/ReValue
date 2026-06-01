@@ -138,7 +138,7 @@ async function listAnnunci(req, res) {
     const skip = (pageNum - 1) * limitNum;
 
     const query = {};
-    if (stato && ['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
+    if (stato && ['DISPONIBILE', 'PRENOTATO', 'CEDUTO', 'SCADUTO'].includes(stato)) {
       query.stato = stato;
     }
 
@@ -193,16 +193,26 @@ async function getSegnalazioni(req, res) {
  */
 async function applicaMalusSegnalazione(req, res) {
   try {
-    const segnalazione = await Segnalazione.findById(req.params.id);
-    if (!segnalazione) return res.status(404).json({ error: 'Segnalazione non trovata' });
-
-    if (segnalazione.stato === 'RISOLTA') {
-      return res.status(409).json({ error: 'Malus già applicato per questa segnalazione' });
+    // OCL #20: malus + chiusura segnalazione atomici; findOneAndUpdate previene doppio malus
+    const session = await mongoose.startSession();
+    let utente, segnalazione;
+    try {
+      await session.withTransaction(async () => {
+        segnalazione = await Segnalazione.findOneAndUpdate(
+          { _id: req.params.id, stato: { $ne: 'RISOLTA' } },
+          { $set: { stato: 'RISOLTA' } },
+          { new: true, session }
+        );
+        if (!segnalazione) {
+          const err = new Error('Segnalazione non trovata o già risolta');
+          err.statusCode = 409;
+          throw err;
+        }
+        utente = await applicaMalus(segnalazione.segnalato, { session });
+      });
+    } finally {
+      await session.endSession();
     }
-
-    const utente = await applicaMalus(segnalazione.segnalato);
-    segnalazione.stato = 'RISOLTA';
-    await segnalazione.save();
 
     return res.status(200).json({
       message: `Malus applicato a ${utente.email}`,
@@ -210,6 +220,7 @@ async function applicaMalusSegnalazione(req, res) {
       utente,
     });
   } catch (err) {
+    if (err.statusCode === 409) return res.status(409).json({ error: err.message });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
@@ -312,7 +323,7 @@ async function riabilitaUtente(req, res) {
 async function forzaStatoAnnuncio(req, res) {
   try {
     const { stato = 'DISPONIBILE' } = req.body || {};
-    const statiForzabili = ['DISPONIBILE', 'SCADUTO', 'RITIRATO'];
+    const statiForzabili = ['DISPONIBILE', 'SCADUTO', 'CEDUTO'];
 
     if (!statiForzabili.includes(stato)) {
       return res.status(400).json({ error: 'Stato forzabile non valido' });
