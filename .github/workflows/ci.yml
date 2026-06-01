@@ -6,13 +6,17 @@ on:
   pull_request:
     branches: [main, preRelease]
 
+permissions:
+  contents: read
+
 jobs:
   test:
-    name: Backend Tests
+    name: Tests and coverage
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,11 +29,17 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Run tests
+      - name: Backend tests with coverage
         working-directory: backend
-        run: npm test
+        run: npm test -- --coverage --coverageReporters=text
         env:
           NODE_ENV: test
+
+      - name: Frontend smoke tests
+        run: node --test frontend/tests/*.test.mjs
+
+      - name: Mobile smoke tests
+        run: node --test mobile/tests/*.test.mjs
 
   smoke-test:
     name: Smoke Test (Produzione)

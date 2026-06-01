@@ -25,6 +25,14 @@ const Prenotazione = require('../../src/models/prenotazioneModel');
 
 let mongoServer;
 
+function payload(res) {
+  return res.body?.data ?? res.body;
+}
+
+function message(res) {
+  return res.body?.message ?? res.body?.error;
+}
+
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
 beforeAll(async () => {
@@ -51,7 +59,7 @@ async function registraUtente(email, nome) {
     .send({ nome, cognome: 'Test', email, password: 'Password123!' });
 
   expect(res.statusCode).toBe(201);
-  return res.body.token;
+  return payload(res).token;
 }
 
 // ── Suite principale ─────────────────────────────────────────────────────────
@@ -88,7 +96,7 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
       });
 
     expect(res.statusCode).toBe(201);
-    annuncioId = res.body._id ?? res.body.annuncio?._id;
+    annuncioId = payload(res)._id ?? payload(res).annuncio?._id;
 
     // Fallback: recupera dal DB se la risposta non include _id direttamente
     if (!annuncioId) {
@@ -124,7 +132,7 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
 
       // ── Assertion 2: la risposta di errore contiene il messaggio corretto
       const resErrore = res1.statusCode === 409 ? res1 : res2;
-      expect(resErrore.body.error).toMatch(/prenotato/i);
+      expect(message(resErrore)).toMatch(/prenotato/i);
 
       // ── Assertion 3: nel DB esiste una sola prenotazione ATTIVA per l'annuncio
       const prenotazioniAttive = await Prenotazione.find({
@@ -167,7 +175,7 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
         });
 
       expect(resAnnuncio.statusCode).toBe(201);
-      let nuovoAnnuncioId = resAnnuncio.body._id ?? resAnnuncio.body.annuncio?._id;
+      let nuovoAnnuncioId = payload(resAnnuncio)._id ?? payload(resAnnuncio).annuncio?._id;
       if (!nuovoAnnuncioId) {
         const doc = await Annuncio.findOne({ titolo: 'Divano usato' });
         nuovoAnnuncioId = doc._id.toString();
@@ -226,7 +234,7 @@ describe('Concorrenza: doppia prenotazione sullo stesso annuncio', () => {
         .send({ annuncioId });
 
       expect(res.statusCode).toBe(409);
-      expect(res.body.error).toMatch(/disponibile|prenotato/i);
+      expect(message(res)).toMatch(/disponibile|prenotato/i);
     }
   );
 });

@@ -29,6 +29,15 @@ const API_BASE = (function () {
   return 'https://revalue-backend-84jb.onrender.com';
 })();
 
+const API_PREFIX = '/api/v1';
+
+function normalizeEndpoint(endpoint) {
+  if (endpoint.startsWith(`${API_PREFIX}/`)) return endpoint;
+  if (endpoint === '/api') return API_PREFIX;
+  if (endpoint.startsWith('/api/')) return `${API_PREFIX}${endpoint.slice(4)}`;
+  return endpoint;
+}
+
 function frontendViewUrl(fileName) {
   return window.location.pathname.includes('/views/')
     ? fileName
@@ -99,7 +108,7 @@ async function request(
 
   let res;
   try {
-    res = await fetch(API_BASE + endpoint, init);
+    res = await fetch(API_BASE + normalizeEndpoint(endpoint), init);
   } catch (networkErr) {
     return {
       ok: false,
@@ -124,11 +133,16 @@ async function request(
     }
   }
 
-  const error = !res.ok
-    ? data?.error || data?.message || `Errore ${res.status}`
+  const normalized = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'ok')
+    ? data
+    : null;
+  const ok = normalized ? normalized.ok && res.ok : res.ok;
+  const payload = normalized && normalized.ok ? normalized.data : data;
+  const error = !ok
+    ? normalized?.message || data?.message || data?.error || `Errore ${res.status}`
     : null;
 
-  return { ok: res.ok, data, status: res.status, error };
+  return { ok, data: payload, status: res.status, error };
 }
 
 /* ── Shorthand per ogni metodo HTTP ─────────────────────────────────── */

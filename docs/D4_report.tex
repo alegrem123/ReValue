@@ -1,0 +1,190 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[hidelinks]{hyperref}
+\usepackage{longtable}
+
+\title{RE-VALUE - D4\\Bozza sezioni AG}
+\author{Alessandro Gremes}
+\date{30 maggio 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduzione}
+
+RE-VALUE e' un'applicazione per il riuso locale di oggetti: un utente pubblica un annuncio, un altro utente prenota l'oggetto, lo scambio viene confermato tramite QR code e il sistema aggiorna wallet, storico e informazioni di affidabilita'. Il progetto copre il flusso web principale, una base mobile Expo/React Native e un backend REST versionato.
+
+Il team di progetto e' composto da:
+
+\begin{itemize}
+  \item Alessandro Gremes - sicurezza, notifiche, admin dashboard, CI e sezioni D4 di architettura/sicurezza;
+  \item Paolo Sarcletti - recensioni, chat estesa, testing e documentazione tecnica dei vincoli;
+  \item Alessandro Turri - premi, segnalazioni, admin backend di supporto, deploy e screenshot.
+\end{itemize}
+
+Lo stack tecnico aggiornato alla fine di maggio e' il seguente:
+
+\begin{itemize}
+  \item Backend: Node.js, Express, MongoDB/Mongoose, JWT, bcrypt, Jest, Supertest e MongoDB Memory Server.
+  \item Frontend web: HTML, JavaScript modulare, Bootstrap, Chart.js e client API centralizzato.
+  \item Mobile: Expo, React Native e AsyncStorage per la persistenza del token.
+  \item CI: GitHub Actions con installazione dipendenze backend, test con coverage e smoke test web/mobile.
+\end{itemize}
+
+\section{Retrospettiva Sprint 1}
+
+Lo Sprint 1 ha prodotto il nucleo funzionale del sistema: registrazione e login, gestione annunci, prenotazione, wallet, QR code e prime schermate frontend. Questo ha permesso di dimostrare un flusso end-to-end coerente con gli use case principali.
+
+\subsection*{Cosa ha funzionato}
+
+\begin{itemize}
+  \item La separazione tra route, controller, model e service ha reso possibile aggiungere moduli Sprint 2 senza riscrivere il backend.
+  \item I test su auth, annunci, prenotazioni, wallet e QR hanno dato una base di regressione utile.
+  \item Il flusso annuncio - prenotazione - QR - wallet e' diventato verificabile automaticamente con test di integrazione.
+\end{itemize}
+
+\subsection*{Cosa non ha funzionato}
+
+\begin{itemize}
+  \item Alcune decisioni progettuali erano presenti nei documenti ma non ancora tracciate in modo uniforme nel codice.
+  \item Gli endpoint non erano ancora versionati con \texttt{/api/v1}, generando debito tecnico sulle integrazioni frontend e mobile.
+  \item La forma delle risposte API non era omogenea, quindi il client doveva gestire payload diversi.
+  \item Alcuni aspetti dichiarati come servizi esterni, in particolare email e SSO, sono stati ridimensionati nel prototipo locale.
+\end{itemize}
+
+\subsection*{Azioni correttive applicate}
+
+\begin{itemize}
+  \item Introduzione del prefisso \texttt{/api/v1} su backend, frontend e mobile.
+  \item Client API web/mobile aggiornati per gestire sia payload raw sia payload standardizzati.
+  \item Deprecazione esplicita degli endpoint legacy \texttt{/api/v1/scambi}.
+  \item Aggiornamento OpenAPI e incremento della suite backend fino a 81 test verdi al 29 maggio.
+\end{itemize}
+
+\section{Architettura finale}
+
+L'architettura attuale e' organizzata come MVC con layer di servizio dove la logica di dominio e' piu' complessa.
+
+\begin{verbatim}
+backend/
+  app.js
+  src/
+    controllers/
+    middleware/
+    models/
+    routes/
+    services/
+    utils/
+frontend/
+  js/
+  views/
+mobile/
+  src/
+docs/
+\end{verbatim}
+
+\subsection*{Flusso richiesta backend}
+
+Una richiesta API segue questo percorso:
+
+\begin{enumerate}
+  \item \texttt{app.js} applica CORS, hardening HTTP, rate limit, parsing body, sanitizzazione e logging.
+  \item Il router \texttt{/api/v1} inoltra alla route di dominio.
+  \item I middleware applicano autenticazione JWT, controllo admin o blocco utenti sospesi.
+  \item Il controller valida l'input e coordina model/service.
+  \item Mongoose esegue persistenza e vincoli di schema.
+  \item La risposta viene restituita al client, che normalizza il payload nei wrapper web/mobile.
+\end{enumerate}
+
+\subsection*{Moduli principali}
+
+\begin{longtable}{p{0.25\linewidth}p{0.65\linewidth}}
+\textbf{Modulo} & \textbf{Responsabilita'} \\
+\hline
+Auth & Registrazione, login, hashing password e rilascio JWT. \\
+Users & Profilo personale, profilo pubblico e dati reputazionali. \\
+Annunci & Catalogo pubblico, CRUD annuncio, filtri, stato e soft-delete. \\
+Prenotazioni & Creazione, annullamento, storico e vincoli su disponibilita'. \\
+QR & Generazione e validazione QR per completamento scambio. \\
+Wallet & Accredito/sottrazione punti e storico transazioni. \\
+Recensioni & Creazione recensioni post-scambio e lettura reputazione. \\
+Segnalazioni & Creazione segnalazioni e gestione malus lato admin. \\
+Admin & Statistiche, gestione utenti, gestione annunci e segnalazioni. \\
+Chat & Conversazioni e messaggi tra utenti coinvolti. \\
+\end{longtable}
+
+\subsection*{Frontend e mobile}
+
+Il frontend web usa pagine HTML e script dedicati per ogni flusso. Il file \texttt{frontend/js/apiClient.js} centralizza token, prefisso \texttt{/api/v1} e normalizzazione delle risposte. L'area admin usa un token separato \texttt{adminToken} e script dedicati in \texttt{frontend/js/admin/}.
+
+L'app mobile mantiene lo stesso contratto REST, con client in \texttt{mobile/src/api/client.js}, persistenza token tramite AsyncStorage e smoke test dedicati. La parte mobile e' allineata al prefisso \texttt{/api/v1}.
+
+\section{Sicurezza}
+
+La sicurezza del prototipo e' basata su autenticazione JWT, hashing password, CORS differenziato per ambiente, controllo ruoli, blocco utenti sospesi e validazioni applicative/model.
+
+\subsection*{Autenticazione e autorizzazione}
+
+\begin{itemize}
+  \item Le password sono salvate solo come hash bcrypt con 10 salt rounds in \texttt{backend/src/utils/password.js}.
+  \item I token JWT sono firmati con \texttt{JWT\_SECRET}, durata 7 giorni e verifica centralizzata in \texttt{backend/src/utils/jwt.js}.
+  \item Il middleware \texttt{authenticate} protegge le route private; \texttt{requireAdmin} limita le route admin.
+  \item Il middleware \texttt{notSospeso} impedisce azioni operative agli utenti sospesi.
+\end{itemize}
+
+\subsection*{CORS e API boundary}
+
+Il CORS e' configurato in \texttt{backend/app.js}. In sviluppo l'origine e' permissiva per facilitare test locali; in produzione viene usata la whitelist \texttt{FRONTEND\_URL}. Tutte le API pubbliche sono montate sotto \texttt{/api/v1}, mentre le vecchie route \texttt{/api} non sono piu' la superficie ufficiale.
+
+\subsection*{Validazione input e protezione dati}
+
+\begin{itemize}
+  \item I model Mongoose applicano required, enum, validatori e indici.
+  \item I controller filtrano i campi modificabili, per esempio nel profilo utente.
+  \item I profili pubblici non espongono password hash e dati non necessari.
+  \item I client API web/mobile normalizzano le risposte per ridurre comportamenti incoerenti lato UI.
+\end{itemize}
+
+\subsection*{Hardening previsto per la chiusura D4}
+
+Al 30 maggio il branch corrente contiene JWT, bcrypt, CORS production whitelist, body limit, Helmet, rate limit sulle route di autenticazione, sanitizzazione Mongo e controlli di ruolo/stato utente. La verifica finale D4 deve confermare l'ordine dei middleware e l'assenza di regressioni sui test di sicurezza.
+
+\section{Notifiche ed Email}
+
+Nel prototipo locale il servizio email e' opzionale: \texttt{backend/src/services/emailService.js} usa Nodemailer solo quando sono presenti \texttt{SMTP\_USER} e \texttt{SMTP\_PASS}; in assenza di configurazione salta l'invio senza bloccare il flusso applicativo. SPID/SSO e il backend OpenStreetMap restano invece ridimensionati rispetto alla visione iniziale.
+
+\subsection*{Architettura prevista}
+
+La soluzione prevista per le notifiche e' un service applicativo indipendente dai controller:
+
+\begin{enumerate}
+  \item un controller completa un evento di dominio, per esempio prenotazione, recensione, segnalazione o messaggio;
+  \item il controller chiama un servizio notifiche in modalita' fire-and-forget;
+  \item il servizio salva la notifica e prova a inviare il canale esterno disponibile;
+  \item eventuali errori del canale esterno non annullano la transazione principale gia' completata.
+\end{enumerate}
+
+Questo schema evita che email o push notification blocchino operazioni critiche come prenotazioni, QR o gestione admin.
+
+\subsection*{Trigger previsti}
+
+\begin{longtable}{p{0.30\linewidth}p{0.60\linewidth}}
+\textbf{Evento} & \textbf{Notifica prevista} \\
+\hline
+Nuova prenotazione & Avviso al donatore che un utente ha prenotato l'annuncio. \\
+Prenotazione annullata & Avviso alle parti coinvolte e ripristino disponibilita' se applicabile. \\
+QR validato & Conferma scambio completato e aggiornamento wallet. \\
+Nuovo messaggio chat & Avviso all'altro partecipante della conversazione. \\
+Nuova recensione & Avviso all'utente recensito. \\
+Segnalazione ricevuta & Avviso o evidenza per dashboard admin. \\
+Malus applicato & Aggiornamento dello stato reputazionale dell'utente segnalato. \\
+\end{longtable}
+
+\subsection*{Stato al 30 maggio}
+
+La parte notifiche in-app e' disponibile tramite model, service, controller e route \texttt{/api/v1/notifiche}. Il canale email e' disponibile come adapter opzionale configurato via variabili d'ambiente, mentre le push native restano un punto di integrazione futuro. La priorita' per la chiusura D4 e' mantenere testabile il flusso core e indicare chiaramente quali canali sono attivi, opzionali o rinviati.
+
+\end{document}

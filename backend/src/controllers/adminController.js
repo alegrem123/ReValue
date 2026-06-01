@@ -20,7 +20,7 @@ async function getStatistiche(req, res) {
     inizioMese.setDate(1);
     inizioMese.setHours(0, 0, 0, 0);
 
-    const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets, creditiErogati] = await Promise.all([
+    const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets, creditiErogati, storicoMensile] = await Promise.all([
       Prenotazione.countDocuments({ stato: 'COMPLETATA', dataCompletamento: { $gte: inizioMese } }),
       User.countDocuments({ ruolo: 'user' }),
       Segnalazione.countDocuments({ stato: 'IN_ATTESA' }),
@@ -45,6 +45,20 @@ async function getStatistiche(req, res) {
           },
         },
       ]),
+      Prenotazione.aggregate([
+        { $match: { stato: 'COMPLETATA', dataCompletamento: { $ne: null } } },
+        {
+          $group: {
+            _id: {
+              anno: { $year: '$dataCompletamento' },
+              mese: { $month: '$dataCompletamento' },
+            },
+            totale: { $sum: 1 },
+          },
+        },
+        { $sort: { '_id.anno': 1, '_id.mese': 1 } },
+        { $limit: 12 },
+      ]),
     ]);
 
     const liquiditaAttuale = wallets[0]?.liquiditaAttuale ?? 0;
@@ -59,6 +73,93 @@ async function getStatistiche(req, res) {
       creditiErogatiTotali,
       creditiErogatiMese,
       totaleCrediti: liquiditaAttuale,
+      storicoMensile: storicoMensile.map((item) => ({
+        anno: item._id.anno,
+        mese: item._id.mese,
+        totale: item.totale,
+      })),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+/**
+ * GET /api/v1/admin/users
+ * Lista utenti paginata con search per nome/email (RF29).
+ */
+async function listUsers(req, res) {
+  try {
+    const { search = '', page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = { ruolo: 'user' };
+    const normalizedSearch = String(search).trim();
+    if (normalizedSearch) {
+      const pattern = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [{ email: pattern }, { nome: pattern }, { cognome: pattern }];
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .select('idUtente nome cognome email malusCount isSospeso bannato ruolo createdAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      User.countDocuments(query),
+    ]);
+
+    return res.status(200).json({
+      users,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+/**
+ * GET /api/v1/admin/annunci
+ * Lista annunci per dashboard admin con paginazione e filtro stato (RF31).
+ */
+async function listAnnunci(req, res) {
+  try {
+    const { stato, page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = {};
+    if (stato && ['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
+      query.stato = stato;
+    }
+
+    const [annunci, total] = await Promise.all([
+      Annuncio.find(query)
+        .populate('donatore', 'nome cognome email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Annuncio.countDocuments(query),
+    ]);
+
+    return res.status(200).json({
+      annunci,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
     });
   } catch (err) {
     return res.status(500).json({ error: 'Errore interno del server' });
@@ -81,6 +182,33 @@ async function getSegnalazioni(req, res) {
       .populate('annuncio', 'titolo stato');
 
     return res.status(200).json(segnalazioni);
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+/**
+ * POST /api/v1/admin/segnalazioni/:id/malus
+ * Applica un malus all'utente segnalato e marca la segnalazione come risolta.
+ */
+async function applicaMalusSegnalazione(req, res) {
+  try {
+    const segnalazione = await Segnalazione.findById(req.params.id);
+    if (!segnalazione) return res.status(404).json({ error: 'Segnalazione non trovata' });
+
+    if (segnalazione.stato === 'RISOLTA') {
+      return res.status(409).json({ error: 'Malus già applicato per questa segnalazione' });
+    }
+
+    const utente = await applicaMalus(segnalazione.segnalato);
+    segnalazione.stato = 'RISOLTA';
+    await segnalazione.save();
+
+    return res.status(200).json({
+      message: `Malus applicato a ${utente.email}`,
+      segnalazione,
+      utente,
+    });
   } catch (err) {
     return res.status(500).json({ error: 'Errore interno del server' });
   }
@@ -183,12 +311,18 @@ async function riabilitaUtente(req, res) {
  */
 async function forzaStatoAnnuncio(req, res) {
   try {
+    const { stato = 'DISPONIBILE' } = req.body || {};
+    const statiForzabili = ['DISPONIBILE', 'SCADUTO', 'RITIRATO'];
+
+    if (!statiForzabili.includes(stato)) {
+      return res.status(400).json({ error: 'Stato forzabile non valido' });
+    }
+
     const annuncio = await Annuncio.findById(req.params.id);
     if (!annuncio) return res.status(404).json({ error: 'Annuncio non trovato' });
 
-    // Idempotency guard: skip transaction if already in target state
-    if (annuncio.stato === 'DISPONIBILE' && annuncio.isAttivo) {
-      return res.status(200).json({ message: 'Annuncio già disponibile', annuncio });
+    if (annuncio.stato === stato) {
+      return res.status(200).json({ message: `Annuncio già in stato ${stato}`, annuncio });
     }
 
     const session = await mongoose.startSession();
@@ -212,7 +346,7 @@ async function forzaStatoAnnuncio(req, res) {
         }
         updated = await Annuncio.findByIdAndUpdate(
           req.params.id,
-          { $set: { stato: 'DISPONIBILE', isAttivo: true }, $inc: { versione: 1 } },
+          { $set: { stato }, $inc: { versione: 1 } },
           { new: true, session }
         );
       });
@@ -220,7 +354,7 @@ async function forzaStatoAnnuncio(req, res) {
       await session.endSession();
     }
 
-    return res.status(200).json({ message: 'Annuncio ripristinato a DISPONIBILE', annuncio: updated });
+    return res.status(200).json({ message: `Annuncio forzato a ${stato}`, annuncio: updated });
   } catch (err) {
     return res.status(500).json({ error: 'Errore interno del server' });
   }
@@ -251,7 +385,10 @@ async function rimuoviAnnuncio(req, res) {
 
 module.exports = {
   getStatistiche,
+  listUsers,
+  listAnnunci,
   getSegnalazioni,
+  applicaMalusSegnalazione,
   bannaUtente,
   sospendiUtente,
   riabilitaUtente,

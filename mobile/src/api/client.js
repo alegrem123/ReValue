@@ -17,6 +17,14 @@ function resolveApiBase() {
 }
 
 export const API_BASE_URL = resolveApiBase();
+const API_PREFIX = '/api/v1';
+
+function normalizeEndpoint(endpoint) {
+  if (endpoint.startsWith(`${API_PREFIX}/`)) return endpoint;
+  if (endpoint === '/api') return API_PREFIX;
+  if (endpoint.startsWith('/api/')) return `${API_PREFIX}${endpoint.slice(4)}`;
+  return endpoint;
+}
 
 export async function getToken() {
   return AsyncStorage.getItem(TOKEN_KEY);
@@ -84,7 +92,7 @@ export async function apiRequest(endpoint, { method = 'GET', body, auth = true }
 
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
       method,
       headers,
       body: hasBody ? JSON.stringify(body) : undefined,
@@ -112,11 +120,17 @@ export async function apiRequest(endpoint, { method = 'GET', body, auth = true }
     await clearSession();
   }
 
+  const normalized = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'ok')
+    ? data
+    : null;
+  const ok = normalized ? normalized.ok && response.ok : response.ok;
+  const payload = normalized && normalized.ok ? normalized.data : data;
+
   return {
-    ok: response.ok,
+    ok,
     status: response.status,
-    data,
-    error: response.ok ? null : data?.error || data?.message || `Errore ${response.status}`,
+    data: payload,
+    error: ok ? null : normalized?.message || data?.message || data?.error || `Errore ${response.status}`,
   };
 }
 

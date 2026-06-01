@@ -110,6 +110,54 @@ describe('Moderation and authentication integration', () => {
     expect(updatedUser.bannato).toBe(false);
   });
 
+  test('admin dashboard legge statistiche, sospende e riabilita un utente', async () => {
+    const { token, loginRes } = await createAdminAndLogin();
+    expect(loginRes.statusCode).toBe(200);
+
+    const user = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Utente',
+      cognome: 'Dashboard',
+      email: 'dashboard-flow@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+      isSospeso: false,
+      bannato: false,
+    });
+
+    const stats = await request(app)
+      .get('/api/v1/admin/statistiche')
+      .set('Authorization', `Bearer ${token}`);
+    expect(stats.statusCode).toBe(200);
+    expect(stats.body.totaleUtenti).toBeGreaterThanOrEqual(1);
+
+    const users = await request(app)
+      .get('/api/v1/admin/users?search=dashboard-flow')
+      .set('Authorization', `Bearer ${token}`);
+    expect(users.statusCode).toBe(200);
+    expect(users.body.users).toHaveLength(1);
+    expect(users.body.users[0]).toMatchObject({
+      email: 'dashboard-flow@test.com',
+      isSospeso: false,
+    });
+
+    const sospendi = await request(app)
+      .post(`/api/v1/admin/utenti/${user._id}/sospendi`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(sospendi.statusCode).toBe(200);
+
+    const sospeso = await User.findById(user._id);
+    expect(sospeso.isSospeso).toBe(true);
+
+    const riabilita = await request(app)
+      .post(`/api/v1/admin/utenti/${user._id}/riabilita`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(riabilita.statusCode).toBe(200);
+
+    const riabilitato = await User.findById(user._id);
+    expect(riabilitato.isSospeso).toBe(false);
+  });
+
   test('admin non può riabilitare un account bannato', async () => {
     const { token, loginRes } = await createAdminAndLogin();
     expect(loginRes.statusCode).toBe(200);

@@ -816,6 +816,54 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /api/v1/admin/users:
+    get:
+      tags: [Admin]
+      summary: Lista utenti per dashboard admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista utenti paginata
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/annunci:
+    get:
+      tags: [Admin]
+      summary: Lista annunci per dashboard admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: stato
+          in: query
+          schema:
+            type: string
+            enum: [DISPONIBILE, PRENOTATO, RITIRATO, SCADUTO]
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista annunci paginata
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /api/v1/admin/segnalazioni:
     get:
       tags: [Admin]
@@ -834,6 +882,29 @@ paths:
                   additionalProperties: true
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/segnalazioni/{id}/malus:
+    post:
+      tags: [Admin]
+      summary: Applica un malus all'utente segnalato
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Malus applicato
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /api/v1/admin/utenti/{id}/ban:
     post:
@@ -888,19 +959,31 @@ paths:
   /api/v1/admin/annunci/{id}/forza:
     patch:
       tags: [Admin]
-      summary: Forza stato annuncio a DISPONIBILE
+      summary: Forza lo stato di un annuncio
       security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stato:
+                  type: string
+                  enum: [DISPONIBILE, SCADUTO, RITIRATO]
       responses:
         '200':
-          description: Annuncio ripristinato
+          description: Stato annuncio aggiornato
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -913,8 +996,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Id'
       responses:
-        '200':
-          $ref: '#/components/responses/Message'
+        '204':
+          description: Annuncio rimosso
         '404':
           $ref: '#/components/responses/NotFound'
 
