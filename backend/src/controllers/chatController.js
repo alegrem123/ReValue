@@ -55,7 +55,7 @@ async function getConversazioniMe(req, res) {
 
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -103,7 +103,7 @@ async function getMessaggi(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
   }
 }
 
@@ -162,7 +162,7 @@ async function inviaMessaggio(req, res) {
 
     return res.status(201).json({ ok: true, data: salvato });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
   }
 }
 
@@ -235,7 +235,7 @@ async function getMessaggiRecenti(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
   }
 }
 
@@ -259,7 +259,7 @@ async function getNonLettiCount(req, res) {
 
     return res.status(200).json({ ok: true, data: { nonLetti: totale } });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
   }
 }
 
@@ -275,7 +275,7 @@ async function setTyping(req, res) {
     await req.conversazione.save();
     return res.status(204).end();
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
   }
 }
 

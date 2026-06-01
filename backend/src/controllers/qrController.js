@@ -41,7 +41,7 @@ async function generaQR(req, res) {
     }
     // stato === 'ATTIVA' da qui in poi
 
-    // OCL #7: annuncio must be PRENOTATO to generate QR (pre-condition for generaQR)
+    // Precondizione QR: la prenotazione attiva deve riferirsi a un annuncio PRENOTATO.
     if (prenotazione.annuncio.stato !== 'PRENOTATO') {
       return res.status(409).json({ error: 'Impossibile generare QR: annuncio non in stato PRENOTATO' });
     }
@@ -51,7 +51,6 @@ async function generaQR(req, res) {
       return res.status(403).json({ error: 'Solo il donatore può generare il QR per questa prenotazione' });
     }
 
-    // OCL #13: solo il donatore della prenotazione può generare il QR
     // Return existing valid token if available
     const existing = await TokenQR.findOne({ prenotazione: prenotazione._id, usato: false });
     if (existing && existing.scadenza > new Date()) {

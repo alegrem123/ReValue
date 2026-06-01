@@ -207,7 +207,7 @@ async function getCatalogo(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -248,7 +248,7 @@ async function getAnnuncio(req, res) {
 
     return res.status(200).json(dati);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -288,7 +288,7 @@ async function creaAnnuncio(req, res) {
     if (err.name === 'ValidationError') {
       return res.status(400).json({ error: err.message });
     }
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -337,7 +337,7 @@ async function modificaAnnuncio(req, res) {
     if (err.name === 'ValidationError') {
       return res.status(400).json({ error: err.message });
     }
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -371,7 +371,7 @@ async function cancellaAnnuncio(req, res) {
 
     return res.status(200).json({ message: 'Annuncio rimosso' });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -439,7 +439,7 @@ async function getMieiAnnunci(req, res) {
 
     return res.status(200).json(annunci);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 

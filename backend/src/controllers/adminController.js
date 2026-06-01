@@ -198,11 +198,21 @@ async function applicaMalusSegnalazione(req, res) {
     let utente, segnalazione;
     try {
       await session.withTransaction(async () => {
-        segnalazione = await Segnalazione.findOneAndUpdate(
-          { _id: req.params.id, stato: { $ne: 'RISOLTA' } },
-          { $set: { stato: 'RISOLTA' } },
-          { new: true, session }
-        );
+        const existing = await Segnalazione.findById(req.params.id).session(session);
+        if (!existing) {
+          const err = new Error('Segnalazione non trovata');
+          err.statusCode = 404;
+          throw err;
+        }
+        if (existing.stato === 'RISOLTA') {
+          const err = new Error('Segnalazione già risolta');
+          err.statusCode = 409;
+          throw err;
+        }
+
+        existing.stato = 'RISOLTA';
+        segnalazione = await existing.save({ session });
+
         if (!segnalazione) {
           const err = new Error('Segnalazione non trovata o già risolta');
           err.statusCode = 409;
@@ -220,7 +230,7 @@ async function applicaMalusSegnalazione(req, res) {
       utente,
     });
   } catch (err) {
-    if (err.statusCode === 409) return res.status(409).json({ error: err.message });
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
@@ -235,22 +245,37 @@ async function applicaMalusSegnalazione(req, res) {
  */
 async function bannaUtente(req, res) {
   try {
-    const utente = await User.findById(req.params.id);
-    if (!utente) return res.status(404).json({ error: 'Utente non trovato' });
+    const session = await mongoose.startSession();
+    let utente;
+    try {
+      await session.withTransaction(async () => {
+        utente = await User.findById(req.params.id).session(session);
+        if (!utente) {
+          const err = new Error('Utente non trovato');
+          err.statusCode = 404;
+          throw err;
+        }
 
-    // admin non può bannare altri admin
-    if (utente.ruolo === 'admin') {
-      return res.status(403).json({ error: 'Non puoi bannare un amministratore' });
+        // admin non può bannare altri admin
+        if (utente.ruolo === 'admin') {
+          const err = new Error('Non puoi bannare un amministratore');
+          err.statusCode = 403;
+          throw err;
+        }
+
+        utente.isSospeso = true;
+        utente.bannato = true;
+        await utente.save({ session });
+
+        await applicaMalus(utente._id, { session });
+      });
+    } finally {
+      await session.endSession();
     }
-
-    utente.isSospeso = true;
-    utente.bannato = true;
-    await utente.save();
-
-    await applicaMalus(utente._id);
 
     return res.status(200).json({ message: `Utente ${utente.email} bannato` });
   } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
@@ -264,20 +289,35 @@ async function bannaUtente(req, res) {
  */
 async function sospendiUtente(req, res) {
   try {
-    const utente = await User.findById(req.params.id);
-    if (!utente) return res.status(404).json({ error: 'Utente non trovato' });
+    const session = await mongoose.startSession();
+    let utente;
+    try {
+      await session.withTransaction(async () => {
+        utente = await User.findById(req.params.id).session(session);
+        if (!utente) {
+          const err = new Error('Utente non trovato');
+          err.statusCode = 404;
+          throw err;
+        }
 
-    if (utente.ruolo === 'admin') {
-      return res.status(403).json({ error: 'Non puoi sospendere un amministratore' });
+        if (utente.ruolo === 'admin') {
+          const err = new Error('Non puoi sospendere un amministratore');
+          err.statusCode = 403;
+          throw err;
+        }
+
+        utente.isSospeso = true;
+        await utente.save({ session });
+
+        await applicaMalus(utente._id, { session });
+      });
+    } finally {
+      await session.endSession();
     }
-
-    utente.isSospeso = true;
-    await utente.save();
-
-    await applicaMalus(utente._id, 'sospensione amministrativa');
 
     return res.status(200).json({ message: `Utente ${utente.email} sospeso` });
   } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }

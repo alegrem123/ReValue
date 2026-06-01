@@ -28,7 +28,7 @@ async function getStorico(req, res) {
 
     return res.status(200).json(conversazione.messaggi);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -78,7 +78,7 @@ async function invia(req, res) {
     const ultimo = conversazione.messaggi[conversazione.messaggi.length - 1];
     return res.status(201).json(ultimo);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -110,7 +110,7 @@ async function marcaLetto(req, res) {
 
     return res.status(200).json({ ok: true, data: messaggio });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
   }
 }
 

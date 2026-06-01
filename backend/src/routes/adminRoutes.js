@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { authenticate, requireAdmin } = require('../middleware/authMiddleware');
+const { validateObjectIdParam } = require('../middleware/validateObjectId');
 const {
   getStatistiche,
   listUsers,
@@ -29,15 +30,15 @@ router.get('/annunci', listAnnunci);
 
 // UC13: gestione segnalazioni
 router.get('/segnalazioni', getSegnalazioni);
-router.post('/segnalazioni/:id/malus', applicaMalusSegnalazione);
+router.post('/segnalazioni/:id/malus', validateObjectIdParam('id'), applicaMalusSegnalazione);
 
 // RF29/D2 §2.2.2: gestione account
-router.post('/utenti/:id/ban', bannaUtente);
-router.post('/utenti/:id/sospendi', sospendiUtente);
-router.post('/utenti/:id/riabilita', riabilitaUtente);
+router.post('/utenti/:id/ban', validateObjectIdParam('id'), bannaUtente);
+router.post('/utenti/:id/sospendi', validateObjectIdParam('id'), sospendiUtente);
+router.post('/utenti/:id/riabilita', validateObjectIdParam('id'), riabilitaUtente);
 
 // RF31/D2 §2.2.2: gestione annunci
-router.patch('/annunci/:id/forza', forzaStatoAnnuncio);
-router.delete('/annunci/:id', rimuoviAnnuncio);
+router.patch('/annunci/:id/forza', validateObjectIdParam('id'), forzaStatoAnnuncio);
+router.delete('/annunci/:id', validateObjectIdParam('id'), rimuoviAnnuncio);
 
 module.exports = router;

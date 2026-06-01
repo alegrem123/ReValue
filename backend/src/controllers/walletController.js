@@ -70,7 +70,7 @@ async function me(req, res) {
       storico,
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -86,7 +86,7 @@ async function saldo(req, res) {
     const bilancio = await getSaldo(req.user.id);
     return res.status(200).json({ bilancio });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -111,7 +111,7 @@ async function storico(req, res) {
     const risultato = filtraEPagina(transazioni, req.query);
     return res.status(200).json(risultato);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 

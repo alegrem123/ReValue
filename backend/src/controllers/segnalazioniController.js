@@ -1,6 +1,7 @@
 const Segnalazione = require('../models/segnalazioneModel');
 const notificheService = require('../services/notificheService');
 const User = require('../models/userModel');
+const { isValidObjectId } = require('../middleware/validateObjectId');
 
 /**
  * POST /api/v1/segnalazioni
@@ -13,6 +14,12 @@ async function createSegnalazione(req, res) {
 
     if (!segnalato) {
       return res.status(400).json({ error: 'segnalato è obbligatorio' });
+    }
+    if (!isValidObjectId(segnalato)) {
+      return res.status(400).json({ error: 'segnalato non valido' });
+    }
+    if (annuncio && !isValidObjectId(annuncio)) {
+      return res.status(400).json({ error: 'annuncio non valido' });
     }
 
     const TIPI_VALIDI = ['descrizione', 'inappropriato', 'altro'];
@@ -40,7 +47,11 @@ async function createSegnalazione(req, res) {
 
     const admin = await User.findOne({ ruolo: 'admin' }).select('_id').lean();
     if (admin) {
-      await notificheService.creaNotifica(admin._id, 'segnalazione', `Nuova segnalazione da ${req.user.id}`, `/api/v1/admin/segnalazioni`);
+      notificheService
+        .creaNotifica(admin._id, 'segnalazione', `Nuova segnalazione da ${req.user.id}`, '/api/v1/admin/segnalazioni')
+        .catch((err) => {
+          console.error('Errore notifica segnalazione:', err);
+        });
     }
 
     return res.status(201).json({ segnalazione });
