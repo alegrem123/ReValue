@@ -107,7 +107,7 @@ Opzione B — serve statico:
 npx serve frontend
 ```
 
-Il frontend chiama l'API su `/api/...` — assicurati che il backend giri su porta 3000 e che il browser punti allo stesso host (o configura un proxy).
+Il frontend chiama l'API su `/api/v1/...` — assicurati che il backend giri su porta 3000 e che il browser punti allo stesso host (o configura un proxy).
 
 ### Pagine principali
 
