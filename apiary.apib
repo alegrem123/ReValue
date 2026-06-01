@@ -1430,6 +1430,41 @@ Endpoint riservati al ruolo `admin`.
           "totaleCrediti": 120
         }
 
+## Lista utenti [GET /api/v1/admin/users{?search,page,limit}]
+
++ Parameters
+    + search: `mario` (string, optional)
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "users": [
+            {
+              "_id": "660000000000000000000001",
+              "nome": "Mario",
+              "cognome": "Rossi",
+              "email": "mario@example.com",
+              "malusCount": 0,
+              "isSospeso": false,
+              "bannato": false,
+              "ruolo": "user",
+              "createdAt": "2026-01-10T10:00:00.000Z"
+            }
+          ],
+          "pagination": { "page": 1, "limit": 20, "total": 1, "pages": 1 }
+        }
+
++ Response 403 (application/json)
+
+        { "error": "Accesso negato" }
+
 ## Segnalazioni [GET /api/v1/admin/segnalazioni]
 
 + Request
@@ -1446,6 +1481,32 @@ Endpoint riservati al ruolo `admin`.
             "motivo": "No-show: acquirente non si e presentato al ritiro"
           }
         ]
+
+## Applica malus segnalazione [POST /api/v1/admin/segnalazioni/{id}/malus]
+
++ Parameters
+    + id: `670000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Malus applicato a mario@example.com",
+          "segnalazione": { "_id": "670000000000000000000001", "stato": "RISOLTA" },
+          "utente": { "_id": "660000000000000000000001", "malusCount": 1, "isSospeso": false }
+        }
+
++ Response 404 (application/json)
+
+        { "error": "Segnalazione non trovata" }
+
++ Response 409 (application/json)
+
+        { "error": "Segnalazione non trovata o già risolta" }
 
 ## Banna utente [POST /api/v1/admin/utenti/{id}/ban]
 
@@ -1495,6 +1556,38 @@ Endpoint riservati al ruolo `admin`.
           "message": "Utente mario.rossi@example.com riabilitato"
         }
 
+## Lista annunci admin [GET /api/v1/admin/annunci{?stato,page,limit}]
+
++ Parameters
+    + stato: `DISPONIBILE` (string, optional) - Uno tra DISPONIBILE, PRENOTATO, CEDUTO, SCADUTO
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "annunci": [
+            {
+              "_id": "665000000000000000000001",
+              "titolo": "Sedia vintage",
+              "stato": "DISPONIBILE",
+              "isAttivo": true,
+              "dataScadenza": "2026-07-01T00:00:00.000Z",
+              "donatore": { "nome": "Mario", "cognome": "Rossi", "email": "mario@example.com" }
+            }
+          ],
+          "pagination": { "page": 1, "limit": 20, "total": 1, "pages": 1 }
+        }
+
++ Response 403 (application/json)
+
+        { "error": "Accesso negato" }
+
 ## Forza stato annuncio [PATCH /api/v1/admin/annunci/{id}/forza]
 
 + Parameters
@@ -1526,11 +1619,7 @@ Endpoint riservati al ruolo `admin`.
 
             Authorization: Bearer jwt-admin-token
 
-+ Response 200 (application/json)
-
-        {
-          "message": "Annuncio rimosso"
-        }
++ Response 204
 
 # Group Scambi Legacy
 
