@@ -3,6 +3,15 @@
  * Gestione pagina "I miei annunci".
  */
 
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const listEl = document.getElementById('my-annunci-list');
 const loadingEl = document.getElementById('my-annunci-loading');
 const emptyEl = document.getElementById('my-annunci-empty');
@@ -57,7 +66,7 @@ function statusClass(stato) {
   const classes = {
     DISPONIBILE: 'bg-success',
     PRENOTATO: 'bg-warning text-dark',
-    RITIRATO: 'bg-secondary',
+    CEDUTO: 'bg-secondary',
     SCADUTO: 'bg-danger',
   };
   return classes[stato] || 'bg-secondary';
@@ -89,10 +98,10 @@ function renderAnnunci() {
         />
         <div class="flex-grow-1">
           <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
-            <h3 class="h5 fw-bold mb-0">${annuncio.titolo || 'Annuncio senza titolo'}</h3>
-            <span class="badge status-badge ${statusClass(annuncio.stato)}">${annuncio.stato || 'N/D'}</span>
+            <h3 class="h5 fw-bold mb-0">${escapeHtml(annuncio.titolo) || 'Annuncio senza titolo'}</h3>
+            <span class="badge status-badge ${statusClass(annuncio.stato)}">${escapeHtml(annuncio.stato) || 'N/D'}</span>
           </div>
-          <p class="text-muted mb-1">${annuncio.oggetto?.categoria || 'Categoria non indicata'}</p>
+          <p class="text-muted mb-1">${escapeHtml(annuncio.oggetto?.categoria) || 'Categoria non indicata'}</p>
           <p class="small text-muted mb-0">Scadenza: ${formatDateItalian(annuncio.dataScadenza)}</p>
         </div>
         <div class="d-flex flex-column flex-sm-row gap-2">

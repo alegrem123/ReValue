@@ -294,7 +294,7 @@ async function creaAnnuncio(req, res) {
 
 /**
  * PUT /api/v1/annunci/:id
- * Modifica annuncio (RF18). Solo il donatore, solo se stato === DISPONIBILE (OCL #8).
+ * Modifica annuncio (RF18). Solo il donatore, solo se stato === DISPONIBILE (OCL #7).
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -312,7 +312,7 @@ async function modificaAnnuncio(req, res) {
       return res.status(403).json({ error: 'Non autorizzato' });
     }
 
-    // OCL #8: modificabile solo se DISPONIBILE
+    // OCL #7: modificabile solo se DISPONIBILE
     if (annuncio.stato !== 'DISPONIBILE') {
       return res.status(409).json({ error: 'Annuncio non modificabile: stato ' + annuncio.stato });
     }
@@ -378,8 +378,8 @@ async function cancellaAnnuncio(req, res) {
 
 /**
  * PATCH /api/v1/annunci/:id/stato
- * Cambia stato annuncio: DISPONIBILE→PRENOTATO→RITIRATO/SCADUTO.
- * Solo donatore o admin possono cambiare stato.
+ * Cambia stato annuncio: DISPONIBILE→PRENOTATO→CEDUTO/SCADUTO.
+ * Solo il donatore può cambiare stato (OCL #2).
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -388,7 +388,7 @@ async function cambiaStatoAnnuncio(req, res) {
   try {
     const { stato } = req.body;
 
-    if (!stato || !['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
+    if (!stato || !['DISPONIBILE', 'PRENOTATO', 'CEDUTO', 'SCADUTO'].includes(stato)) {
       return res.status(400).json({ error: 'Stato non valido' });
     }
 
@@ -398,20 +398,17 @@ async function cambiaStatoAnnuncio(req, res) {
       return res.status(404).json({ error: 'Annuncio non trovato' });
     }
 
-    // Solo donatore o admin possono cambiare stato
-    const isDonatore = annuncio.donatore.toString() === req.user.id;
-    const isAdmin = req.user.ruolo === 'admin';
-
-    if (!isDonatore && !isAdmin) {
+    // OCL #2: solo il donatore può cambiare stato
+    if (annuncio.donatore.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Non autorizzato' });
     }
 
-    // Validazione transizioni
+    // OCL #3: macchina a stati — no back-transition; annullamento via DELETE /prenotazioni/:id
     const transizioniValide = {
       'DISPONIBILE': ['PRENOTATO', 'SCADUTO'],
-      'PRENOTATO': ['RITIRATO', 'DISPONIBILE'], // annulla prenotazione
-      'RITIRATO': [],
-      'SCADUTO': []
+      'PRENOTATO':   ['CEDUTO'],
+      'CEDUTO':      [],
+      'SCADUTO':     [],
     };
 
     if (!transizioniValide[annuncio.stato].includes(stato)) {
@@ -423,7 +420,7 @@ async function cambiaStatoAnnuncio(req, res) {
 
     return res.status(200).json(annuncio);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
