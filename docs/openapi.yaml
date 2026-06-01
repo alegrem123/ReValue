@@ -1663,7 +1663,7 @@ components:
         titolo: { type: string }
         descrizione: { type: string }
         costoCrediti: { type: integer }
-        stock: { type: integer, description: '0 = illimitato' }
+        stock: { type: integer, description: 'Stock disponibili; 0 = esaurito' }
         attivo: { type: boolean }
     Riscatto:
       type: object

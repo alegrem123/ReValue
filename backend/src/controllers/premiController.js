@@ -51,14 +51,12 @@ async function riscattaCoupon(req, res) {
         {
           _id: req.params.id,
           attivo: true,
-          $or: [{ stock: { $gt: 0 } }, { stock: -1 }],
+          stock: { $gt: 0 },
         },
         [
           {
             $set: {
-              stock: {
-                $cond: [{ $gt: ['$stock', 0] }, { $subtract: ['$stock', 1] }, '$stock'],
-              },
+              stock: { $subtract: ['$stock', 1] },
             },
           },
         ],
