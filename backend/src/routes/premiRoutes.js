@@ -4,7 +4,7 @@ const { getPremi, riscattaCoupon, getMieiRiscatti, marcaUsato } = require('../co
 
 const router = Router();
 
-// UC7: lista coupon attivi — pubblica ma auth preferibile per coerenza
+// UC7: lista coupon attivi — richiede utente autenticato
 router.get('/', authenticate, getPremi);
 
 // UC7: riscatta coupon (OCL #17 — verifica saldo)

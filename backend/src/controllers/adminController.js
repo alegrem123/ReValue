@@ -59,7 +59,7 @@ async function getStatistiche(req, res) {
       totaleCrediti: liquiditaAttuale,
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -80,7 +80,7 @@ async function getSegnalazioni(req, res) {
 
     return res.status(200).json(segnalazioni);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -106,11 +106,11 @@ async function bannaUtente(req, res) {
     utente.bannato = true;
     await utente.save();
 
-    await applicaMalus(utente._id).catch((err) => console.error('applicaMalus failed:', err));
+    await applicaMalus(utente._id);
 
     return res.status(200).json({ message: `Utente ${utente.email} bannato` });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -133,11 +133,11 @@ async function sospendiUtente(req, res) {
     utente.isSospeso = true;
     await utente.save();
 
-    await applicaMalus(utente._id, 'sospensione amministrativa').catch(() => {});
+    await applicaMalus(utente._id, 'sospensione amministrativa');
 
     return res.status(200).json({ message: `Utente ${utente.email} sospeso` });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -168,7 +168,7 @@ async function riabilitaUtente(req, res) {
 
     return res.status(200).json({ message: `Utente ${utente.email} riabilitato` });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -191,7 +191,7 @@ async function forzaStatoAnnuncio(req, res) {
 
     return res.status(200).json({ message: 'Annuncio ripristinato a DISPONIBILE', annuncio });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -212,9 +212,9 @@ async function rimuoviAnnuncio(req, res) {
 
     if (!annuncio) return res.status(404).json({ error: 'Annuncio non trovato' });
 
-    return res.status(200).json({ message: 'Annuncio rimosso' });
+    return res.status(204).send();
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 

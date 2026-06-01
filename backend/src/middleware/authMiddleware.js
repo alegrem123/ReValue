@@ -19,7 +19,7 @@ async function authenticate(req, res, next) {
     const user = await User.findById(payload.id);
 
     if (!user) {
-      return res.status(404).json({ error: 'Utente non trovato' });
+      return res.status(401).json({ error: 'Token non valido' });
     }
 
     if (user.isSospeso) {
@@ -39,7 +39,7 @@ async function authenticate(req, res, next) {
     if (err.name === 'CastError') {
       return res.status(401).json({ error: 'Invalid token' });
     }
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 

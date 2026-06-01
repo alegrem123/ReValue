@@ -147,24 +147,17 @@ async function inviaMessaggio(req, res) {
 
     const salvato = req.conversazione.messaggi[req.conversazione.messaggi.length - 1];
 
-    // RF12 — Notifica nuovo messaggio all'altro partecipante (fire-and-forget)
+    // RF12 — Notifica nuovo messaggio all'altro partecipante
     const destinatario = req.conversazione.partecipanti.find(
       (p) => p.toString() !== req.user.id
     );
     if (destinatario) {
-      notificheService
-        .creaNotifica({
-          destinatario: destinatario.toString(),
-          tipo: 'nuovo_messaggio',
-          messaggio: `Nuovo messaggio da ${req.user.nome || 'utente'}`,
-          riferimento: {
-            tipo: 'conversazione',
-            id: req.conversazione._id.toString(),
-          },
-        })
-        .catch((err) =>
-          console.error('[chatController] errore notifica:', err.message)
-        );
+      await notificheService.creaNotifica({
+        destinatario: destinatario.toString(),
+        tipo: 'messaggio',
+        testo: `Nuovo messaggio da ${req.user.nome || 'utente'}`,
+        link: `/conversazioni/${req.conversazione._id}`,
+      });
     }
 
     return res.status(201).json({ ok: true, data: salvato });
