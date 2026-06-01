@@ -20,10 +20,11 @@ function getJwtSecret() {
 /**
  * Signs a JWT payload with the configured secret and a 7-day expiration.
  * @param {object} payload - Plain object to embed in the JWT.
+ * @param {object} [options={}] - Optional jwt.sign options (e.g. { expiresIn: '-1s' }).
  * @returns {string} Signed JWT token.
  */
-function signToken(payload) {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: TOKEN_EXPIRATION });
+function signToken(payload, options = {}) {
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: TOKEN_EXPIRATION, ...options });
 }
 
 /**
