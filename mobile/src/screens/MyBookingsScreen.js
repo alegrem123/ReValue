@@ -104,10 +104,6 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
             {b.stato === 'ATTIVA' ? (
               <View style={styles.actions}>
                 <Button
-                  title="Mostra QR"
-                  onPress={() => onOpenQRDisplay(b._id)}
-                />
-                <Button
                   title="Scansiona QR"
                   variant="secondary"
                   onPress={() => onOpenQRScan()}

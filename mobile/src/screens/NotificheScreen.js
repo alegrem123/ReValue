@@ -29,7 +29,8 @@ export function NotificheScreen({ onBack }) {
       setError(res.error || 'Impossibile caricare le notifiche.');
       return;
     }
-    setNotifiche(res.data?.notifiche ?? res.data?.data ?? res.data ?? []);
+    const payload = res.data?.data ?? res.data;
+    setNotifiche(Array.isArray(payload?.notifiche) ? payload.notifiche : []);
   }, []);
 
   useEffect(() => {

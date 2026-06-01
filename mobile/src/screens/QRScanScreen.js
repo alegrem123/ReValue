@@ -44,8 +44,7 @@ export function QRScanScreen({ onSuccess, onBack }) {
 
       <View style={styles.hint}>
         <Text style={styles.hintText}>
-          Il donatore mostra un QR nella sezione "Prenota" → "Mostra QR".
-          Inserisci il codice numerico per completare lo scambio.
+          Chiedi al donatore di aprire il QR dalla prenotazione ricevuta, poi inserisci il codice mostrato.
         </Text>
       </View>
     </Screen>
