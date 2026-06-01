@@ -23,7 +23,7 @@ ReValue/
 
 | Tool | Versione minima |
 |------|-----------------|
-| Node.js | 20.x (LTS) |
+| Node.js | 22.x (LTS) |
 | npm | 9.x |
 | Expo CLI | `npx expo` (incluso con Expo SDK 54) |
 | MongoDB Atlas | account con cluster attivo |
@@ -64,7 +64,7 @@ Server disponibile su `http://localhost:3000`.
 ### Esecuzione test backend
 
 Prerequisiti:
-- Node.js 18.18.2, come indicato nel file `.nvmrc` nella root del repository.
+- Node.js 22.x, come indicato nel file `.nvmrc` nella root del repository.
 - npm 9.x.
 - Dipendenze installate a partire da `backend/package-lock.json`.
 
