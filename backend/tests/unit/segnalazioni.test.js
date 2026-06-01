@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const request = require('supertest');
 const app = require('../../app');
 const User = require('../../src/models/userModel');
@@ -14,7 +14,7 @@ let tokenSegnalante;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'test-jwt-secret';
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongoServer.getUri());
 });
 

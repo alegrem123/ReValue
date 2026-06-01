@@ -14,7 +14,7 @@
 
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
 
 // JWT_SECRET necessario per firmare i token nei test
 process.env.JWT_SECRET = 'test-secret-key-for-integration-tests';
@@ -28,7 +28,7 @@ let mongoServer;
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongoServer.getUri());
 });
 

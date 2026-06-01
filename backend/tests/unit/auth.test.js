@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const User = require('../../src/models/userModel');
 const { hashPassword } = require('../../src/utils/password');
 
@@ -12,13 +11,13 @@ jest.mock('../../src/services/emailService', () => ({
 
 const emailService = require('../../src/services/emailService');
 const { register, login } = require('../../src/controllers/authController');
-const { verifyToken } = require('../../src/utils/jwt');
+const { verifyToken, signToken } = require('../../src/utils/jwt');
 
 let mongoServer;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'test-jwt-secret';
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongoServer.getUri());
 });
 
@@ -189,13 +188,7 @@ describe('Auth flow', () => {
 
 describe('JWT utility', () => {
   test('verifyToken fallisce per JWT scaduto', async () => {
-    const token = jwt.sign(
-      { id: 'test-id', ruolo: 'user' },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: '-1s',
-      }
-    );
+    const token = signToken({ id: 'test-id', ruolo: 'user' }, { expiresIn: '-1s' });
 
     expect(() => verifyToken(token)).toThrow('Token expired');
   });
