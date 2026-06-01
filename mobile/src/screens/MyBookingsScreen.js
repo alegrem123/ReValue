@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { api } from '../api/client';
+import { api, getUserId } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
@@ -31,10 +31,11 @@ function entroQuindiciMinuti(dataPrenotazione) {
 }
 
 export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
-  const [bookings, setBookings]   = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [filter, setFilter]       = useState('');
-  const [error, setError]         = useState('');
+  const [bookings, setBookings]       = useState([]);
+  const [loading, setLoading]         = useState(false);
+  const [filter, setFilter]           = useState('');
+  const [error, setError]             = useState('');
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +47,7 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { getUserId().then(setCurrentUserId); }, []);
 
   async function annulla(id) {
     Alert.alert('Annulla prenotazione', 'Sei sicuro? Puoi annullare solo entro 15 minuti.', [
@@ -65,7 +67,7 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
   const visible = filter ? bookings.filter((b) => b.stato === filter) : bookings;
 
   return (
-    <Screen title="Prenotazioni" subtitle="Le tue prenotazioni come acquirente." scroll={false}>
+    <Screen title="Prenotazioni" subtitle="Le tue prenotazioni (come acquirente o donatore)." scroll={false}>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <View style={styles.filters}>
@@ -101,20 +103,30 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
             </Text>
             <Text style={styles.meta}>{formatDate(b.dataPrenotazione)}</Text>
 
-            {b.stato === 'ATTIVA' ? (
+            {b.stato === 'ATTIVA' && currentUserId ? (
               <View style={styles.actions}>
-                <Button
-                  title="Scansiona QR"
-                  variant="secondary"
-                  onPress={() => onOpenQRScan()}
-                />
-                {entroQuindiciMinuti(b.dataPrenotazione) ? (
+                {b.donatore?._id === currentUserId ? (
                   <Button
-                    title="Annulla"
-                    variant="danger"
-                    onPress={() => annulla(b._id)}
+                    title="Mostra QR"
+                    variant="primary"
+                    onPress={() => onOpenQRDisplay(b._id)}
                   />
-                ) : null}
+                ) : (
+                  <>
+                    <Button
+                      title="Scansiona QR"
+                      variant="secondary"
+                      onPress={() => onOpenQRScan()}
+                    />
+                    {entroQuindiciMinuti(b.dataPrenotazione) ? (
+                      <Button
+                        title="Annulla"
+                        variant="danger"
+                        onPress={() => annulla(b._id)}
+                      />
+                    ) : null}
+                  </>
+                )}
               </View>
             ) : null}
           </View>
