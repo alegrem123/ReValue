@@ -1,4 +1,5 @@
 const { randomUUID } = require('crypto');
+const mongoose = require('mongoose');
 const Coupon = require('../models/couponModel');
 const Riscatto = require('../models/riscattoModel');
 const walletService = require('../services/walletService');
@@ -27,7 +28,7 @@ async function getPremi(req, res) {
 
     return res.status(200).json({ coupon, totale, page, limit });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -37,53 +38,66 @@ async function getPremi(req, res) {
  * UC7, OCL #17
  */
 async function riscattaCoupon(req, res) {
+  // Pre-check: existence and availability (outside transaction for clear error codes)
+  const existing = await Coupon.findById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Coupon non trovato' });
+  if (!existing.attivo) return res.status(409).json({ error: 'Coupon non disponibile' });
+
+  const session = await mongoose.startSession();
   try {
-    const coupon = await Coupon.findById(req.params.id);
-    if (!coupon) return res.status(404).json({ error: 'Coupon non trovato' });
-    if (!coupon.attivo) return res.status(409).json({ error: 'Coupon non disponibile' });
-
-    // OCL #17 — verifica saldo prima di procedere
-    const saldo = await walletService.getSaldo(req.user.id);
-    if (saldo < coupon.costoCrediti) {
-      return res.status(409).json({ error: 'Saldo insufficiente (OCL #17)' });
-    }
-
-    // Decrementa stock atomicamente se limitato (stock > 0)
-    if (coupon.stock > 0) {
-      const updated = await Coupon.findOneAndUpdate(
-        { _id: coupon._id, stock: { $gt: 0 } },
-        { $inc: { stock: -1 } },
-        { new: true }
+    let riscatto;
+    await session.withTransaction(async () => {
+      const coupon = await Coupon.findOneAndUpdate(
+        {
+          _id: req.params.id,
+          attivo: true,
+          $or: [{ stock: { $gt: 0 } }, { stock: -1 }],
+        },
+        [
+          {
+            $set: {
+              stock: {
+                $cond: [{ $gt: ['$stock', 0] }, { $subtract: ['$stock', 1] }, '$stock'],
+              },
+            },
+          },
+        ],
+        { new: true, session }
       );
-      if (!updated) {
-        return res.status(409).json({ error: 'Stock esaurito' });
-      }
-    }
 
-    try {
-      await walletService.sottraiPunti(
-        req.user.id,
-        coupon.costoCrediti,
-        `Riscatto coupon: ${coupon.titolo}`,
-        coupon._id
+      if (!coupon) {
+        const err = new Error('Stock esaurito');
+        err.statusCode = 409;
+        throw err;
+      }
+
+      try {
+        await walletService.sottraiPunti(
+          req.user.id,
+          coupon.costoCrediti,
+          `Riscatto coupon: ${coupon.titolo}`,
+          coupon._id,
+          { session }
+        );
+      } catch (walletErr) {
+        const err = new Error('Saldo insufficiente (OCL #17)');
+        err.statusCode = 409;
+        throw err;
+      }
+
+      [riscatto] = await Riscatto.create(
+        [{ utente: req.user.id, coupon: coupon._id, codiceUnivoco: randomUUID() }],
+        { session }
       );
-    } catch (walletErr) {
-      // Rollback stock se sottrazione fallisce
-      if (coupon.stock > 0) {
-        await Coupon.findByIdAndUpdate(coupon._id, { $inc: { stock: 1 } });
-      }
-      return res.status(409).json({ error: walletErr.message });
-    }
-
-    const riscatto = await Riscatto.create({
-      utente: req.user.id,
-      coupon: coupon._id,
-      codiceUnivoco: randomUUID(),
     });
 
     return res.status(201).json({ riscatto, codiceUnivoco: riscatto.codiceUnivoco });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    const status = err.statusCode || 500;
+    const message = status < 500 ? err.message : 'Errore interno del server';
+    return res.status(status).json({ error: message });
+  } finally {
+    await session.endSession();
   }
 }
 
@@ -109,7 +123,7 @@ async function getMieiRiscatti(req, res) {
 
     return res.status(200).json({ riscatti, totale, page, limit });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -134,7 +148,7 @@ async function marcaUsato(req, res) {
 
     return res.status(200).json({ riscatto });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 

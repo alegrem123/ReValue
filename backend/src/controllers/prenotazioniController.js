@@ -1,10 +1,12 @@
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const Annuncio = require('../models/annuncioModel');
 const Prenotazione = require('../models/prenotazioneModel');
 const TokenQR = require('../models/tokenQRModel');
 const Conversazione = require('../models/conversazioneModel');
 const User = require('../models/userModel');
 const Segnalazione = require('../models/segnalazioneModel');
+const { applicaMalus } = require('../services/userService');
 
 // finestra massima per disdire il ritiro (RF20): 3 giorni in ms
 const DISDETTA_TTL_MS = 3 * 24 * 60 * 60 * 1000;
@@ -61,18 +63,29 @@ async function creaPrenotazione(req, res) {
       return res.status(409).json({ error: 'Oggetto appena prenotato da un altro utente' });
     }
 
-    // crea Prenotazione
-    const prenotazione = await Prenotazione.create({
-      annuncio: annuncio._id,
-      acquirente: req.user.id,
-      donatore: annuncio.donatore,
-    });
-
-    // crea Conversazione (D2 §2.4.1, composizione con Prenotazione)
-    await Conversazione.create({
-      prenotazione: prenotazione._id,
-      partecipanti: [annuncio.donatore, req.user.id],
-    });
+    // crea Prenotazione e Conversazione in modo atomico; se fallisce, annuncio torna DISPONIBILE
+    const session = await mongoose.startSession();
+    let prenotazione;
+    try {
+      await session.withTransaction(async () => {
+        [prenotazione] = await Prenotazione.create(
+          [{ annuncio: annuncio._id, acquirente: req.user.id, donatore: annuncio.donatore }],
+          { session }
+        );
+        await Conversazione.create(
+          [{ prenotazione: prenotazione._id, partecipanti: [annuncio.donatore, req.user.id] }],
+          { session }
+        );
+      });
+    } catch (txErr) {
+      await Annuncio.findByIdAndUpdate(annuncio._id, {
+        $set: { stato: 'DISPONIBILE' },
+        $inc: { versione: 1 },
+      });
+      return res.status(500).json({ error: 'Errore interno del server' });
+    } finally {
+      await session.endSession();
+    }
 
     // RF25: svela indirizzo esatto solo dopo prenotazione confermata
     return res.status(201).json({
@@ -83,7 +96,7 @@ async function creaPrenotazione(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -127,7 +140,7 @@ async function annullaPrenotazione(req, res) {
 
     return res.status(200).json({ message: 'Prenotazione annullata' });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -155,7 +168,7 @@ async function getMiePrenotazioni(req, res) {
 
     return res.status(200).json(prenotazioni);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -187,7 +200,7 @@ async function getPrenotazione(req, res) {
 
     return res.status(200).json(prenotazione);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -234,19 +247,12 @@ async function segnalaMancatoRitiro(req, res) {
     // Rimuove TokenQR associato
     await TokenQR.deleteOne({ prenotazione: prenotazione._id });
 
-    // Penalità all'acquirente
-    const acquirente = await User.findById(prenotazione.acquirente);
-    if (acquirente) {
-      acquirente.malusCount += 1;
-      if (acquirente.malusCount >= 3) {
-        acquirente.isSospeso = true;
-      }
-      await acquirente.save();
-    }
+    // OCL #20: malusCount >= 5 → auto-sospensione (via applicaMalus atomico)
+    await applicaMalus(prenotazione.acquirente);
 
     return res.status(200).json({ message: 'Mancato ritiro segnalato con successo' });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -290,7 +296,7 @@ async function disdiciPrenotazione(req, res) {
 
     return res.status(200).json({ message: 'Ritiro disdetto' });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
