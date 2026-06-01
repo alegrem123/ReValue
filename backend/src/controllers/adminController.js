@@ -1,9 +1,11 @@
+const mongoose = require('mongoose');
 const User = require('../models/userModel');
 const { applicaMalus } = require('../services/userService');
 const Annuncio = require('../models/annuncioModel');
 const Prenotazione = require('../models/prenotazioneModel');
 const Segnalazione = require('../models/segnalazioneModel');
 const Wallet = require('../models/walletModel');
+const TokenQR = require('../models/tokenQRModel');
 
 /**
  * GET /api/v1/admin/statistiche
@@ -21,7 +23,7 @@ async function getStatistiche(req, res) {
     const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets, creditiErogati] = await Promise.all([
       Prenotazione.countDocuments({ stato: 'COMPLETATA', dataCompletamento: { $gte: inizioMese } }),
       User.countDocuments({ ruolo: 'user' }),
-      Segnalazione.countDocuments(),
+      Segnalazione.countDocuments({ stato: 'IN_ATTESA' }),
       Wallet.aggregate([{ $group: { _id: null, liquiditaAttuale: { $sum: '$bilancio' } } }]),
       Wallet.aggregate([
         { $unwind: '$transazioni' },
@@ -181,15 +183,44 @@ async function riabilitaUtente(req, res) {
  */
 async function forzaStatoAnnuncio(req, res) {
   try {
-    const annuncio = await Annuncio.findByIdAndUpdate(
-      req.params.id,
-      { $set: { stato: 'DISPONIBILE', isAttivo: true }, $inc: { versione: 1 } },
-      { new: true }
-    );
-
+    const annuncio = await Annuncio.findById(req.params.id);
     if (!annuncio) return res.status(404).json({ error: 'Annuncio non trovato' });
 
-    return res.status(200).json({ message: 'Annuncio ripristinato a DISPONIBILE', annuncio });
+    // Idempotency guard: skip transaction if already in target state
+    if (annuncio.stato === 'DISPONIBILE' && annuncio.isAttivo) {
+      return res.status(200).json({ message: 'Annuncio già disponibile', annuncio });
+    }
+
+    const session = await mongoose.startSession();
+    let updated;
+    try {
+      await session.withTransaction(async () => {
+        // Cancel active prenotazioni and their QR tokens
+        const prenotazioniAttive = await Prenotazione.find(
+          { annuncio: req.params.id, stato: 'ATTIVA' },
+          '_id',
+          { session }
+        );
+        const ids = prenotazioniAttive.map((p) => p._id);
+        if (ids.length > 0) {
+          await Prenotazione.updateMany(
+            { _id: { $in: ids } },
+            { $set: { stato: 'ANNULLATA' } },
+            { session }
+          );
+          await TokenQR.deleteMany({ prenotazione: { $in: ids } }).session(session);
+        }
+        updated = await Annuncio.findByIdAndUpdate(
+          req.params.id,
+          { $set: { stato: 'DISPONIBILE', isAttivo: true }, $inc: { versione: 1 } },
+          { new: true, session }
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return res.status(200).json({ message: 'Annuncio ripristinato a DISPONIBILE', annuncio: updated });
   } catch (err) {
     return res.status(500).json({ error: 'Errore interno del server' });
   }

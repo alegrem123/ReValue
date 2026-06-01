@@ -36,6 +36,11 @@ const segnalazioneSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    stato: {
+      type: String,
+      enum: ['IN_ATTESA', 'RISOLTA', 'ARCHIVIATA'],
+      default: 'IN_ATTESA',
+    },
   },
   {
     versionKey: false,
@@ -56,6 +61,7 @@ segnalazioneSchema.pre('validate', function validateDifferentUsers(next) {
 // OCL #19: segnalante !== segnalato — enforced at schema (pre-validate) and service level
 segnalazioneSchema.index({ segnalato: 1 });
 segnalazioneSchema.index({ annuncio: 1 });
+segnalazioneSchema.index({ stato: 1 });
 
 module.exports =
   mongoose.models.Segnalazione || mongoose.model('Segnalazione', segnalazioneSchema);
