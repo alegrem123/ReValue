@@ -33,8 +33,12 @@ describe('frontend smoke', () => {
   it('il client normalizza le risposte API standard', () => {
     const source = readFileSync(join(root, 'js/apiClient.js'), 'utf8');
     assert.match(source, /API_PREFIX = '\/api\/v1'/);
+    assert.match(source, /function normalizeEndpoint\(endpoint\)/);
+    assert.match(source, /endpoint\.startsWith\('\/api\/'\)/);
     assert.match(source, /Object\.prototype\.hasOwnProperty\.call\(data, 'ok'\)/);
     assert.match(source, /normalized\?\.message/);
+    assert.match(source, /window\.api = api/);
+    assert.match(source, /window\.apiRequest = request/);
   });
 
   it('la dashboard admin usa token separato ed endpoint v1', () => {
