@@ -7,26 +7,32 @@
  *  - restituisce sempre { ok, data, error } — convenzione API del progetto
  */
 
+const DEFAULT_API_BASE = 'https://revalue-backend-84jb.onrender.com';
+
+function cleanApiBase(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
+
 const API_BASE = (function () {
   // Override esplicito (es. injettato da Render env via config)
-  if (window.REVALUE_API_BASE) return window.REVALUE_API_BASE;
+  const configuredBase = window.REVALUE_API_BASE || window.REVALUE_CONFIG?.API_BASE;
+  if (configuredBase) return cleanApiBase(configuredBase);
 
   // Dev: Live Server su 127.0.0.1:55xx
   if (
     ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
     window.location.port.startsWith('55')
   ) {
-    return 'http://127.0.0.1:3000';
+    return cleanApiBase('http://127.0.0.1:3000');
   }
 
   // Dev: backend locale su porta 3000 senza Live Server
   if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) {
-    return 'http://127.0.0.1:3000';
+    return cleanApiBase('http://127.0.0.1:3000');
   }
 
   // Produzione: Render Static Site → backend su servizio separato
-  // Aggiornare con URL effettivo dopo deploy backend su Render
-  return 'https://revalue-backend-84jb.onrender.com';
+  return DEFAULT_API_BASE;
 })();
 
 const API_PREFIX = '/api/v1';

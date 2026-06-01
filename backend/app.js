@@ -59,6 +59,7 @@ const premiRoutes = require('./src/routes/premiRoutes');
 const segnalazioniRoutes = require('./src/routes/segnalazioniRoutes');
 const recensioniRoutes = require('./src/routes/recensioniRoutes');
 const notificheRoutes = require('./src/routes/notificheRoutes');
+const supportoRoutes = require('./src/routes/supportoRoutes');
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false, skip: () => process.env.NODE_ENV === 'test' });
 app.use('/api/v1/auth', authLimiter, authRoutes);
@@ -75,6 +76,7 @@ app.use('/api/v1/premi', premiRoutes);
 app.use('/api/v1/segnalazioni', segnalazioniRoutes);
 app.use('/api/v1/recensioni', recensioniRoutes);
 app.use('/api/v1/notifiche', notificheRoutes);
+app.use('/api/v1/supporto', supportoRoutes);
 
 app.use('/api/v1', notFoundHandler);
 app.use(errorHandler);

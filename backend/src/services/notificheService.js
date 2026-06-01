@@ -1,4 +1,5 @@
 const Notifica = require('../models/notificaModel');
+const User = require('../models/userModel');
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -70,7 +71,30 @@ async function creaNotifica(idUtenteOrPayload, tipo, testo, link = null, options
     link: payload.link,
   });
 
-  return notifica.save({ session });
+  const saved = await notifica.save({ session });
+  sendExpoPushIfConfigured(payload.idUtente, payload.testo).catch(() => {});
+  return saved;
+}
+
+async function sendExpoPushIfConfigured(idUtente, testo) {
+  if (!global.fetch) return;
+  const user = await User.findById(idUtente).select('expoPushToken').lean();
+  if (!user?.expoPushToken) return;
+
+  await fetch('https://exp.host/--/api/v2/push/send', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Accept-Encoding': 'gzip, deflate',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      to: user.expoPushToken,
+      sound: 'default',
+      title: 'RE-VALUE',
+      body: testo,
+    }),
+  });
 }
 
 async function getNotifiche(idUtente, page = 1, options = {}) {
@@ -133,4 +157,5 @@ module.exports = {
   contaNonLette,
   marcaLetta,
   marcaTutteLette,
+  sendExpoPushIfConfigured,
 };

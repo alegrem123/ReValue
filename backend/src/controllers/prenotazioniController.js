@@ -12,6 +12,10 @@ const DISDETTA_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 async function creaPrenotazione(req, res) {
   try {
+    if (req.user?.ruolo === 'admin') {
+      return res.status(403).json({ error: 'Gli amministratori non possono prenotare annunci' });
+    }
+
     const { annuncioId } = req.body;
     if (!annuncioId) return res.status(400).json({ error: 'annuncioId is required' });
 

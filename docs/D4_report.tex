@@ -61,7 +61,7 @@ Lo Sprint 1 ha prodotto il nucleo funzionale del sistema: registrazione e login,
   \item Introduzione del prefisso \texttt{/api/v1} su backend, frontend e mobile.
   \item Client API web/mobile aggiornati per gestire sia payload raw sia payload standardizzati.
   \item Deprecazione esplicita degli endpoint legacy \texttt{/api/v1/scambi}.
-  \item Aggiornamento OpenAPI e incremento della suite di verifica: backend 129/129, frontend 3/3 e mobile 2/2 test verdi.
+  \item Aggiornamento OpenAPI e incremento della suite di verifica: backend 134/134, frontend 3/3 e mobile 2/2 test verdi.
 \end{itemize}
 
 \section{Architettura finale}
@@ -150,7 +150,11 @@ Il CORS e' configurato in \texttt{backend/app.js}. In sviluppo l'origine e' perm
 
 \subsection*{Hardening previsto per la chiusura D4}
 
-Al 30 maggio il branch corrente contiene JWT, bcrypt, CORS production whitelist, body limit, Helmet, rate limit sulle route di autenticazione, sanitizzazione Mongo e controlli di ruolo/stato utente. La verifica finale D4 deve confermare l'ordine dei middleware e l'assenza di regressioni sui test di sicurezza.
+Al 1 giugno il branch corrente contiene JWT, bcrypt, CORS production whitelist, body limit, Helmet, rate limit sulle route di autenticazione, sanitizzazione Mongo e controlli di ruolo/stato utente. La verifica automatica copre il comportamento applicativo principale; CORS, Helmet e sanitizzazione sono documentati come hardening configurativo in \texttt{backend/app.js} e restano candidati a test dedicati di sicurezza.
+
+\section{Verifica RNF2}
+
+RNF2 e' verificato in modo prudente come tenuta funzionale sotto concorrenza, non come benchmark prestazionale assoluto. La suite backend include \texttt{backend/tests/integration/concurrent.test.js}, che lancia prenotazioni concorrenti sullo stesso annuncio e uno stress test con 10 acquirenti simultanei: l'esito atteso e' una sola prenotazione \texttt{ATTIVA}, stato annuncio \texttt{PRENOTATO}, versione incrementata una sola volta e conflitti \texttt{409} per gli altri tentativi. Questa evidenza dimostra atomicita' e assenza di doppia prenotazione sotto carico concorrente limitato; non misura SLA di latenza o throughput di produzione.
 
 \section{Notifiche ed Email}
 

@@ -6,6 +6,7 @@
  */
 
 const POLL_INTERVAL = 5000;
+const SEND_RETRY_DELAYS = [400, 1200];
 
 const messagesArea = document.getElementById('messages-area');
 const msgInput     = document.getElementById('msg-input');
@@ -34,6 +35,26 @@ function showAlert(msg, type = 'danger') {
   chatAlert.className = `alert alert-${type} shadow`;
   chatAlert.classList.remove('d-none');
   setTimeout(() => chatAlert.classList.add('d-none'), 4000);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetriableSendError(res) {
+  return !res.ok && (res.status === 0 || res.status === 408 || res.status === 429 || res.status >= 500);
+}
+
+async function postMessageWithRetry(body) {
+  let res = null;
+  for (let attempt = 0; attempt <= SEND_RETRY_DELAYS.length; attempt += 1) {
+    res = await api.post(`/api/v1/conversazioni/${convId}/messaggi`, body);
+    if (!isRetriableSendError(res) || attempt === SEND_RETRY_DELAYS.length) {
+      return res;
+    }
+    await wait(SEND_RETRY_DELAYS[attempt]);
+  }
+  return res;
 }
 
 function formatTime(dateInput) {
@@ -260,7 +281,7 @@ async function sendMessage() {
     body.immagine = pendingImage.base64;
   }
 
-  const res = await api.post(`/api/v1/conversazioni/${convId}/messaggi`, body);
+  const res = await postMessageWithRetry(body);
 
   sendBtn.disabled = false;
   msgInput.disabled = false;

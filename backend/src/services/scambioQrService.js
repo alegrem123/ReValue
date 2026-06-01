@@ -28,7 +28,7 @@ async function finalizzaScambio({ token, prenotazione, session = null }) {
   await prenotazione.save({ session });
 
   const annuncio = prenotazione.annuncio;
-  annuncio.stato = 'CEDUTO';
+  annuncio.stato = 'RITIRATO';
   annuncio.isAttivo = false;
   await annuncio.save({ session });
 

@@ -11,6 +11,8 @@ info:
     - Gli endpoint `/api/v1/scambi/*` sono legacy deprecati e rispondono `410 Gone`.
     - SPID/SSO, Gestore Email e backend OpenStreetMap restano progettuali.
 servers:
+  - url: https://revalue-backend-84jb.onrender.com
+    description: Ambiente production Render
   - url: http://localhost:3000
     description: Ambiente locale
 tags:
@@ -32,7 +34,7 @@ paths:
       tags: [Auth]
       summary: Registra un utente e crea il wallet
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:

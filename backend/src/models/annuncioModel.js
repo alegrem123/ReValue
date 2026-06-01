@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 // StatoAnnuncio (D2 §2.3.1)
-const STATI_ANNUNCIO = ['DISPONIBILE', 'PRENOTATO', 'CEDUTO', 'SCADUTO'];
+const STATI_ANNUNCIO = ['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'];
 
 // Oggetto embedded (D2 §2.3.2) — non esiste senza l'annuncio che lo contiene
 const oggettoSchema = new Schema(

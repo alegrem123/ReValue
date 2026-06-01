@@ -1,5 +1,5 @@
 FORMAT: 1A
-HOST: http://localhost:3000
+HOST: https://revalue-backend-84jb.onrender.com
 
 # RE-VALUE API
 
@@ -9,6 +9,8 @@ La specifica equivalente in formato OpenAPI e mantenuta in `docs/openapi.yaml`.
 Questa specifica descrive le API REST implementate nello Sprint 1 e allineate
 alla progettazione D2. Il backend reale espone le route sotto il prefisso
 `/api/v1`, considerato autorevole anche nella D3 aggiornata.
+L'host indicato sopra e' l'ambiente production Render; in locale usare
+`http://localhost:3000`.
 
 ## Convenzioni
 
@@ -50,6 +52,11 @@ Gestione registrazione, login e logout logico.
 Registra un utente, crea il wallet iniziale e restituisce un JWT.
 
 + Request (application/json)
+    + Attributes
+        + nome (string, required)
+        + cognome (string, required)
+        + email (string, required)
+        + password (string, required)
 
         {
           "nome": "Mario",

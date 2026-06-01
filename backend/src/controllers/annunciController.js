@@ -263,6 +263,10 @@ async function getAnnuncio(req, res) {
  */
 async function creaAnnuncio(req, res) {
   try {
+    if (req.user?.ruolo === 'admin') {
+      return res.status(403).json({ error: 'Gli amministratori non possono pubblicare annunci' });
+    }
+
     const { titolo, dataScadenza, latitudine, longitudine, oggetto } = req.body;
 
     if (!titolo || !dataScadenza || !oggetto) {
@@ -378,7 +382,7 @@ async function cancellaAnnuncio(req, res) {
 
 /**
  * PATCH /api/v1/annunci/:id/stato
- * Cambia stato annuncio: DISPONIBILE→PRENOTATO→CEDUTO/SCADUTO.
+ * Cambia stato annuncio: DISPONIBILE→PRENOTATO→RITIRATO/SCADUTO.
  * Solo il donatore può cambiare stato (OCL #2).
  *
  * @param {import('express').Request} req
@@ -388,7 +392,7 @@ async function cambiaStatoAnnuncio(req, res) {
   try {
     const { stato } = req.body;
 
-    if (!stato || !['DISPONIBILE', 'PRENOTATO', 'CEDUTO', 'SCADUTO'].includes(stato)) {
+    if (!stato || !['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
       return res.status(400).json({ error: 'Stato non valido' });
     }
 
@@ -406,8 +410,8 @@ async function cambiaStatoAnnuncio(req, res) {
     // OCL #3: macchina a stati — no back-transition; annullamento via DELETE /prenotazioni/:id
     const transizioniValide = {
       'DISPONIBILE': ['PRENOTATO', 'SCADUTO'],
-      'PRENOTATO':   ['CEDUTO'],
-      'CEDUTO':      [],
+      'PRENOTATO':   ['RITIRATO'],
+      'RITIRATO':    [],
       'SCADUTO':     [],
     };
 

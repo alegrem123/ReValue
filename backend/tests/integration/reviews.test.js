@@ -154,7 +154,7 @@ describe('Integration Recensioni: OCL #21 — recensione solo su scambio complet
     expect(prenotaDb.stato).toBe('COMPLETATA');
 
     const annuncioDb = await Annuncio.findById(annuncioId);
-    expect(annuncioDb.stato).toBe('CEDUTO');
+    expect(annuncioDb.stato).toBe('RITIRATO');
   });
 
   // ---------- Caso 2: Recensione positiva di Acquirente verso Donatore → 201 ----------

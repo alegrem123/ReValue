@@ -66,7 +66,7 @@ async function registerUser({ nome, cognome, email, password }) {
     throw createAuthError(400, 'Formato email non valido', 'INVALID_EMAIL');
   }
 
-  // OCL #2: password lunga almeno 8 caratteri prima dell'hashing bcrypt.
+  // OCL #2: password lunga almeno 8 caratteri prima dell'hashing SHA-256.
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
     throw createAuthError(
       400,

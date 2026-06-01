@@ -39,8 +39,14 @@ const userSchema = new Schema(
     passwordHash: {
       type: String,
       required: [true, 'passwordHash is required'],
-      // OCL #2: la password in chiaro deve avere almeno 8 caratteri prima dell'hash.
-      minlength: [60, 'passwordHash must be at least 60 characters long'],
+      minlength: [64, 'passwordHash must be at least 64 characters long'],
+      maxlength: [64, 'passwordHash must be exactly 64 characters long'],
+      validate: {
+        validator(value) {
+          return /^[a-f0-9]{64}$/i.test(value);
+        },
+        message: 'passwordHash must be a SHA-256 hexadecimal digest (OCL #2)',
+      },
     },
     malusCount: {
       type: Number,
@@ -63,6 +69,16 @@ const userSchema = new Schema(
         values: ['user', 'admin'],
         message: 'ruolo must be either user or admin',
       },
+    },
+    livelloAccesso: {
+      type: Number,
+      default: 0,
+      min: [0, 'livelloAccesso cannot be negative'],
+    },
+    expoPushToken: {
+      type: String,
+      trim: true,
+      default: '',
     },
     telefono: {
       type: String,

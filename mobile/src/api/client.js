@@ -3,6 +3,11 @@ import Constants from 'expo-constants';
 
 const TOKEN_KEY = 'revalue.jwt';
 const USER_KEY = 'revalue.user';
+const DEFAULT_API_BASE_URL = 'https://revalue-backend-84jb.onrender.com';
+
+function cleanApiBase(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
 
 function resolveApiBase() {
   // In sviluppo: stesso IP del dev server Expo, porta 3000
@@ -10,10 +15,10 @@ function resolveApiBase() {
     const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
     if (hostUri) {
       const host = hostUri.split(':')[0];
-      return `http://${host}:3000`;
+      return cleanApiBase(`http://${host}:3000`);
     }
   }
-  return process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+  return cleanApiBase(process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL);
 }
 
 export const API_BASE_URL = resolveApiBase();

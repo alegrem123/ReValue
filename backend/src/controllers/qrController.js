@@ -29,7 +29,7 @@ async function generaQR(req, res) {
 
     const prenotazione = await Prenotazione.findById(prenotazioneId).populate('annuncio');
 
-    // BUG FIX #1: distinguiamo prenotazione inesistente da stati non generabili.
+    // Distingue prenotazione inesistente da stati non generabili.
     if (!prenotazione) {
       return res.status(404).json({ error: 'Prenotazione non trovata' });
     }
@@ -89,7 +89,7 @@ async function validaQR(req, res) {
     // Cerchiamo il token e facciamo populate di prenotazione e annuncio
     const token = await findTokenByCodice(codice);
 
-    // BUG FIX #3: Il TTL index di MongoDB rimuove automaticamente i token scaduti.
+    // Il TTL index di MongoDB rimuove automaticamente i token scaduti.
     // Se findOne ritorna null NON possiamo sapere se il codice non è mai esistito
     // oppure se è stato rimosso per scadenza. Per dare un messaggio preciso al
     // client, tentiamo un lookup "tombstone" cercando nella cronologia della
@@ -118,7 +118,7 @@ async function validaQR(req, res) {
     const prenotazione = token.prenotazione;
     // OCL #15: il token validato deve appartenere alla prenotazione caricata (già garantito da findTokenByCodice)
 
-    // BUG FIX #4: messaggi distinti per ogni stato non-ATTIVA.
+    // Messaggi distinti per ogni stato non-ATTIVA.
     if (prenotazione.stato === 'ANNULLATA') {
       return res.status(409).json({
         error: 'Prenotazione annullata: lo scambio non può essere validato',

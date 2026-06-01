@@ -117,8 +117,32 @@ async function getPublicProfile(req, res) {
   }
 }
 
+async function updatePushToken(req, res) {
+  try {
+    const { expoPushToken } = req.body || {};
+    if (
+      typeof expoPushToken !== 'string' ||
+      !/^ExponentPushToken\[[A-Za-z0-9_-]+\]$|^ExpoPushToken\[[A-Za-z0-9_-]+\]$/.test(expoPushToken.trim())
+    ) {
+      return res.status(400).json({ error: 'expoPushToken non valido' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { expoPushToken: expoPushToken.trim() },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+    return res.status(200).json({ user: sanitizePublicProfile(user) });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
 module.exports = {
   updateProfile,
+  updatePushToken,
   getPublicProfile,
   getMe,
 };

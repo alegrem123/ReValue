@@ -140,7 +140,7 @@ describe('Integration Flow E2E: register -> annuncio -> prenota -> QR -> complet
     expect(prenotaDb.dataCompletamento).toBeTruthy();
 
     const annuncioDb = await Annuncio.findById(annuncioId);
-    expect(annuncioDb.stato).toBe('CEDUTO');
+    expect(annuncioDb.stato).toBe('RITIRATO');
   });
 
   test('7. Verifica accreditamento punti nel Wallet per entrambi', async () => {

@@ -49,7 +49,7 @@ async function getQR(req, res) {
  * Se la validazione ha successo:
  *   - TokenQR.usato = true (OCL #14: non riusabile)
  *   - Prenotazione.stato = COMPLETATA (OCL #12)
- *   - Annuncio.stato = CEDUTO (OCL #12)
+ *   - Annuncio.stato = RITIRATO (OCL #12)
  *   - crediti accreditati a donatore e acquirente (RNF5 anti-frode)
  *
  * @param {import('express').Request} req

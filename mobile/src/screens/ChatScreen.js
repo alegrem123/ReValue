@@ -16,11 +16,20 @@ import { api, getUserId } from '../api/client';
 import { colors } from '../theme/colors';
 
 const POLL_MS = 5000;
+const SEND_RETRY_DELAYS = [400, 1200];
 
 function formatTime(dateInput) {
   const d = new Date(dateInput);
   if (Number.isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(d);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetriableSendError(res) {
+  return !res.ok && (res.status === 0 || res.status === 408 || res.status === 429 || res.status >= 500);
 }
 
 export function ChatScreen({ conversazioneId, onBack }) {
@@ -62,9 +71,15 @@ export function ChatScreen({ conversazioneId, onBack }) {
   }, [load]);
 
   async function invia() {
-    if (!testo.trim()) return;
+    const testoDaInviare = testo.trim();
+    if (!testoDaInviare) return;
     setSending(true);
-    const res = await api.post(`/api/v1/conversazioni/${conversazioneId}/messaggi`, { testo });
+    let res = null;
+    for (let attempt = 0; attempt <= SEND_RETRY_DELAYS.length; attempt += 1) {
+      res = await api.post(`/api/v1/conversazioni/${conversazioneId}/messaggi`, { testo: testoDaInviare });
+      if (!isRetriableSendError(res) || attempt === SEND_RETRY_DELAYS.length) break;
+      await wait(SEND_RETRY_DELAYS[attempt]);
+    }
     setSending(false);
     if (!res.ok) return;
     setTesto('');

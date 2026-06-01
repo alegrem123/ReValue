@@ -138,7 +138,7 @@ async function listAnnunci(req, res) {
     const skip = (pageNum - 1) * limitNum;
 
     const query = {};
-    if (stato && ['DISPONIBILE', 'PRENOTATO', 'CEDUTO', 'SCADUTO'].includes(stato)) {
+    if (stato && ['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
       query.stato = stato;
     }
 
@@ -362,18 +362,16 @@ async function riabilitaUtente(req, res) {
  */
 async function forzaStatoAnnuncio(req, res) {
   try {
-    const { stato = 'DISPONIBILE' } = req.body || {};
-    const statiForzabili = ['DISPONIBILE', 'SCADUTO', 'CEDUTO'];
-
-    if (!statiForzabili.includes(stato)) {
-      return res.status(400).json({ error: 'Stato forzabile non valido' });
+    const statoRichiesto = req.body?.stato;
+    if (statoRichiesto && statoRichiesto !== 'DISPONIBILE') {
+      return res.status(400).json({ error: 'RF31 consente di forzare solo lo stato DISPONIBILE' });
     }
 
     const annuncio = await Annuncio.findById(req.params.id);
     if (!annuncio) return res.status(404).json({ error: 'Annuncio non trovato' });
 
-    if (annuncio.stato === stato) {
-      return res.status(200).json({ message: `Annuncio già in stato ${stato}`, annuncio });
+    if (annuncio.stato === 'DISPONIBILE') {
+      return res.status(200).json({ message: 'Annuncio già in stato DISPONIBILE', annuncio });
     }
 
     const session = await mongoose.startSession();
@@ -397,7 +395,7 @@ async function forzaStatoAnnuncio(req, res) {
         }
         updated = await Annuncio.findByIdAndUpdate(
           req.params.id,
-          { $set: { stato }, $inc: { versione: 1 } },
+          { $set: { stato: 'DISPONIBILE' }, $inc: { versione: 1 } },
           { new: true, session }
         );
       });
@@ -405,7 +403,7 @@ async function forzaStatoAnnuncio(req, res) {
       await session.endSession();
     }
 
-    return res.status(200).json({ message: `Annuncio forzato a ${stato}`, annuncio: updated });
+    return res.status(200).json({ message: 'Annuncio forzato a DISPONIBILE', annuncio: updated });
   } catch (err) {
     return res.status(500).json({ error: 'Errore interno del server' });
   }

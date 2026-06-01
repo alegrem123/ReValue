@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { authenticate, optionalAuthenticate } = require('../middleware/authMiddleware');
+const { notSospeso } = require('../middleware/notSospesoMiddleware');
 const { validateObjectIdParam } = require('../middleware/validateObjectId');
 const {
   getCatalogo,
@@ -19,7 +20,7 @@ router.get('/', optionalAuthenticate, getCatalogo);
 // route protette — richiedono autenticazione
 router.get('/me', authenticate, getMieiAnnunci);
 router.get('/:id', validateObjectIdParam('id'), optionalAuthenticate, getAnnuncio);
-router.post('/', authenticate, creaAnnuncio);
+router.post('/', authenticate, notSospeso, creaAnnuncio);
 router.put('/:id', authenticate, validateObjectIdParam('id'), modificaAnnuncio);
 router.delete('/:id', authenticate, validateObjectIdParam('id'), cancellaAnnuncio);
 router.patch('/:id/stato', authenticate, validateObjectIdParam('id'), cambiaStatoAnnuncio);

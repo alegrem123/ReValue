@@ -46,7 +46,7 @@ Atlas Dashboard → **Network Access → Add IP Address** → inserire `0.0.0.0/
 
 Dopo il deploy, aprire:
 ```
-https://revalue-backend.onrender.com/api/v1/annunci
+https://revalue-backend-84jb.onrender.com/api/v1/annunci
 ```
 Atteso: risposta JSON (anche array vuoto), non errore 503.
 

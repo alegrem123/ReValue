@@ -1,5 +1,5 @@
 (function () {
-  const STATI_FORZABILI = ['DISPONIBILE', 'SCADUTO', 'CEDUTO'];
+  const STATI_FORZABILI = ['DISPONIBILE', 'SCADUTO', 'RITIRATO'];
   let currentPage = 1;
   let currentStato = '';
   let pendingRemove = null;
@@ -26,7 +26,7 @@
       DISPONIBILE: 'success',
       PRENOTATO: 'primary',
       SCADUTO: 'secondary',
-      CEDUTO: 'dark',
+      RITIRATO: 'dark',
     };
     return `<span class="badge text-bg-${variants[stato] || 'secondary'}">${escapeHtml(stato)}</span>`;
   }

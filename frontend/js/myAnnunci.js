@@ -66,7 +66,7 @@ function statusClass(stato) {
   const classes = {
     DISPONIBILE: 'bg-success',
     PRENOTATO: 'bg-warning text-dark',
-    CEDUTO: 'bg-secondary',
+    RITIRATO: 'bg-secondary',
     SCADUTO: 'bg-danger',
   };
   return classes[stato] || 'bg-secondary';
