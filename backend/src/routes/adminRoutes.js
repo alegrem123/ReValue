@@ -3,6 +3,9 @@ const { authenticate, requireAdmin } = require('../middleware/authMiddleware');
 const {
   getStatistiche,
   getSegnalazioni,
+  getUtenti,
+  getAnnunciAdmin,
+  applicaMalusSegnalazione,
   bannaUtente,
   sospendiUtente,
   riabilitaUtente,
@@ -20,6 +23,11 @@ router.get('/statistiche', getStatistiche);
 
 // UC13: gestione segnalazioni
 router.get('/segnalazioni', getSegnalazioni);
+router.post('/segnalazioni/:id/malus', applicaMalusSegnalazione);
+
+// UC13/RF29/RF31: viste operative dashboard admin
+router.get('/utenti', getUtenti);
+router.get('/annunci', getAnnunciAdmin);
 
 // RF29/D2 §2.2.2: gestione account
 router.post('/utenti/:id/ban', bannaUtente);

@@ -59,6 +59,9 @@ const NAVBAR_HTML = `
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('notifiche.html')}">Notifiche</a>
         </li>
+        <li class="nav-item nav-admin d-none">
+          <a class="nav-link text-white" href="${viewUrl('admin/dashboard.html')}">Admin</a>
+        </li>
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('messaggi.html')}">
             Messaggi
@@ -170,6 +173,9 @@ function updateAuthUI(user) {
     guestEls.forEach((el) => el.classList.add('d-none'));
     const nameEl = document.getElementById('navbar-username');
     if (nameEl) nameEl.textContent = user.nome || 'Profilo';
+    document.querySelectorAll('.nav-admin').forEach((el) => {
+      el.classList.toggle('d-none', user.ruolo !== 'admin');
+    });
 
     api.get('/api/v1/wallet/saldo')
       .then((res) => {
@@ -179,6 +185,7 @@ function updateAuthUI(user) {
       .catch(() => {});
   } else {
     authEls.forEach((el) => el.classList.add('d-none'));
+    document.querySelectorAll('.nav-admin').forEach((el) => el.classList.add('d-none'));
     guestEls.forEach((el) => el.classList.remove('d-none'));
   }
 }
@@ -206,6 +213,35 @@ function updateUnreadBadge() {
 }
 
 /**
+ * Polling notifiche utente: mostra toast solo per notifiche non viste nella sessione.
+ */
+function pollNotificationToasts() {
+  if (!localStorage.getItem('jwt')) return;
+
+  const shownKey = 'rvShownNotificationIds';
+  let shown = [];
+  try {
+    shown = JSON.parse(sessionStorage.getItem(shownKey) || '[]');
+  } catch {
+    shown = [];
+  }
+  const shownSet = new Set(shown);
+
+  api.get('/api/v1/notifiche/me?letta=false&page=1&limit=10')
+    .then((res) => {
+      if (!res.ok) return;
+      const notifiche = res.data?.data?.notifiche ?? res.data?.notifiche ?? [];
+      const nuove = notifiche.filter((n) => n?._id && !shownSet.has(n._id));
+      nuove.reverse().forEach((n) => {
+        window.showToast?.(n.testo || 'Nuova notifica', 'info', 6000);
+        shownSet.add(n._id);
+      });
+      sessionStorage.setItem(shownKey, JSON.stringify([...shownSet].slice(-100)));
+    })
+    .catch(() => {});
+}
+
+/**
  * Inizializza navbar e footer, poi aggiorna UI.
  */
 function initLayout() {
@@ -222,7 +258,9 @@ function initLayout() {
   // Badge non letti: primo fetch + polling ogni 30s (RF12)
   if (user) {
     updateUnreadBadge();
+    pollNotificationToasts();
     setInterval(updateUnreadBadge, 30_000);
+    setInterval(pollNotificationToasts, 30_000);
   }
 
   // Logout

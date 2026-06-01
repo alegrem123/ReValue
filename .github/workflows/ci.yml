@@ -27,7 +27,7 @@ jobs:
 
       - name: Run tests
         working-directory: backend
-        run: npm test
+        run: npm run test:coverage -- --coverageReporters=text
         env:
           NODE_ENV: test
 

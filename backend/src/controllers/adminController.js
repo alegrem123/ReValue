@@ -87,6 +87,130 @@ async function getSegnalazioni(req, res) {
 }
 
 /**
+ * GET /api/v1/admin/utenti
+ * Lista utenti per dashboard amministrativa (RF29, UC13).
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function getUtenti(req, res) {
+  try {
+    const { q = '', page = 1, limit = 25 } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 25));
+    const filtro = {};
+
+    if (q.trim()) {
+      const regex = new RegExp(q.trim(), 'i');
+      filtro.$or = [
+        { nome: regex },
+        { cognome: regex },
+        { email: regex },
+        { idUtente: regex },
+      ];
+    }
+
+    const [utenti, totale] = await Promise.all([
+      User.find(filtro)
+        .select('idUtente nome cognome email ruolo isSospeso bannato malusCount createdAt')
+        .sort({ createdAt: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .lean(),
+      User.countDocuments(filtro),
+    ]);
+
+    return res.status(200).json({
+      utenti,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totale,
+        pages: Math.ceil(totale / limitNum),
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+/**
+ * GET /api/v1/admin/annunci
+ * Lista annunci per moderazione amministrativa (RF31, UC13).
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function getAnnunciAdmin(req, res) {
+  try {
+    const { q = '', stato, page = 1, limit = 25 } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 25));
+    const filtro = {};
+
+    if (stato) filtro.stato = stato;
+    if (q.trim()) {
+      const regex = new RegExp(q.trim(), 'i');
+      filtro.$or = [
+        { titolo: regex },
+        { 'oggetto.categoria': regex },
+        { 'oggetto.descrizione': regex },
+      ];
+    }
+
+    const [annunci, totale] = await Promise.all([
+      Annuncio.find(filtro)
+        .populate('donatore', 'nome cognome email')
+        .sort({ createdAt: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .lean(),
+      Annuncio.countDocuments(filtro),
+    ]);
+
+    return res.status(200).json({
+      annunci,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totale,
+        pages: Math.ceil(totale / limitNum),
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+/**
+ * POST /api/v1/admin/segnalazioni/:id/malus
+ * Applica malus al segnalato e marca la segnalazione come risolta (OCL #20).
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function applicaMalusSegnalazione(req, res) {
+  try {
+    const segnalazione = await Segnalazione.findById(req.params.id);
+    if (!segnalazione) {
+      return res.status(404).json({ error: 'Segnalazione non trovata' });
+    }
+
+    const utente = await applicaMalus(segnalazione.segnalato);
+    segnalazione.stato = 'RISOLTA';
+    await segnalazione.save();
+
+    return res.status(200).json({
+      message: 'Malus applicato e segnalazione risolta',
+      segnalazione,
+      utente,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+/**
  * POST /api/v1/admin/utenti/:id/ban
  * Banna permanentemente un account fraudolento (RF29, D2 §2.2.2).
  * L'utente bannato non può più accedere (isSospeso = true + ruolo marcato).
@@ -183,36 +307,43 @@ async function riabilitaUtente(req, res) {
  */
 async function forzaStatoAnnuncio(req, res) {
   try {
+    const statoTarget = req.body?.stato || 'DISPONIBILE';
+    if (!['DISPONIBILE', 'PRENOTATO', 'CEDUTO', 'SCADUTO'].includes(statoTarget)) {
+      return res.status(400).json({ error: 'Stato non valido' });
+    }
+
     const annuncio = await Annuncio.findById(req.params.id);
     if (!annuncio) return res.status(404).json({ error: 'Annuncio non trovato' });
 
     // Idempotency guard: skip transaction if already in target state
-    if (annuncio.stato === 'DISPONIBILE' && annuncio.isAttivo) {
-      return res.status(200).json({ message: 'Annuncio già disponibile', annuncio });
+    if (annuncio.stato === statoTarget && annuncio.isAttivo) {
+      return res.status(200).json({ message: `Annuncio già in stato ${statoTarget}`, annuncio });
     }
 
     const session = await mongoose.startSession();
     let updated;
     try {
       await session.withTransaction(async () => {
-        // Cancel active prenotazioni and their QR tokens
-        const prenotazioniAttive = await Prenotazione.find(
-          { annuncio: req.params.id, stato: 'ATTIVA' },
-          '_id',
-          { session }
-        );
-        const ids = prenotazioniAttive.map((p) => p._id);
-        if (ids.length > 0) {
-          await Prenotazione.updateMany(
-            { _id: { $in: ids } },
-            { $set: { stato: 'ANNULLATA' } },
+        // If admin resets to available, cancel active bookings and QR tokens.
+        if (statoTarget === 'DISPONIBILE') {
+          const prenotazioniAttive = await Prenotazione.find(
+            { annuncio: req.params.id, stato: 'ATTIVA' },
+            '_id',
             { session }
           );
-          await TokenQR.deleteMany({ prenotazione: { $in: ids } }).session(session);
+          const ids = prenotazioniAttive.map((p) => p._id);
+          if (ids.length > 0) {
+            await Prenotazione.updateMany(
+              { _id: { $in: ids } },
+              { $set: { stato: 'ANNULLATA' } },
+              { session }
+            );
+            await TokenQR.deleteMany({ prenotazione: { $in: ids } }).session(session);
+          }
         }
         updated = await Annuncio.findByIdAndUpdate(
           req.params.id,
-          { $set: { stato: 'DISPONIBILE', isAttivo: true }, $inc: { versione: 1 } },
+          { $set: { stato: statoTarget, isAttivo: true }, $inc: { versione: 1 } },
           { new: true, session }
         );
       });
@@ -220,7 +351,7 @@ async function forzaStatoAnnuncio(req, res) {
       await session.endSession();
     }
 
-    return res.status(200).json({ message: 'Annuncio ripristinato a DISPONIBILE', annuncio: updated });
+    return res.status(200).json({ message: `Annuncio aggiornato a ${statoTarget}`, annuncio: updated });
   } catch (err) {
     return res.status(500).json({ error: 'Errore interno del server' });
   }
@@ -252,6 +383,9 @@ async function rimuoviAnnuncio(req, res) {
 module.exports = {
   getStatistiche,
   getSegnalazioni,
+  getUtenti,
+  getAnnunciAdmin,
+  applicaMalusSegnalazione,
   bannaUtente,
   sospendiUtente,
   riabilitaUtente,

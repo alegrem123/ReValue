@@ -1,0 +1,24 @@
+\section{Sezioni AG - Sprint 2}
+
+\subsection{Introduzione e continuita con Sprint 1}
+Nel periodo 25--30 maggio lo Sprint 2 ha consolidato il nucleo consegnato in D3 con funzioni di gestione operativa, sicurezza e deploy. Il lavoro AG riguarda in particolare notifiche, dashboard amministrativa, Continuous Integration e documentazione tecnica.
+
+\subsection{Architettura finale aggiornata}
+Il backend espone API REST versionate sotto \texttt{/api/v1}. La dashboard admin usa endpoint dedicati:
+\begin{itemize}
+  \item \texttt{GET /api/v1/admin/statistiche}
+  \item \texttt{GET /api/v1/admin/utenti}
+  \item \texttt{GET /api/v1/admin/annunci}
+  \item \texttt{GET /api/v1/admin/segnalazioni}
+  \item \texttt{POST /api/v1/admin/segnalazioni/:id/malus}
+\end{itemize}
+Il frontend web resta statico e comunica con il backend Render tramite \texttt{frontend/js/apiClient.js}; l'area admin usa un token separato salvato come \texttt{adminToken}.
+
+\subsection{Sicurezza}
+Le misure applicate nello Sprint 2 includono CORS con whitelist in produzione, Helmet, sanitizzazione MongoDB, rate limiting sugli endpoint di autenticazione e JWT con controllo ruolo admin lato middleware. L'accesso alla dashboard amministrativa richiede un utente con \texttt{ruolo = admin}; i token non admin vengono rifiutati dalla pagina di login admin e dal backend.
+
+\subsection{Notifiche ed email}
+Il backend mantiene il modello \texttt{Notifica} e gli endpoint \texttt{/api/v1/notifiche}. Il frontend espone la pagina \texttt{notifiche.html}, la marcatura singola/totale come letta e un polling ogni 30 secondi. Per evitare duplicati nei toast in-app, gli ID gia mostrati vengono salvati in \texttt{sessionStorage}. Il servizio email SMTP e collegato al flusso di registrazione con invio welcome fire-and-forget.
+
+\subsection{CI e verifica}
+La pipeline GitHub Actions esegue \texttt{npm ci} e \texttt{npm run test:coverage -- --coverageReporters=text} nella directory backend. Dopo i test, sui branch principali viene eseguito uno smoke test verso backend e frontend Render.

@@ -835,6 +835,54 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /api/v1/admin/segnalazioni/{id}/malus:
+    post:
+      tags: [Admin]
+      summary: Applica malus al segnalato e risolve la segnalazione
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Malus applicato
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/utenti:
+    get:
+      tags: [Admin]
+      summary: Lista utenti per dashboard admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Utenti paginati
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /api/v1/admin/utenti/{id}/ban:
     post:
       tags: [Admin]
@@ -888,14 +936,24 @@ paths:
   /api/v1/admin/annunci/{id}/forza:
     patch:
       tags: [Admin]
-      summary: Forza stato annuncio a DISPONIBILE
+      summary: Forza stato annuncio
       security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stato:
+                  type: string
+                  enum: [DISPONIBILE, PRENOTATO, CEDUTO, SCADUTO]
       responses:
         '200':
-          description: Annuncio ripristinato
+          description: Annuncio aggiornato
           content:
             application/json:
               schema:
@@ -903,6 +961,38 @@ paths:
                 additionalProperties: true
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/annunci:
+    get:
+      tags: [Admin]
+      summary: Lista annunci per dashboard admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: stato
+          in: query
+          schema:
+            type: string
+            enum: [DISPONIBILE, PRENOTATO, CEDUTO, SCADUTO]
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Annunci paginati
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /api/v1/admin/annunci/{id}:
     delete:

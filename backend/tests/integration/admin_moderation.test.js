@@ -7,6 +7,8 @@ process.env.JWT_SECRET = 'test-secret-key-for-integration-tests';
 const app = require('../../app');
 const User = require('../../src/models/userModel');
 const Wallet = require('../../src/models/walletModel');
+const Annuncio = require('../../src/models/annuncioModel');
+const Segnalazione = require('../../src/models/segnalazioneModel');
 const { hashPassword } = require('../../src/utils/password');
 
 let mongoServer;
@@ -25,6 +27,8 @@ beforeEach(async () => {
   await Promise.all([
     User.deleteMany({}),
     Wallet.deleteMany({}),
+    Annuncio.deleteMany({}),
+    Segnalazione.deleteMany({}),
   ]);
 });
 
@@ -137,5 +141,83 @@ describe('Moderation and authentication integration', () => {
     const unchangedUser = await User.findById(user._id);
     expect(unchangedUser.isSospeso).toBe(true);
     expect(unchangedUser.bannato).toBe(true);
+  });
+
+  test('admin dashboard espone liste utenti e annunci', async () => {
+    const { token } = await createAdminAndLogin();
+    const user = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Mario',
+      cognome: 'Dashboard',
+      email: 'dashboard@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+    });
+
+    await Annuncio.create({
+      donatore: user._id,
+      titolo: 'Lampada vintage',
+      dataScadenza: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      oggetto: {
+        categoria: 'casa',
+        descrizione: 'Lampada funzionante',
+        dimensioni: 'piccolo',
+        materiale: 'metallo',
+      },
+    });
+
+    const utentiRes = await request(app)
+      .get('/api/v1/admin/utenti?q=dashboard')
+      .set('Authorization', `Bearer ${token}`);
+    expect(utentiRes.statusCode).toBe(200);
+    expect(utentiRes.body.utenti).toHaveLength(1);
+    expect(utentiRes.body.utenti[0].email).toBe('dashboard@test.com');
+
+    const annunciRes = await request(app)
+      .get('/api/v1/admin/annunci?q=lampada')
+      .set('Authorization', `Bearer ${token}`);
+    expect(annunciRes.statusCode).toBe(200);
+    expect(annunciRes.body.annunci).toHaveLength(1);
+    expect(annunciRes.body.annunci[0].titolo).toBe('Lampada vintage');
+  });
+
+  test('admin applica malus da segnalazione e la marca risolta', async () => {
+    const { token } = await createAdminAndLogin();
+    const segnalante = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Utente',
+      cognome: 'Segnalante',
+      email: 'segnalante@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+    });
+    const segnalato = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Utente',
+      cognome: 'Segnalato',
+      email: 'segnalato@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+    });
+    const segnalazione = await Segnalazione.create({
+      segnalante: segnalante._id,
+      segnalato: segnalato._id,
+      tipo: 'altro',
+      motivo: 'Comportamento non conforme',
+    });
+
+    const res = await request(app)
+      .post(`/api/v1/admin/segnalazioni/${segnalazione._id}/malus`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toBe('Malus applicato e segnalazione risolta');
+
+    const [updatedUser, updatedReport] = await Promise.all([
+      User.findById(segnalato._id),
+      Segnalazione.findById(segnalazione._id),
+    ]);
+    expect(updatedUser.malusCount).toBe(1);
+    expect(updatedReport.stato).toBe('RISOLTA');
   });
 });
