@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const form           = document.getElementById('segnala-form');
   const submitBtn      = document.getElementById('segnala-submit');
   const backBtn        = document.getElementById('segnala-back');
-  const sегнDisplay    = document.getElementById('segnalato-display');
+  const segnDisplay    = document.getElementById('segnalato-display');
   const segnNomeInput  = document.getElementById('segnalato-nome-display');
   const segnIdInput    = document.getElementById('segnalato-id');
   const segnManualWrap = document.getElementById('segnalato-input-wrap');
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // populate utente segnalato from query param
   if (userId) {
-    sегнDisplay.classList.remove('d-none');
+    segnDisplay.classList.remove('d-none');
     segnNomeInput.value = userId;
     segnIdInput.value   = userId;
   } else {
