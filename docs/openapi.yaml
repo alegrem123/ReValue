@@ -86,6 +86,23 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   /api/v1/users/me:
+    get:
+      tags: [Users]
+      summary: Profilo utente autenticato
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profilo utente corrente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+        '401':
+          description: Non autenticato
     put:
       tags: [Users]
       summary: Aggiorna il profilo dell'utente autenticato
@@ -954,6 +971,295 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /api/v1/premi:
+    get:
+      tags: [Premi]
+      summary: Lista coupon attivi (UC7)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: costoMax
+          in: query
+          schema: { type: integer }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Lista coupon
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  coupon:
+                    type: array
+                    items: { $ref: '#/components/schemas/Coupon' }
+                  totale: { type: integer }
+                  page: { type: integer }
+                  limit: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/premi/{id}/riscatta:
+    post:
+      tags: [Premi]
+      summary: Riscatta coupon (UC7, OCL #17)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: Coupon riscattato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  riscatto: { $ref: '#/components/schemas/Riscatto' }
+                  codiceUnivoco: { type: string }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Saldo insufficiente o stock esaurito
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/premi/miei:
+    get:
+      tags: [Premi]
+      summary: Lista riscatti dell'utente autenticato
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Lista riscatti
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  riscatti:
+                    type: array
+                    items: { $ref: '#/components/schemas/Riscatto' }
+                  totale: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/premi/riscatti/{id}/usato:
+    patch:
+      tags: [Premi]
+      summary: Marca riscatto come usato
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Riscatto marcato usato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  riscatto: { $ref: '#/components/schemas/Riscatto' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Già segnato come usato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/v1/segnalazioni:
+    post:
+      tags: [Segnalazioni]
+      summary: Crea segnalazione contro un utente (OCL #18, OCL #19)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [segnalato, tipo, motivo]
+              properties:
+                segnalato:
+                  type: string
+                  description: ID dell'utente segnalato (non può essere sé stessi — OCL #19)
+                tipo:
+                  type: string
+                  enum: [descrizione, inappropriato, altro]
+                motivo:
+                  type: string
+                  minLength: 10
+                  description: Motivo obbligatorio (OCL #18)
+      responses:
+        '201':
+          description: Segnalazione creata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Segnalazione' }
+        '409':
+          description: Auto-segnalazione non consentita (OCL #19) o segnalazione duplicata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/segnalazioni/me:
+    get:
+      tags: [Segnalazioni]
+      summary: Segnalazioni inviate dall'utente autenticato
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista segnalazioni inviate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  segnalazioni:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Segnalazione'
+        '401':
+          description: Non autenticato
+
+  /api/v1/recensioni:
+    post:
+      tags: [Recensioni]
+      summary: Crea recensione su uno scambio completato
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prenotazioneId, positiva]
+              properties:
+                prenotazioneId:
+                  type: string
+                  description: ID della prenotazione COMPLETATA
+                positiva:
+                  type: boolean
+                testo:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '201':
+          description: Recensione creata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Recensione' }
+        '409':
+          description: Prenotazione non completata o recensione già esistente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/recensioni/me/ricevute:
+    get:
+      tags: [Recensioni]
+      summary: Recensioni ricevute dall'utente autenticato
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Array di recensioni ricevute
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Recensione' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/recensioni/me/scritte:
+    get:
+      tags: [Recensioni]
+      summary: Recensioni scritte dall'utente autenticato
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Array di recensioni scritte
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Recensione' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/recensioni/{id}:
+    delete:
+      tags: [Recensioni]
+      summary: Elimina propria recensione
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Recensione eliminata
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/users/{id}/recensioni:
+    get:
+      tags: [Recensioni]
+      summary: Recensioni pubbliche ricevute da un utente
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Riepilogo recensioni con recenti
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totale: { type: integer }
+                  positive: { type: integer }
+                  negative: { type: integer }
+                  recenti:
+                    type: array
+                    items: { $ref: '#/components/schemas/Recensione' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1172,7 +1478,7 @@ components:
             additionalProperties: true
     StatoAnnuncio:
       type: string
-      enum: [DISPONIBILE, PRENOTATO, RITIRATO, SCADUTO]
+      enum: [DISPONIBILE, PRENOTATO, CEDUTO, SCADUTO]
     Oggetto:
       type: object
       required: [categoria, descrizione]
@@ -1350,3 +1656,57 @@ components:
           $ref: '#/components/schemas/Messaggio'
         nonLetti:
           type: integer
+    Coupon:
+      type: object
+      properties:
+        _id: { type: string }
+        titolo: { type: string }
+        descrizione: { type: string }
+        costoCrediti: { type: integer }
+        stock: { type: integer, description: '0 = illimitato' }
+        attivo: { type: boolean }
+    Riscatto:
+      type: object
+      properties:
+        _id: { type: string }
+        utente: { type: string }
+        coupon:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Coupon'
+        codiceUnivoco: { type: string }
+        usato: { type: boolean }
+        dataRiscatto: { type: string, format: date-time }
+    Segnalazione:
+      type: object
+      properties:
+        _id:
+          type: string
+        segnalante:
+          type: string
+          description: ID utente segnalante
+        segnalato:
+          type: string
+          description: ID utente segnalato
+        annuncio:
+          type: string
+          nullable: true
+          description: ID annuncio oggetto della segnalazione
+        tipo:
+          type: string
+          enum: [descrizione, inappropriato, altro]
+        motivo:
+          type: string
+        data:
+          type: string
+          format: date-time
+    Recensione:
+      type: object
+      properties:
+        _id: { type: string }
+        prenotazione: { type: string }
+        recensore: { type: string }
+        recensito: { type: string }
+        positiva: { type: boolean }
+        testo: { type: string }
+        data: { type: string, format: date-time }

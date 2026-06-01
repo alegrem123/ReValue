@@ -1608,6 +1608,241 @@ RF9 — OCL #18: motivo non vuoto. OCL #19: segnalante !== segnalato.
           "limit": 20
         }
 
+# Group Notifiche
+
+## Notifiche Utente [/api/v1/notifiche/me]
+
+### Get notifiche [GET /api/v1/notifiche/me{?page,limit,letta}]
+
++ Parameters
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+    + letta: `false` (boolean, optional) - Filtra per stato letto
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "notifiche": [
+              {
+                "_id": "6825b9d94b0d6f001234nn01",
+                "tipo": "segnalazione",
+                "testo": "Nuova segnalazione ricevuta",
+                "link": "/api/v1/admin/segnalazioni",
+                "letta": false,
+                "data": "2026-05-31T10:00:00.000Z"
+              }
+            ],
+            "pagination": {
+              "page": 1,
+              "limit": 20,
+              "total": 1,
+              "pages": 1
+            },
+            "nonLette": 1
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "ok": false,
+          "error": "Parametro letta non valido"
+        }
+
+## Marca Notifica Letta [/api/v1/notifiche/{id}/letta]
+
++ Parameters
+    + id: `6825b9d94b0d6f001234nn01` (string, required)
+
+### Marca letta [PATCH]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "_id": "6825b9d94b0d6f001234nn01",
+            "letta": true
+          }
+        }
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Notifica non trovata"
+        }
+
+## Marca Tutte Lette [/api/v1/notifiche/me/leggi-tutte]
+
+### Marca tutte lette [PATCH]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ok": true,
+          "data": {
+            "aggiornate": 3
+          }
+        }
+
+# Group Recensioni
+
+## Recensioni Collection [/api/v1/recensioni]
+
+### Crea recensione [POST]
+
+Crea una recensione su uno scambio completato (OCL #21: solo su prenotazione COMPLETATA, una per utente).
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "prenotazioneId": "6825bc414b0d6f001234dd01",
+              "positiva": true,
+              "testo": "Ottima esperienza, oggetto come descritto"
+            }
+
++ Response 201 (application/json)
+
+        {
+          "_id": "6825b9d94b0d6f001234rr01",
+          "prenotazione": "6825bc414b0d6f001234dd01",
+          "recensore": "6825b9d94b0d6f001234aa01",
+          "recensito": "6825b9d94b0d6f001234aa02",
+          "positiva": true,
+          "testo": "Ottima esperienza, oggetto come descritto",
+          "createdAt": "2026-05-31T10:00:00.000Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "prenotazioneId e positiva (boolean) sono obbligatori"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Solo i partecipanti dello scambio possono recensire"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Puoi recensire solo uno scambio completato"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Hai già lasciato una recensione per questo scambio"
+        }
+
+## Recensioni Ricevute [/api/v1/recensioni/me/ricevute]
+
+### Get recensioni ricevute [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "recensioni": [
+            {
+              "_id": "6825b9d94b0d6f001234rr01",
+              "recensore": { "_id": "6825b9d94b0d6f001234aa01", "nome": "Luigi" },
+              "positiva": true,
+              "testo": "Ottima esperienza"
+            }
+          ],
+          "totale": 1,
+          "positive": 1,
+          "negative": 0
+        }
+
+## Recensioni Scritte [/api/v1/recensioni/me/scritte]
+
+### Get recensioni scritte [GET]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "6825b9d94b0d6f001234rr01",
+            "recensito": { "_id": "6825b9d94b0d6f001234aa02", "nome": "Mario" },
+            "positiva": true,
+            "testo": "Ottima esperienza"
+          }
+        ]
+
+## Elimina Recensione [/api/v1/recensioni/{id}]
+
++ Parameters
+    + id: `6825b9d94b0d6f001234rr01` (string, required)
+
+### Elimina recensione [DELETE]
+
+Eliminazione consentita entro 24 ore dalla creazione e solo dall'autore.
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Recensione eliminata"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Recensione non trovata"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Eliminazione consentita solo entro 24 ore dalla creazione"
+        }
+
 # Group Legacy Scambi
 
 ## Legacy QR [/api/v1/scambi/{prenotazioneId}/qr]
