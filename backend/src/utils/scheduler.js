@@ -19,7 +19,7 @@ async function expireAnnunciScaduti() {
     );
 
     if (result.modifiedCount > 0) {
-      console.log(`Scheduler: ${result.modifiedCount} annunci scaduti aggiornati a SCADUTO`);
+      if (process.env.NODE_ENV !== 'production') console.error(`Scheduler: ${result.modifiedCount} annunci scaduti aggiornati a SCADUTO`);
     }
   } catch (error) {
     console.error('Scheduler: errore durante l aggiornamento degli annunci scaduti:', error);

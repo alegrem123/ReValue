@@ -10,7 +10,7 @@ mongoose.connection.on('error', (err) => {
 });
 
 mongoose.connection.once('open', () => {
-  console.log('Connesso a MongoDB');
+  if (process.env.NODE_ENV !== 'production') console.error('Connesso a MongoDB');
 });
 
 async function connectDB() {
