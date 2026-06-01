@@ -44,7 +44,7 @@ async function validaCodice(codice) {
 
   const crediti = res.data?.creditiAssegnati ?? res.creditiAssegnati ?? 50;
   const prenotazioneId = res.data?.prenotazione ?? '';
-  window.location.href = `swap-success.html?crediti=${encodeURIComponent(crediti)}&prenotazione=${encodeURIComponent(prenotazioneId)}`;
+  window.location.href = `swap-success.html?crediti=${encodeURIComponent(crediti)}&prenotazioneId=${encodeURIComponent(prenotazioneId)}`;
 }
 
 function stopScanner() {
