@@ -37,7 +37,7 @@ async function getNotificheMe(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
   }
 }
 
@@ -51,7 +51,7 @@ async function marcaLetta(req, res) {
     return res.status(200).json({ ok: true, data: notifica });
   } catch (err) {
     const statusCode = err.statusCode || (err.name === 'CastError' ? 404 : 500);
-    return res.status(statusCode).json({ ok: false, error: err.message });
+    return res.status(statusCode).json({ ok: false, error: statusCode < 500 ? err.message : 'Errore interno del server' });
   }
 }
 
@@ -64,7 +64,7 @@ async function marcaTutteLette(req, res) {
     const aggiornate = await marcaTutteLetteService(req.user.id);
     return res.status(200).json({ ok: true, data: { aggiornate } });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
   }
 }
 

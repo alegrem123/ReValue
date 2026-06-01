@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
 const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
@@ -10,6 +13,11 @@ const corsOrigin =
   process.env.NODE_ENV === 'production'
     ? (process.env.FRONTEND_URL || '').split(',').map((origin) => origin.trim()).filter(Boolean)
     : true;
+
+// Security middleware (RNF4/RNF10) — skip in test to avoid interfering with supertest
+if (process.env.NODE_ENV !== 'test') {
+  app.use(helmet());
+}
 
 // Middleware
 app.use(
@@ -22,6 +30,11 @@ app.use(
 );
 app.use(express.json({ limit: requestBodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
+
+// mongoSanitize dopo i body parser — altrimenti il body JSON non è ancora parsato (RNF4)
+if (process.env.NODE_ENV !== 'test') {
+  app.use(mongoSanitize());
+}
 
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('combined'));
@@ -47,7 +60,8 @@ const segnalazioniRoutes = require('./src/routes/segnalazioniRoutes');
 const recensioniRoutes = require('./src/routes/recensioniRoutes');
 const notificheRoutes = require('./src/routes/notificheRoutes');
 
-app.use('/api/v1/auth', authRoutes);
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false, skip: () => process.env.NODE_ENV === 'test' });
+app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/users', utentiRoutes);
 app.use('/api/v1/annunci', annunciRoutes);
 app.use('/api/v1/wallet', walletRoutes);

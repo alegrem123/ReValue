@@ -65,7 +65,7 @@ async function createRecensione(req, res) {
         .status(409)
         .json({ error: 'Hai già lasciato una recensione per questo scambio' });
     }
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -106,7 +106,7 @@ async function getRecensioniUtente(req, res) {
       riepilogo: { positive, negative },
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -125,7 +125,7 @@ async function getRecensioniRicevute(req, res) {
 
     return res.status(200).json(recensioni);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -144,7 +144,7 @@ async function getRecensioniScritte(req, res) {
 
     return res.status(200).json(recensioni);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -180,7 +180,7 @@ async function deleteRecensione(req, res) {
 
     return res.status(200).json({ message: 'Recensione eliminata' });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 

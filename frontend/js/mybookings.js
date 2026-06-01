@@ -4,6 +4,15 @@
  * Mostra prenotazioni con stati visivi + annullamento entro 15min (RF26).
  */
 
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const bookingsList  = document.getElementById('bookings-list');
 const bookingsAlert = document.getElementById('bookings-alert');
 
@@ -42,8 +51,8 @@ function entroQuindiciMinuti(dataPrenotazione) {
 }
 
 function buildCard(p) {
-  const titolo   = p.annuncio?.titolo || 'Annuncio rimosso';
-  const donatore = p.donatore ? `${p.donatore.nome} ${p.donatore.cognome}` : '—';
+  const titolo   = escapeHtml(p.annuncio?.titolo) || 'Annuncio rimosso';
+  const donatore = p.donatore ? escapeHtml(`${p.donatore.nome} ${p.donatore.cognome}`) : '—';
   const puoAnnullare = p.stato === 'ATTIVA' && entroQuindiciMinuti(p.dataPrenotazione);
 
   return `

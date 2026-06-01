@@ -3,6 +3,15 @@
  * Componente card per la pagina catalogo.
  */
 
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function formatDateItalian(dateInput) {
   const date = new Date(dateInput);
   return new Intl.DateTimeFormat('it-IT', {
@@ -34,15 +43,15 @@ function createAnnuncioCard(annuncio) {
   const foto =
     annuncio.oggetto?.foto?.[0] ||
     'https://via.placeholder.com/420x220/ced4da/6c757d?text=Immagine+non+disponibile';
-  const titolo = annuncio.titolo || 'Annuncio senza titolo';
+  const titolo = escapeHtml(annuncio.titolo) || 'Annuncio senza titolo';
   const scadenza = annuncio.dataScadenza
     ? formatDateItalian(annuncio.dataScadenza)
     : 'Data non disponibile';
   const distanza = formatDistanceLabel(annuncio.distanza);
-  const dettaglioUrl = `annuncio.html?id=${annuncio._id}`;
-  const stato = annuncio.stato || 'disponibile';
-  const categoria = annuncio.oggetto?.categoria || annuncio.categoria || '';
-  const crediti = annuncio.creditiRichiesti ?? annuncio.crediti ?? 0;
+  const dettaglioUrl = `annuncio.html?id=${encodeURIComponent(annuncio._id)}`;
+  const stato = escapeHtml(annuncio.stato) || 'disponibile';
+  const categoria = escapeHtml(annuncio.oggetto?.categoria || annuncio.categoria || '');
+  const crediti = Number(annuncio.creditiRichiesti ?? annuncio.crediti ?? 0);
 
   const col = document.createElement('div');
   col.className = 'col-md-6 col-lg-4 mb-4';
@@ -50,7 +59,7 @@ function createAnnuncioCard(annuncio) {
     <a href="${dettaglioUrl}" class="text-decoration-none text-reset d-block h-100">
       <div class="rv-annuncio-card rv-reveal h-100">
         <div class="rv-card-img-wrapper">
-          <img src="${foto}" alt="${titolo}" loading="lazy" />
+          <img src="${escapeHtml(foto)}" alt="${titolo}" loading="lazy" />
         </div>
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start gap-2 mb-2">

@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
-  Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { api, clearSession, getUserId } from '../api/client';
@@ -13,7 +10,6 @@ import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
-const TIPI_SEGNALAZIONE = ['descrizione', 'inappropriato', 'altro'];
 
 export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
   const [balance, setBalance]           = useState(null);
@@ -24,14 +20,6 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
   // Recensioni
   const [recensioni, setRecensioni]     = useState(null); // { totale, positive, negative, recenti }
   const [loadingRec, setLoadingRec]     = useState(false);
-
-  // Modal segnala
-  const [segnalaOpen, setSegnalaOpen]   = useState(false);
-  const [segnalaTipo, setSegnalaTipo]   = useState('descrizione');
-  const [segnalaMotivo, setSegnalaMotivo] = useState('');
-  const [segnalaLoading, setSegnalaLoading] = useState(false);
-  const [segnalaError, setSegnalaError] = useState('');
-  const [segnalaDone, setSegnalaDone]   = useState(false);
 
   const loadWallet = useCallback(async () => {
     setLoading(true);
@@ -66,28 +54,6 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
     onLogout();
   }
 
-  async function inviaSegnalazione() {
-    if (!segnalaMotivo.trim()) { setSegnalaError('Il motivo è obbligatorio.'); return; }
-    setSegnalaLoading(true);
-    setSegnalaError('');
-    const userId = await getUserId();
-    const res = await api.post('/api/v1/segnalazioni', {
-      segnalato: userId, // placeholder — in produzione sarà l'ID dell'utente segnalato
-      tipo: segnalaTipo,
-      motivo: segnalaMotivo.trim(),
-    });
-    setSegnalaLoading(false);
-    if (!res.ok) { setSegnalaError(res.error || 'Errore invio segnalazione.'); return; }
-    setSegnalaDone(true);
-  }
-
-  function chiudiSegnala() {
-    setSegnalaOpen(false);
-    setSegnalaMotivo('');
-    setSegnalaTipo('descrizione');
-    setSegnalaError('');
-    setSegnalaDone(false);
-  }
 
   const totPos = recensioni?.positive ?? recensioni?.recensioni?.filter((r) => r.positiva).length ?? 0;
   const totNeg = recensioni?.negative ?? recensioni?.recensioni?.filter((r) => !r.positiva).length ?? 0;
@@ -176,61 +142,6 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
         )}
       </View>
 
-      {/* ── Modal segnalazione ── */}
-      <Modal visible={segnalaOpen} animationType="slide" transparent onRequestClose={chiudiSegnala}>
-        <Pressable style={styles.backdrop} onPress={chiudiSegnala} />
-        <View style={styles.sheet}>
-          {segnalaDone ? (
-            <>
-              <Text style={styles.sheetTitle}>✓ Segnalazione inviata</Text>
-              <Text style={styles.muted}>Grazie. Il team esaminerà la segnalazione.</Text>
-              <Button title="Chiudi" onPress={chiudiSegnala} />
-            </>
-          ) : (
-            <>
-              <Text style={styles.sheetTitle}>Segnala utente</Text>
-
-              <Text style={styles.fieldLabel}>Tipo</Text>
-              <View style={styles.tipiRow}>
-                {TIPI_SEGNALAZIONE.map((t) => (
-                  <Pressable
-                    key={t}
-                    style={[styles.tipoPill, segnalaTipo === t && styles.tipoPillActive]}
-                    onPress={() => setSegnalaTipo(t)}
-                  >
-                    <Text style={[styles.tipoPillText, segnalaTipo === t && styles.tipoPillTextActive]}>
-                      {t}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <Text style={styles.fieldLabel}>Motivo *</Text>
-              <TextInput
-                style={styles.textarea}
-                placeholder="Descrivi il problema..."
-                placeholderTextColor={colors.muted}
-                multiline
-                numberOfLines={4}
-                value={segnalaMotivo}
-                onChangeText={setSegnalaMotivo}
-              />
-
-              {segnalaError ? <Text style={styles.errorText}>{segnalaError}</Text> : null}
-
-              <View style={styles.actions}>
-                <Button title="Annulla" variant="secondary" onPress={chiudiSegnala} />
-                <Button
-                  title="Invia"
-                  onPress={inviaSegnalazione}
-                  loading={segnalaLoading}
-                  disabled={segnalaLoading}
-                />
-              </View>
-            </>
-          )}
-        </View>
-      </Modal>
     </Screen>
   );
 }

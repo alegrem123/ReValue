@@ -3,6 +3,15 @@
  * Logica della pagina profilo pubblico utente.
  */
 
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const alertBox = document.getElementById('public-profile-alert');
 const profileAvatar = document.getElementById('public-profile-avatar');
 const profileName = document.getElementById('public-profile-name');
@@ -57,7 +66,7 @@ function renderReviews(reviews) {
       ? '<i class="bi bi-hand-thumbs-up-fill text-success"></i>'
       : '<i class="bi bi-hand-thumbs-down-fill text-danger"></i>';
     const author = review.recensore
-      ? `${review.recensore.nome || ''} ${review.recensore.cognome || ''}`.trim()
+      ? escapeHtml(`${review.recensore.nome || ''} ${review.recensore.cognome || ''}`.trim())
       : 'Utente';
 
     return `
@@ -66,7 +75,7 @@ function renderReviews(reviews) {
           <span class="fw-semibold">${icon} ${author}</span>
           <span class="text-muted small">${formatDate(review.data)}</span>
         </div>
-        <p class="mb-0 text-muted">${review.testo || 'Nessun commento testuale.'}</p>
+        <p class="mb-0 text-muted">${escapeHtml(review.testo) || 'Nessun commento testuale.'}</p>
       </article>
     `;
   }).join('');

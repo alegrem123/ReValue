@@ -45,7 +45,7 @@ async function createSegnalazione(req, res) {
 
     return res.status(201).json({ segnalazione });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -72,7 +72,7 @@ async function getMieSegnalazioni(req, res) {
 
     return res.status(200).json({ segnalazioni, totale, page, limit });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 

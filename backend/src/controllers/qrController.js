@@ -43,6 +43,11 @@ async function generaQR(req, res) {
     }
     // stato === 'ATTIVA' da qui in poi
 
+    // OCL #7: annuncio deve essere in stato PRENOTATO per generare QR
+    if (prenotazione.annuncio.stato !== 'PRENOTATO') {
+      return res.status(409).json({ error: 'Impossibile generare QR: annuncio non in stato PRENOTATO' });
+    }
+
     // Solo il donatore può generare il QR per questa prenotazione
     if (prenotazione.annuncio.donatore.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Solo il donatore può generare il QR per questa prenotazione' });
@@ -74,7 +79,7 @@ async function generaQR(req, res) {
       scadenza: token.scadenza,
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -153,7 +158,7 @@ async function validaQR(req, res) {
     if (err.statusCode) {
       return res.status(err.statusCode).json({ error: err.message });
     }
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
