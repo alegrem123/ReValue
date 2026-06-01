@@ -17,7 +17,9 @@ async function creaPrenotazione(req, res) {
 
     const annuncio = await Annuncio.findById(annuncioId);
     if (!annuncio || !annuncio.isAttivo) return res.status(404).json({ error: 'Annuncio non trovato' });
+    // OCL #4: il donatore non può prenotare il proprio annuncio
     if (annuncio.donatore.toString() === req.user.id) return res.status(409).json({ error: 'Non puoi prenotare il tuo stesso annuncio' });
+    // OCL #6: prenotazione solo su annuncio DISPONIBILE e non scaduto
     if (annuncio.stato === 'PRENOTATO') return res.status(409).json({ error: 'Oggetto già prenotato' });
     if (annuncio.stato !== 'DISPONIBILE' || annuncio.dataScadenza <= new Date()) return res.status(409).json({ error: 'Oggetto non più disponibile' });
 
@@ -25,6 +27,7 @@ async function creaPrenotazione(req, res) {
     let prenotazione, lockedAnnuncio;
     try {
       await session.withTransaction(async () => {
+        // OCL #9/#10: una sola prenotazione attiva — optimistic lock su versione
         lockedAnnuncio = await Annuncio.findOneAndUpdate(
           { _id: annuncio._id, stato: 'DISPONIBILE', versione: annuncio.versione },
           { $set: { stato: 'PRENOTATO' }, $inc: { versione: 1 } },
@@ -123,6 +126,7 @@ async function segnalaMancatoRitiro(req, res) {
     if (!prenotazione || prenotazione.stato !== 'ATTIVA') return res.status(404).json({ error: 'Prenotazione attiva non trovata' });
     if (prenotazione.donatore.toString() !== req.user.id) return res.status(403).json({ error: 'Solo il donatore può segnalare il mancato ritiro' });
 
+    // OCL #20: no-show crea segnalazione e applica malus — tutto atomico
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
@@ -134,22 +138,15 @@ async function segnalaMancatoRitiro(req, res) {
           { session }
         );
         await TokenQR.deleteOne({ prenotazione: prenotazione._id }).session(session);
+        await Segnalazione.create([{
+          segnalante: req.user.id, segnalato: prenotazione.acquirente,
+          annuncio: prenotazione.annuncio, tipo: 'altro',
+          motivo: 'No-show: acquirente non si è presentato al ritiro',
+        }], { session });
+        await applicaMalus(prenotazione.acquirente, { session });
       });
     } finally {
       await session.endSession();
-    }
-
-    // Side effects outside transaction: no rollback needed if these fail
-    try {
-      await Segnalazione.create({
-        segnalante: req.user.id, segnalato: prenotazione.acquirente,
-        annuncio: prenotazione.annuncio, tipo: 'altro',
-        motivo: 'No-show: acquirente non si è presentato al ritiro',
-      });
-      await applicaMalus(prenotazione.acquirente);
-    } catch (sideEffectErr) {
-      // side effects failed but core state is already committed — log and proceed
-      console.error('segnalaMancatoRitiro side effects failed:', sideEffectErr.message);
     }
 
     return res.status(200).json({ message: 'Mancato ritiro segnalato con successo' });
