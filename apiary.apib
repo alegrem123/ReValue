@@ -1506,7 +1506,7 @@ Endpoint riservati al ruolo `admin`.
 
 + Response 409 (application/json)
 
-        { "error": "Segnalazione non trovata o già risolta" }
+        { "error": "Segnalazione già risolta" }
 
 ## Banna utente [POST /api/v1/admin/utenti/{id}/ban]
 
@@ -1597,11 +1597,18 @@ Endpoint riservati al ruolo `admin`.
     + Headers
 
             Authorization: Bearer jwt-admin-token
+            Content-Type: application/json
+
+    + Body
+
+            {
+              "stato": "DISPONIBILE"
+            }
 
 + Response 200 (application/json)
 
         {
-          "message": "Annuncio ripristinato a DISPONIBILE",
+          "message": "Annuncio forzato a DISPONIBILE",
           "annuncio": {
             "_id": "665000000000000000000001",
             "stato": "DISPONIBILE",

@@ -32,7 +32,7 @@ paths:
       tags: [Auth]
       summary: Registra un utente e crea il wallet
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -316,7 +316,6 @@ paths:
           application/json:
             schema:
               type: object
-              required: [stato]
               properties:
                 stato:
                   $ref: '#/components/schemas/StatoAnnuncio'
@@ -900,11 +899,23 @@ paths:
                 type: object
                 additionalProperties: true
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: Segnalazione già risolta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Segnalazione già risolta
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: Segnalazione inesistente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Segnalazione non trovata
 
   /api/v1/admin/utenti/{id}/ban:
     post:
@@ -965,15 +976,18 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Id'
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [stato]
               properties:
                 stato:
                   type: string
                   enum: [DISPONIBILE, SCADUTO, CEDUTO]
+              example:
+                stato: DISPONIBILE
       responses:
         '200':
           description: Stato annuncio aggiornato
@@ -981,7 +995,13 @@ paths:
             application/json:
               schema:
                 type: object
-                additionalProperties: true
+                properties:
+                  message:
+                    type: string
+                    example: Annuncio forzato a DISPONIBILE
+                  annuncio:
+                    type: object
+                    additionalProperties: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
