@@ -11,10 +11,11 @@
  *  SCENARIO 5 – Prenotazione non ATTIVA (COMPLETATA)          → 409
  *  SCENARIO 6 – generaQR su prenotazione COMPLETATA           → 409
  *  SCENARIO 7 – generaQR su prenotazione ANNULLATA            → 409
- *  SCENARIO 8 – OCL #15: wallet saldo ≥ 0 dopo scambio       → verifica
+ *  SCENARIO 8 – OCL #17: wallet saldo ≥ 0 dopo scambio       → verifica
  *
  * Riferimenti OCL: #13 (postcondizione generaQR), #14 (pre/post validaQR),
- *                  #15 (saldo non negativo).
+ *                  #15 (QR corrisponde alla prenotazione — enforced by findTokenByCodice),
+ *                  #17 (saldo wallet non negativo).
  * Riferimenti RF:  RF17, RF27.
  */
 
@@ -352,12 +353,12 @@ describe('QR Edge Cases – copertura OCL #13, #14, #15', () => {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SCENARIO 8: OCL #15 – Wallet saldo ≥ 0 dopo scambio validato
+  // SCENARIO 8: OCL #17 – Wallet saldo ≥ 0 dopo scambio validato
   //             Verifica che i crediti vengano accreditati correttamente
   //             e che il bilancio non diventi mai negativo.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  describe('SCENARIO 8 – OCL #15: saldo wallet ≥ 0 dopo scambio con QR', () => {
+  describe('SCENARIO 8 – OCL #17: saldo wallet ≥ 0 dopo scambio con QR', () => {
     let tokenD, tokenA, annId, prenId, qrCode;
 
     beforeAll(async () => {
@@ -377,14 +378,14 @@ describe('QR Edge Cases – copertura OCL #13, #14, #15', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.creditiAssegnati).toBeGreaterThan(0);
 
-      // Verifica Wallet Donatore (OCL #15: bilancio ≥ 0)
+      // Verifica Wallet Donatore (OCL #17: bilancio ≥ 0)
       const donatoreId = getUserIdFromToken(tokenD);
       const walletDonatore = await Wallet.findOne({ idUtente: donatoreId });
       expect(walletDonatore).not.toBeNull();
       expect(walletDonatore.bilancio).toBeGreaterThanOrEqual(0);
       expect(walletDonatore.bilancio).toBe(res.body.creditiAssegnati);
 
-      // Verifica Wallet Acquirente (OCL #15: bilancio ≥ 0)
+      // Verifica Wallet Acquirente (OCL #17: bilancio ≥ 0)
       const acquirenteId = getUserIdFromToken(tokenA);
       const walletAcquirente = await Wallet.findOne({ idUtente: acquirenteId });
       expect(walletAcquirente).not.toBeNull();
@@ -392,7 +393,7 @@ describe('QR Edge Cases – copertura OCL #13, #14, #15', () => {
       expect(walletAcquirente.bilancio).toBe(res.body.creditiAssegnati);
     });
 
-    test('il saldo non può diventare negativo (invariante OCL #15)', async () => {
+    test('il saldo non può diventare negativo (invariante OCL #17)', async () => {
       // Verifica che il modello Wallet rifiuti un bilancio negativo
       const donatoreId = getUserIdFromToken(tokenD);
       const wallet = await Wallet.findOne({ idUtente: donatoreId });
