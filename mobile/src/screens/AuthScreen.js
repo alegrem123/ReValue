@@ -27,7 +27,7 @@ export function AuthScreen({ onAuthenticated }) {
     setError('');
     setLoading(true);
 
-    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+    const endpoint = isRegister ? '/api/v1/auth/register' : '/api/v1/auth/login';
     const body = isRegister
       ? form
       : { email: form.email.trim(), password: form.password };
@@ -47,7 +47,8 @@ export function AuthScreen({ onAuthenticated }) {
   return (
     <Screen
       title="RE-VALUE"
-      subtitle="Accedi all'app per pubblicare annunci, prenotare oggetti e seguire il tuo wallet."
+      subtitle="Dai nuova vita ai tuoi oggetti. Accedi per pubblicare e prenotare."
+      variant="gradient"
     >
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{isRegister ? 'Crea account' : 'Accedi'}</Text>
@@ -98,16 +99,23 @@ export function AuthScreen({ onAuthenticated }) {
 const styles = StyleSheet.create({
   card: {
     gap: 14,
-    borderRadius: 8,
+    borderRadius: 20,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    elevation: 5,
+    marginHorizontal: 4,
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: '800',
     color: colors.text,
+    letterSpacing: -0.3,
   },
   row: {
     flexDirection: 'row',

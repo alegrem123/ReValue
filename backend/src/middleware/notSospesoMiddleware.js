@@ -5,6 +5,14 @@ async function notSospeso(req, res, next) {
     return res.status(401).json({ error: 'Autenticazione richiesta' });
   }
 
+  if (req.user.isSospeso === true) {
+    return res.status(403).json({ error: 'Account sospeso' });
+  }
+
+  if (req.user.isSospeso === false) {
+    return next();
+  }
+
   try {
     const user = await User.findById(req.user.id);
     if (!user) {

@@ -4,6 +4,15 @@
  * Mostra prenotazioni con stati visivi + annullamento entro 15min (RF26).
  */
 
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const bookingsList  = document.getElementById('bookings-list');
 const bookingsAlert = document.getElementById('bookings-alert');
 
@@ -42,8 +51,8 @@ function entroQuindiciMinuti(dataPrenotazione) {
 }
 
 function buildCard(p) {
-  const titolo   = p.annuncio?.titolo || 'Annuncio rimosso';
-  const donatore = p.donatore ? `${p.donatore.nome} ${p.donatore.cognome}` : '—';
+  const titolo   = escapeHtml(p.annuncio?.titolo) || 'Annuncio rimosso';
+  const donatore = p.donatore ? escapeHtml(`${p.donatore.nome} ${p.donatore.cognome}`) : '—';
   const puoAnnullare = p.stato === 'ATTIVA' && entroQuindiciMinuti(p.dataPrenotazione);
 
   return `
@@ -115,7 +124,7 @@ async function annullaPrenotazione() {
   confirmBtn.disabled = true;
   confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Annullamento...';
 
-  const res = await api.delete(`/api/prenotazioni/${pendingAnnulla}`);
+  const res = await api.delete(`/api/v1/prenotazioni/${pendingAnnulla}`);
 
   confirmBtn.disabled = false;
   confirmBtn.textContent = 'Annulla prenotazione';
@@ -149,7 +158,7 @@ async function loadBookings() {
     return;
   }
 
-  const res = await api.get('/api/prenotazioni/me');
+  const res = await api.get('/api/v1/prenotazioni/me');
   if (!res.ok) {
     bookingsList.innerHTML = '';
     showAlert(res.error || 'Impossibile caricare le prenotazioni.');

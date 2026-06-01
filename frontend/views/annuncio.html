@@ -17,30 +17,6 @@
     crossorigin="anonymous"
   />
   <style>
-    :root {
-      --rv-green:       #2E7D32;
-      --rv-green-light: #43A047;
-      --rv-green-dark:  #1B5E20;
-      --rv-accent:      #FFC107;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .annuncio-header {
-      border-left: 4px solid var(--rv-green);
-    }
-
-    .annuncio-meta dt {
-      width: 160px;
-    }
-
-    .annuncio-meta dd {
-      margin-left: 0;
-    }
-
     .img-preview {
       max-height: 420px;
       object-fit: cover;
@@ -53,22 +29,22 @@
   <main class="container py-5">
     <div id="annuncio-alert" class="alert d-none" role="alert"></div>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 annuncio-header">
+    <section class="page-hero">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
         <div>
-          <p class="text-uppercase small text-success mb-2">Dettaglio annuncio</p>
-          <h1 id="annuncio-title" class="h3 fw-bold mb-2">Caricamento...</h1>
-          <p id="annuncio-donatore" class="mb-0 text-muted"></p>
+          <p class="page-hero-eyebrow">Dettaglio annuncio</p>
+          <h1 id="annuncio-title" class="fw-bold mb-2">Caricamento...</h1>
+          <p id="annuncio-donatore" class="mb-0" style="opacity:0.8"></p>
         </div>
         <div class="text-md-end">
-          <a href="catalog.html" class="btn btn-outline-success btn-sm">Torna al catalogo</a>
+          <a href="catalog.html" class="btn btn-outline-light btn-sm">Torna al catalogo</a>
         </div>
       </div>
     </section>
 
     <div class="row g-4">
       <div class="col-lg-6">
-        <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="card overflow-hidden">
           <img id="annuncio-image" src="https://via.placeholder.com/720x420?text=Nessuna+immagine" alt="Immagine annuncio" class="w-100 img-preview" />
           <div class="card-body">
             <p id="annuncio-description" class="mb-0 text-muted"></p>
@@ -76,7 +52,7 @@
         </div>
       </div>
       <aside class="col-lg-6">
-        <div class="card shadow-sm border-0 p-4">
+        <div class="card p-4">
           <div class="mb-4">
             <h2 class="h5 fw-bold mb-3">Informazioni</h2>
             <dl class="row annuncio-meta">
@@ -103,6 +79,9 @@
             <button id="annuncio-action" type="button" class="btn btn-success btn-lg">Prenota annuncio</button>
             <a id="annuncio-donor-profile" href="catalog.html" class="btn btn-outline-success">
               Profilo pubblico donatore
+            </a>
+            <a id="btn-segnala-annuncio" href="segnala.html" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-flag me-1"></i>Segnala donatore
             </a>
           </div>
         </div>

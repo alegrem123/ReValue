@@ -1,17 +1,45 @@
+const User = require('../models/userModel');
 const { verifyToken } = require('../utils/jwt');
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Token mancante' });
   }
 
+  let payload;
   try {
     const token = authHeader.slice(7);
-    req.user = verifyToken(token);
-    next();
+    payload = verifyToken(token);
   } catch (err) {
     return res.status(401).json({ error: err.message });
+  }
+
+  try {
+    const user = await User.findById(payload.id);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Token non valido' });
+    }
+
+    if (user.isSospeso) {
+      return res.status(403).json({ error: 'Account sospeso' });
+    }
+
+    req.user = {
+      ...payload,
+      id: user._id.toString(),
+      ruolo: user.ruolo,
+      nome: user.nome,
+      isSospeso: user.isSospeso,
+    };
+
+    next();
+  } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -32,11 +60,21 @@ function requireAdmin(req, res, next) {
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
-function optionalAuthenticate(req, _res, next) {
+async function optionalAuthenticate(req, _res, next) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
-      req.user = verifyToken(authHeader.slice(7));
+      const payload = verifyToken(authHeader.slice(7));
+      const user = await User.findById(payload.id);
+      if (user && !user.isSospeso) {
+        req.user = {
+          ...payload,
+          id: user._id.toString(),
+          ruolo: user.ruolo,
+          nome: user.nome,
+          isSospeso: user.isSospeso,
+        };
+      }
     } catch {
       // token invalido — req.user resta undefined, nessun errore
     }

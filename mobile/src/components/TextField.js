@@ -23,15 +23,17 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontWeight: '700',
+    fontSize: 14,
   },
   input: {
-    minHeight: 46,
-    borderWidth: 1,
+    minHeight: 48,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: colors.surface,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     color: colors.text,
+    fontSize: 15,
   },
   multiline: {
     minHeight: 104,

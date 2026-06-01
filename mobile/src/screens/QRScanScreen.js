@@ -15,11 +15,12 @@ export function QRScanScreen({ onSuccess, onBack }) {
     if (!codice.trim()) { setError('Inserisci il codice QR.'); return; }
     setLoading(true);
     setError('');
-    const res = await api.post('/api/qr/valida', { codice: codice.trim() });
+    const res = await api.post('/api/v1/qr/valida', { codice: codice.trim() });
     setLoading(false);
     if (!res.ok) { setError(res.error || 'Codice non valido o scaduto.'); return; }
     const crediti = res.data?.creditiAssegnati ?? 50;
-    onSuccess(crediti);
+    const prenotazioneId = res.data?.prenotazione ?? null;
+    onSuccess(crediti, prenotazioneId);
   }
 
   return (
@@ -43,8 +44,7 @@ export function QRScanScreen({ onSuccess, onBack }) {
 
       <View style={styles.hint}>
         <Text style={styles.hintText}>
-          Il donatore mostra un QR nella sezione "Prenota" → "Mostra QR".
-          Inserisci il codice numerico per completare lo scambio.
+          Chiedi al donatore di aprire il QR dalla prenotazione ricevuta, poi inserisci il codice mostrato.
         </Text>
       </View>
     </Screen>

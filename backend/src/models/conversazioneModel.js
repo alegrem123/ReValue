@@ -23,6 +23,10 @@ const messaggioSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    immagine: {
+      type: String,
+      default: null, // base64, max 1 MB — validato nel controller
+    },
   },
   { _id: true }
 );
@@ -45,6 +49,12 @@ const conversazioneSchema = new Schema(
     messaggi: {
       type: [messaggioSchema],
       default: [],
+    },
+    // Mappa userId → timestamp ultimo evento "sta scrivendo" (transiente, TTL ~3s)
+    typing: {
+      type: Map,
+      of: Date,
+      default: {},
     },
   },
   {

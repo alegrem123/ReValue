@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
 let mongoServer;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -18,6 +17,7 @@ async function connectDB() {
   let uri = MONGODB_URI;
 
   if (isPlaceholderUri(uri) && process.env.NODE_ENV !== 'production') {
+    const { MongoMemoryServer } = require('mongodb-memory-server');
     console.warn(
       'MONGODB_URI non valida o placeholder rilevato, avvio MongoDB in memoria per lo sviluppo.'
     );

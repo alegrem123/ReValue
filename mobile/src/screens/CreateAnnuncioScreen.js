@@ -89,7 +89,7 @@ export function CreateAnnuncioScreen({ onCreated }) {
     }
 
     setLoading(true);
-    const response = await api.post('/api/annunci', buildPayload());
+    const response = await api.post('/api/v1/annunci', buildPayload());
     setLoading(false);
 
     if (!response.ok) {

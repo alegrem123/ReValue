@@ -2,11 +2,11 @@ const Prenotazione = require('../models/prenotazioneModel');
 const {
   findActiveTokenByPrenotazione,
   findTokenByCodice,
-  finalizzaScambio,
+  finalizzaScambioAtomico,
 } = require('../services/scambioQrService');
 
 /**
- * GET /api/scambi/:prenotazioneId/qr
+ * GET /api/v1/scambi/:prenotazioneId/qr
  * Il donatore visualizza il codice QR da mostrare all'acquirente (UC3 step 1).
  * Solo il donatore dell'annuncio può accedere al codice.
  *
@@ -44,12 +44,12 @@ async function getQR(req, res) {
 }
 
 /**
- * POST /api/scambi/:prenotazioneId/valida
+ * POST /api/v1/scambi/:prenotazioneId/valida
  * L'acquirente scansiona il QR e certifica l'avvenuto scambio fisico (UC3, RF27).
  * Se la validazione ha successo:
  *   - TokenQR.usato = true (OCL #14: non riusabile)
  *   - Prenotazione.stato = COMPLETATA (OCL #12)
- *   - Annuncio.stato = RITIRATO (OCL #12)
+ *   - Annuncio.stato = CEDUTO (OCL #12)
  *   - crediti accreditati a donatore e acquirente (RNF5 anti-frode)
  *
  * @param {import('express').Request} req
@@ -98,10 +98,13 @@ async function validaScambio(req, res) {
       return res.status(401).json({ error: 'Scansione non autorizzata' });
     }
 
-    const crediti = await finalizzaScambio({ token: tokenQR, prenotazione });
+    const crediti = await finalizzaScambioAtomico({ tokenId: tokenQR._id });
 
     return res.status(200).json({ message: 'Scambio confermato', crediti });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
     return res.status(500).json({ error: err.message });
   }
 }

@@ -1,16 +1,23 @@
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const User = require('../../src/models/userModel');
 const { hashPassword } = require('../../src/utils/password');
+
+jest.mock('../../src/services/emailService', () => ({
+  sendWelcome: jest.fn(() => Promise.resolve({ skipped: true })),
+  sendBookingConfirmation: jest.fn(() => Promise.resolve({ skipped: true })),
+  sendSwapCompleted: jest.fn(() => Promise.resolve({ skipped: true })),
+}));
+
+const emailService = require('../../src/services/emailService');
 const { register, login } = require('../../src/controllers/authController');
-const { verifyToken } = require('../../src/utils/jwt');
+const { verifyToken, signToken } = require('../../src/utils/jwt');
 
 let mongoServer;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'test-jwt-secret';
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongoServer.getUri());
 });
 
@@ -21,6 +28,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await User.deleteMany({});
+  jest.clearAllMocks();
 });
 
 function createMockRes() {
@@ -54,6 +62,12 @@ describe('Auth flow', () => {
       email: 'mario.rossi@example.com',
     });
     expect(response.user.passwordHash).toBeUndefined();
+    expect(emailService.sendWelcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nome: 'Mario',
+        email: 'mario.rossi@example.com',
+      })
+    );
   });
 
   test('register fail se email già esiste', async () => {
@@ -140,17 +154,41 @@ describe('Auth flow', () => {
       expect.objectContaining({ error: 'Credenziali non valide' })
     );
   });
+
+  test('login fail per utente bannato', async () => {
+    const password = 'Password123!';
+    const user = new User({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Paolo',
+      cognome: 'Blu',
+      email: 'paolo.blu@example.com',
+      passwordHash: await hashPassword(password),
+      ruolo: 'user',
+      bannato: true,
+      isSospeso: true,
+    });
+    await user.save();
+
+    const req = {
+      body: {
+        email: 'paolo.blu@example.com',
+        password,
+      },
+    };
+    const res = createMockRes();
+
+    await login(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Account bannato' })
+    );
+  });
 });
 
 describe('JWT utility', () => {
   test('verifyToken fallisce per JWT scaduto', async () => {
-    const token = jwt.sign(
-      { id: 'test-id', ruolo: 'user' },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: '-1s',
-      }
-    );
+    const token = signToken({ id: 'test-id', ruolo: 'user' }, { expiresIn: '-1s' });
 
     expect(() => verifyToken(token)).toThrow('Token expired');
   });

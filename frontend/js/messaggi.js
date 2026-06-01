@@ -1,7 +1,7 @@
 /**
  * messaggi.js
  * Pagina lista conversazioni — RF11, RF12.
- * Fetch GET /api/conversazioni/me, render card per ogni conversazione.
+ * Fetch GET /api/v1/conversazioni/me, render card per ogni conversazione.
  */
 
 const convList = document.getElementById('conv-list');
@@ -77,7 +77,7 @@ async function load() {
     myId = payload.id;
   } catch { /* non critico */ }
 
-  const res = await api.get('/api/conversazioni/me');
+  const res = await api.get('/api/v1/conversazioni/me');
 
   if (!res.ok) {
     convList.innerHTML = '';

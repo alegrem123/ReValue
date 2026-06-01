@@ -1,50 +1,78 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { api, clearSession } from '../api/client';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { api, clearSession, getUserId } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
-export function ProfileScreen({ user, onLogout }) {
-  const [balance, setBalance] = useState(null);
+
+export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
+  const [balance, setBalance]           = useState(null);
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState('');
+
+  // Recensioni
+  const [recensioni, setRecensioni]     = useState(null); // { totale, positive, negative, recenti }
+  const [loadingRec, setLoadingRec]     = useState(false);
 
   const loadWallet = useCallback(async () => {
     setLoading(true);
     setError('');
-
     const [saldoRes, storicoRes] = await Promise.all([
-      api.get('/api/wallet/saldo'),
-      api.get('/api/wallet/storico?limit=5'),
+      api.get('/api/v1/wallet/saldo'),
+      api.get('/api/v1/wallet/storico?limit=5'),
     ]);
-
     setLoading(false);
-    if (!saldoRes.ok) {
-      setError(saldoRes.error || 'Impossibile caricare il wallet.');
-      return;
-    }
-
-    setBalance(saldoRes.data?.bilancio ?? saldoRes.data?.saldo ?? saldoRes.data?.crediti ?? 0);
+    if (!saldoRes.ok) { setError(saldoRes.error || 'Impossibile caricare il wallet.'); return; }
+    setBalance(saldoRes.data?.bilancio ?? saldoRes.data?.saldo ?? 0);
     setTransactions(storicoRes.ok ? storicoRes.data?.data || storicoRes.data || [] : []);
+  }, []);
+
+  const loadRecensioni = useCallback(async () => {
+    const userId = await getUserId();
+    if (!userId) return;
+    setLoadingRec(true);
+    const res = await api.get(`/api/v1/users/${userId}/recensioni?limit=3`);
+    setLoadingRec(false);
+    if (!res.ok) return;
+    setRecensioni(res.data);
   }, []);
 
   useEffect(() => {
     loadWallet();
-  }, [loadWallet]);
+    loadRecensioni();
+  }, [loadWallet, loadRecensioni]);
 
   async function logout() {
     await clearSession();
     onLogout();
   }
 
+
+  const totPos = recensioni?.positive ?? recensioni?.recensioni?.filter((r) => r.positiva).length ?? 0;
+  const totNeg = recensioni?.negative ?? recensioni?.recensioni?.filter((r) => !r.positiva).length ?? 0;
+  const recenti = recensioni?.recenti ?? recensioni?.recensioni ?? [];
+
   return (
     <Screen
       title="Profilo"
       subtitle={`${user?.nome || 'Utente'} ${user?.cognome || ''}`.trim()}
-      right={<Button title="Esci" variant="secondary" onPress={logout} />}
+      right={
+        <View style={styles.headerActions}>
+          {onOpenNotifiche ? (
+            <Button title="🔔" variant="secondary" onPress={onOpenNotifiche} />
+          ) : null}
+          <Button title="Esci" variant="secondary" onPress={logout} />
+        </View>
+      }
     >
+      {/* ── Wallet ── */}
       <View style={styles.wallet}>
         <Text style={styles.walletLabel}>Saldo crediti</Text>
         {loading ? (
@@ -55,28 +83,65 @@ export function ProfileScreen({ user, onLogout }) {
         <Text style={styles.walletLabel}>crediti RE-VALUE</Text>
       </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+      {/* ── Account ── */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Account</Text>
-        <Info label="Email" value={user?.email} />
-        <Info label="Ruolo" value={user?.ruolo || 'user'} />
-        <Info label="Citta" value={user?.citta || 'Non indicata'} />
+        <Info label="Email"  value={user?.email} />
+        <Info label="Ruolo"  value={user?.ruolo || 'user'} />
+        <Info label="Città"  value={user?.citta || 'Non indicata'} />
       </View>
 
+      {/* ── Recensioni ricevute ── */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Recensioni ricevute</Text>
+        {loadingRec ? (
+          <ActivityIndicator color={colors.green} />
+        ) : (
+          <>
+            <View style={styles.recCountRow}>
+              <View style={[styles.recCount, { backgroundColor: colors.greenXLight }]}>
+                <Text style={[styles.recCountNum, { color: colors.green }]}>{totPos}</Text>
+                <Text style={styles.recCountLabel}>👍 Positive</Text>
+              </View>
+              <View style={[styles.recCount, { backgroundColor: colors.dangerLight }]}>
+                <Text style={[styles.recCountNum, { color: colors.danger }]}>{totNeg}</Text>
+                <Text style={styles.recCountLabel}>👎 Negative</Text>
+              </View>
+            </View>
+            {recenti.length === 0 ? (
+              <Text style={styles.muted}>Nessuna recensione ricevuta.</Text>
+            ) : (
+              recenti.slice(0, 3).map((r, i) => (
+                <View key={r._id || i} style={styles.recRow}>
+                  <Text style={styles.recIcon}>{r.positiva ? '👍' : '👎'}</Text>
+                  <View style={{ flex: 1 }}>
+                    {r.testo ? <Text style={styles.recTesto}>{r.testo}</Text> : null}
+                    <Text style={styles.recData}>{fmtDate(r.data || r.createdAt)}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </>
+        )}
+      </View>
+
+      {/* ── Ultime transazioni ── */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Ultime transazioni</Text>
         {transactions.length === 0 ? (
           <Text style={styles.muted}>Nessuna transazione recente.</Text>
         ) : (
           transactions.map((item) => (
-            <View key={item._id || item.id || `${item.tipo}-${item.createdAt}`} style={styles.transaction}>
+            <View key={item._id || `${item.tipo}-${item.createdAt}`} style={styles.transaction}>
               <Text style={styles.transactionTitle}>{item.tipo || 'Movimento'}</Text>
               <Text style={styles.muted}>{item.ammontare ?? 0} crediti</Text>
             </View>
           ))
         )}
       </View>
+
     </Screen>
   );
 }
@@ -88,6 +153,11 @@ function Info({ label, value }) {
       <Text style={styles.infoValue}>{value || 'Non disponibile'}</Text>
     </View>
   );
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 const styles = StyleSheet.create({
@@ -119,9 +189,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.text,
   },
-  info: {
-    gap: 3,
-  },
+  info: { gap: 3 },
   infoLabel: {
     color: colors.muted,
     fontSize: 12,
@@ -142,8 +210,119 @@ const styles = StyleSheet.create({
   muted: {
     color: colors.muted,
   },
-  error: {
+  errorText: {
     color: colors.danger,
     fontWeight: '700',
   },
+
+  // Recensioni
+  recCountRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  recCount: {
+    flex: 1,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  recCountNum: {
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  recCountLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  recRow: {
+    flexDirection: 'row',
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 10,
+  },
+  recIcon: {
+    fontSize: 18,
+  },
+  recTesto: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  recData: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  // Modal segnala
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    gap: 14,
+    minHeight: 360,
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  fieldLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  tipiRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  tipoPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  tipoPillActive: {
+    borderColor: colors.green,
+    backgroundColor: colors.greenXLight,
+  },
+  tipoPillText: {
+    color: colors.muted,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  tipoPillTextActive: {
+    color: colors.greenDark,
+  },
+  textarea: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    color: colors.text,
+    fontSize: 14,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dangerLight: colors.dangerLight,
 });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { getStoredUser, getToken } from './src/api/client';
 import { AnnuncioDetailScreen } from './src/screens/AnnuncioDetailScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
@@ -14,15 +15,18 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { QRDisplayScreen } from './src/screens/QRDisplayScreen';
 import { QRScanScreen } from './src/screens/QRScanScreen';
 import { SwapSuccessScreen } from './src/screens/SwapSuccessScreen';
+import { PremiScreen } from './src/screens/PremiScreen';
+import { NotificheScreen } from './src/screens/NotificheScreen';
 import { colors } from './src/theme/colors';
 
 const tabs = [
-  { key: 'catalog',   label: 'Catalogo' },
-  { key: 'create',    label: 'Crea' },
-  { key: 'mine',      label: 'Miei' },
-  { key: 'bookings',  label: 'Prenot.' },
-  { key: 'chat',      label: 'Chat' },
-  { key: 'profile',   label: 'Profilo' },
+  { key: 'catalog',  label: 'Catalogo', icon: 'grid-outline',         iconActive: 'grid' },
+  { key: 'create',   label: 'Crea',     icon: 'add-circle-outline',   iconActive: 'add-circle' },
+  { key: 'mine',     label: 'Miei',     icon: 'pricetag-outline',     iconActive: 'pricetag' },
+  { key: 'bookings', label: 'Prenot.',  icon: 'calendar-outline',     iconActive: 'calendar' },
+  { key: 'premi',    label: 'Premi',    icon: 'gift-outline',         iconActive: 'gift' },
+  { key: 'chat',     label: 'Chat',     icon: 'chatbubble-outline',   iconActive: 'chatbubble' },
+  { key: 'profile',  label: 'Profilo',  icon: 'person-circle-outline',iconActive: 'person-circle' },
 ];
 
 export default function App() {
@@ -64,7 +68,9 @@ export default function App() {
       return (
         <QRScanScreen
           onBack={closeModal}
-          onSuccess={(crediti) => setModal({ name: 'swapSuccess', params: { crediti } })}
+          onSuccess={(crediti, prenotazioneId) =>
+            setModal({ name: 'swapSuccess', params: { crediti, prenotazioneId } })
+          }
         />
       );
     }
@@ -72,9 +78,13 @@ export default function App() {
       return (
         <SwapSuccessScreen
           crediti={modal.params.crediti}
+          prenotazioneId={modal.params.prenotazioneId}
           onDone={() => { closeModal(); setTab('bookings'); }}
         />
       );
+    }
+    if (modal?.name === 'notifiche') {
+      return <NotificheScreen onBack={closeModal} />;
     }
     if (modal?.name === 'chat') {
       return <ChatScreen conversazioneId={modal.params.id} onBack={closeModal} />;
@@ -107,6 +117,9 @@ export default function App() {
         />
       );
     }
+    if (tab === 'premi') {
+      return <PremiScreen />;
+    }
     if (tab === 'profile') {
       return (
         <ProfileScreen
@@ -116,6 +129,7 @@ export default function App() {
             setTab('catalog');
             setModal(null);
           }}
+          onOpenNotifiche={() => setModal({ name: 'notifiche', params: {} })}
         />
       );
     }
@@ -140,7 +154,7 @@ export default function App() {
 
   return (
     <View style={styles.app}>
-      <StatusBar style="dark" />
+      <StatusBar style="dark" backgroundColor={colors.cream} />
       <View style={styles.content}>{renderContent()}</View>
       {user && !modal ? (
         <SafeAreaView style={styles.navSafe}>
@@ -153,6 +167,11 @@ export default function App() {
                   onPress={() => setTab(item.key)}
                   style={[styles.navItem, active && styles.navItemActive]}
                 >
+                  <Ionicons
+                    name={active ? item.iconActive : item.icon}
+                    size={22}
+                    color={active ? colors.green : colors.muted}
+                  />
                   <Text style={[styles.navText, active && styles.navTextActive]}>{item.label}</Text>
                 </Pressable>
               );
@@ -167,7 +186,7 @@ export default function App() {
 const styles = StyleSheet.create({
   app: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.cream,
   },
   content: {
     flex: 1,
@@ -191,25 +210,30 @@ const styles = StyleSheet.create({
   },
   nav: {
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingTop: 10,
+    paddingHorizontal: 6,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
-    borderRadius: 8,
+    gap: 2,
+    paddingVertical: 6,
+    borderRadius: 12,
+    minHeight: 52,
   },
   navItemActive: {
-    backgroundColor: '#E7F3E8',
+    backgroundColor: colors.greenXLight,
   },
   navText: {
     color: colors.muted,
-    fontWeight: '800',
+    fontWeight: '600',
+    fontSize: 10,
+    letterSpacing: 0.2,
   },
   navTextActive: {
-    color: colors.greenDark,
+    color: colors.green,
+    fontWeight: '800',
   },
 });

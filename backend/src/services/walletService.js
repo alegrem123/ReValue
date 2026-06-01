@@ -6,15 +6,16 @@ async function creaWallet(idUtente) {
 }
 
 // OCL #16: ammontare > 0
-async function addPunti(idUtente, ammontare, motivo, riferimento = null) {
+async function addPunti(idUtente, ammontare, motivo, riferimento = null, options = {}) {
   if (!ammontare || ammontare <= 0) throw new Error('ammontare deve essere > 0');
+  const { session = null } = options;
 
   const transazione = { tipo: 'accredito', ammontare, motivo, ...(riferimento && { riferimento }) };
 
   const wallet = await Wallet.findOneAndUpdate(
     { idUtente },
     { $inc: { bilancio: ammontare }, $push: { transazioni: transazione } },
-    { new: true }
+    { new: true, session }
   );
 
   if (!wallet) throw new Error('Wallet non trovato');
@@ -22,8 +23,9 @@ async function addPunti(idUtente, ammontare, motivo, riferimento = null) {
 }
 
 // OCL #17: ammontare > 0, bilancio >= ammontare
-async function sottraiPunti(idUtente, ammontare, motivo, riferimento = null) {
+async function sottraiPunti(idUtente, ammontare, motivo, riferimento = null, options = {}) {
   if (!ammontare || ammontare <= 0) throw new Error('ammontare deve essere > 0');
+  const { session = null } = options;
 
   const transazione = { tipo: 'sottrazione', ammontare, motivo, ...(riferimento && { riferimento }) };
 
@@ -31,7 +33,7 @@ async function sottraiPunti(idUtente, ammontare, motivo, riferimento = null) {
   const wallet = await Wallet.findOneAndUpdate(
     { idUtente, bilancio: { $gte: ammontare } },
     { $inc: { bilancio: -ammontare }, $push: { transazioni: transazione } },
-    { new: true }
+    { new: true, session }
   );
 
   if (!wallet) throw new Error('Saldo insufficiente o wallet non trovato');

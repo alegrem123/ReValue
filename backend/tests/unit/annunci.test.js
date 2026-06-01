@@ -1,13 +1,18 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
+const request = require('supertest');
+const app = require('../../app');
 const Annuncio = require('../../src/models/annuncioModel');
 const Utente = require('../../src/models/userModel');
+const { signToken } = require('../../src/utils/jwt');
+
+process.env.JWT_SECRET = 'test-secret-key-for-unit-tests';
 
 let mongoServer;
 
 // Setup e teardown
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   const mongoUri = mongoServer.getUri();
   await mongoose.connect(mongoUri);
 });
@@ -164,8 +169,10 @@ describe('Annunci - CRUD Operations', () => {
 
   describe('UPDATE', () => {
     let annuncio;
+    let tokenDonatore;
 
     beforeEach(async () => {
+      tokenDonatore = signToken({ id: donatore._id.toString(), ruolo: donatore.ruolo });
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       annuncio = await Annuncio.create({
         donatore: donatore._id,
@@ -193,13 +200,15 @@ describe('Annunci - CRUD Operations', () => {
     });
 
     test('Rifiuta modifica se stato non è DISPONIBILE', async () => {
-      annuncio.stato = 'PRENOTATO';
-      await annuncio.save();
+      await Annuncio.findByIdAndUpdate(annuncio._id, { stato: 'PRENOTATO' });
 
-      // Simulazione del controllo logico di business
-      if (annuncio.stato !== 'DISPONIBILE') {
-        expect(annuncio.stato).not.toBe('DISPONIBILE');
-      }
+      const res = await request(app)
+        .put(`/api/v1/annunci/${annuncio._id}`)
+        .set('Authorization', `Bearer ${tokenDonatore}`)
+        .send({ titolo: 'Nuovo titolo' });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBeDefined();
     });
 
     test('Aggiorna correttamente la data di scadenza', async () => {
@@ -216,8 +225,10 @@ describe('Annunci - CRUD Operations', () => {
 
   describe('DELETE (Soft-Delete)', () => {
     let annuncio;
+    let tokenDonatore;
 
     beforeEach(async () => {
+      tokenDonatore = signToken({ id: donatore._id.toString(), ruolo: donatore.ruolo });
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       annuncio = await Annuncio.create({
         donatore: donatore._id,
@@ -248,11 +259,14 @@ describe('Annunci - CRUD Operations', () => {
     });
 
     test('Rifiuta soft-delete se stato non è DISPONIBILE', async () => {
-      annuncio.stato = 'PRENOTATO';
-      await annuncio.save();
+      await Annuncio.findByIdAndUpdate(annuncio._id, { stato: 'PRENOTATO' });
 
-      // Controllo logico
-      expect(annuncio.stato).not.toBe('DISPONIBILE');
+      const res = await request(app)
+        .delete(`/api/v1/annunci/${annuncio._id}`)
+        .set('Authorization', `Bearer ${tokenDonatore}`);
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBeDefined();
     });
   });
 });

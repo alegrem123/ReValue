@@ -27,6 +27,10 @@ const prenotazioneSchema = new Schema(
       enum: STATI_PRENOTAZIONE,
       default: 'ATTIVA',
     },
+    dataCompletamento: {
+      type: Date,
+      default: null,
+    },
     dataPrenotazione: {
       type: Date,
       default: Date.now,
@@ -42,8 +46,12 @@ const prenotazioneSchema = new Schema(
 // enforced a livello di service con query atomica su Annuncio.versione
 // indice parziale per query rapida su prenotazioni attive
 prenotazioneSchema.index(
-  { annuncio: 1, stato: 1 },
-  { partialFilterExpression: { stato: 'ATTIVA' } }
+  { annuncio: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { stato: 'ATTIVA' },
+    name: 'unique_active_booking_per_annuncio',
+  }
 );
 prenotazioneSchema.index({ acquirente: 1 });
 prenotazioneSchema.index({ donatore: 1 });

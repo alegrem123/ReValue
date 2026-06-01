@@ -2,7 +2,7 @@
  * qr-scan.js
  * Pagina QR scan per l'acquirente (UC3, RF27).
  * Modalità webcam via html5-qrcode + fallback inserimento manuale.
- * Chiama POST /api/qr/valida con il codice scansionato.
+ * Chiama POST /api/v1/qr/valida con il codice scansionato.
  */
 
 const scanAlert      = document.getElementById('scan-alert');
@@ -34,7 +34,7 @@ async function validaCodice(codice) {
   validated = true;
   stopScanner();
 
-  const res = await api.post('/api/qr/valida', { codice: codice.trim() });
+  const res = await api.post('/api/v1/qr/valida', { codice: codice.trim() });
 
   if (!res.ok) {
     validated = false;
@@ -43,7 +43,8 @@ async function validaCodice(codice) {
   }
 
   const crediti = res.data?.creditiAssegnati ?? res.creditiAssegnati ?? 50;
-  window.location.href = `swap-success.html?crediti=${crediti}`;
+  const prenotazioneId = res.data?.prenotazione ?? '';
+  window.location.href = `swap-success.html?crediti=${encodeURIComponent(crediti)}&prenotazioneId=${encodeURIComponent(prenotazioneId)}`;
 }
 
 function stopScanner() {

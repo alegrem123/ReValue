@@ -15,23 +15,7 @@
     crossorigin="anonymous"
   />
   <style>
-    :root {
-      --rv-green:       #2E7D32;
-      --rv-green-light: #43A047;
-      --rv-green-dark:  #1B5E20;
-      --rv-accent:      #FFC107;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .page-header {
-      border-left: 4px solid var(--rv-green);
-    }
-
-    .booking-card {
+.booking-card {
       transition: box-shadow 0.15s ease;
     }
 
@@ -56,13 +40,13 @@
   <main class="container py-5">
     <div id="bookings-alert" class="alert d-none" role="alert"></div>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 page-header">
+    <section class="page-hero">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
         <div>
-          <p class="text-uppercase small text-success mb-2">Il mio account</p>
+          <p class="page-hero-eyebrow">Il mio account</p>
           <h1 class="h3 fw-bold mb-0">Le mie prenotazioni</h1>
         </div>
-        <a href="catalog.html" class="btn btn-outline-success btn-sm align-self-start">
+        <a href="catalog.html" class="btn btn-outline-light btn-sm">
           <i class="bi bi-grid me-1"></i>Esplora catalogo
         </a>
       </div>

@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, preRelease]
+  pull_request:
+    branches: [main, preRelease]
+
+jobs:
+  test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run tests
+        working-directory: backend
+        run: npm test
+        env:
+          NODE_ENV: test
+
+  smoke-test:
+    name: Smoke Test (Produzione)
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/preRelease'
+
+    steps:
+      - name: Health check backend
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://revalue-backend-84jb.onrender.com/api/v1/annunci)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Backend smoke test FAILED — HTTP $STATUS"
+            exit 1
+          fi
+          echo "Backend smoke test PASSED"
+
+      - name: Health check frontend
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://revalue-frontend.onrender.com)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Frontend smoke test FAILED — HTTP $STATUS"
+            exit 1
+          fi
+          echo "Frontend smoke test PASSED"

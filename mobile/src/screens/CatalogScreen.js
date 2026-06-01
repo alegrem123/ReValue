@@ -14,7 +14,7 @@ export function CatalogScreen({ onOpenAnnuncio, refreshKey }) {
   const loadAnnunci = useCallback(async () => {
     setError('');
     setLoading(true);
-    const response = await api.get('/api/annunci?limit=50');
+    const response = await api.get('/api/v1/annunci?limit=50');
     setLoading(false);
 
     if (!response.ok) {

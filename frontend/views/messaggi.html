@@ -15,21 +15,7 @@
     crossorigin="anonymous"
   />
   <style>
-    :root {
-      --rv-green:       #2E7D32;
-      --rv-green-light: #43A047;
-      --rv-green-dark:  #1B5E20;
-      --rv-accent:      #FFC107;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .page-header { border-left: 4px solid var(--rv-green); }
-
-    .conv-card {
+.conv-card {
       transition: box-shadow 0.15s ease, background-color 0.15s ease;
       cursor: pointer;
       text-decoration: none;
@@ -85,13 +71,13 @@
   <main class="container py-5">
     <div id="msg-alert" class="alert d-none" role="alert"></div>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 page-header">
+    <section class="page-hero">
       <div class="d-flex justify-content-between align-items-start gap-3">
         <div>
-          <p class="text-uppercase small text-success mb-2">Comunicazioni</p>
+          <p class="page-hero-eyebrow">Comunicazioni</p>
           <h1 class="h3 fw-bold mb-0">Messaggi</h1>
         </div>
-        <a href="catalog.html" class="btn btn-outline-success btn-sm">
+        <a href="catalog.html" class="btn btn-outline-light btn-sm">
           <i class="bi bi-grid me-1"></i>Catalogo
         </a>
       </div>

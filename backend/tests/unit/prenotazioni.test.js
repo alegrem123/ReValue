@@ -1,13 +1,19 @@
+const request = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
+
+process.env.JWT_SECRET = 'test-secret-key-for-unit-tests';
+
+const app = require('../../app');
 const Annuncio = require('../../src/models/annuncioModel');
 const Prenotazione = require('../../src/models/prenotazioneModel');
 const User = require('../../src/models/userModel');
+const Wallet = require('../../src/models/walletModel');
 
 let mongoServer;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongoServer.getUri());
 });
 
@@ -20,6 +26,7 @@ beforeEach(async () => {
   await Prenotazione.deleteMany({});
   await Annuncio.deleteMany({});
   await User.deleteMany({});
+  await Wallet.deleteMany({});
 });
 
 async function createUser(email) {
@@ -82,5 +89,47 @@ describe('Prenotazioni - modello', () => {
         acquirente: acquirente._id,
       })
     ).rejects.toThrow();
+  });
+});
+
+describe('Prenotazioni - vincoli controller', () => {
+  test('TC17 / OCL #4: il donatore non può prenotare il proprio annuncio', async () => {
+    const register = await request(app)
+      .post('/api/v1/auth/register')
+      .send({
+        nome: 'Alessandro',
+        cognome: 'Gremes',
+        email: 'tc17-donatore@test.com',
+        password: 'password123',
+      });
+
+    expect(register.statusCode).toBe(201);
+    const token = register.body.token;
+
+    const create = await request(app)
+      .post('/api/v1/annunci')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        titolo: 'Libreria piccola',
+        dataScadenza: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        oggetto: {
+          categoria: 'Mobili',
+          descrizione: 'Libreria in buono stato',
+        },
+      });
+
+    expect(create.statusCode).toBe(201);
+
+    const selfBooking = await request(app)
+      .post('/api/v1/prenotazioni')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ annuncioId: create.body._id });
+
+    expect(selfBooking.statusCode).toBe(409);
+    expect(selfBooking.body).toEqual(
+      expect.objectContaining({
+        error: 'Non puoi prenotare il tuo stesso annuncio',
+      })
+    );
   });
 });

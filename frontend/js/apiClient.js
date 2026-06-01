@@ -8,15 +8,25 @@
  */
 
 const API_BASE = (function () {
-  // Se stai servendo il frontend da Live Server su 127.0.0.1:55xx,
-  // punta le richieste verso il backend in esecuzione su 127.0.0.1:3000.
+  // Override esplicito (es. injettato da Render env via config)
+  if (window.REVALUE_API_BASE) return window.REVALUE_API_BASE;
+
+  // Dev: Live Server su 127.0.0.1:55xx
   if (
     ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
     window.location.port.startsWith('55')
   ) {
     return 'http://127.0.0.1:3000';
   }
-  return '';
+
+  // Dev: backend locale su porta 3000 senza Live Server
+  if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) {
+    return 'http://127.0.0.1:3000';
+  }
+
+  // Produzione: Render Static Site → backend su servizio separato
+  // Aggiornare con URL effettivo dopo deploy backend su Render
+  return 'https://revalue-backend-84jb.onrender.com';
 })();
 
 function frontendViewUrl(fileName) {
@@ -63,7 +73,7 @@ function handleUnauthorized() {
 /**
  * Core: esegue la fetch con header auth automatico.
  *
- * @param {string} endpoint   — es. '/api/annunci'
+ * @param {string} endpoint   — es. '/api/v1/annunci'
  * @param {Object} [options]
  * @param {'GET'|'POST'|'PUT'|'PATCH'|'DELETE'} [options.method='GET']
  * @param {Object|null} [options.body]    — verrà serializzato in JSON

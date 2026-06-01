@@ -61,10 +61,12 @@ async function registerUser({ nome, cognome, email, password }) {
     throw createAuthError(400, 'Campi obbligatori mancanti', 'REQUIRED_FIELDS');
   }
 
+  // OCL #1: email deve rispettare il formato previsto dal dominio applicativo.
   if (!emailRegex.test(email)) {
     throw createAuthError(400, 'Formato email non valido', 'INVALID_EMAIL');
   }
 
+  // OCL #2: password lunga almeno 8 caratteri prima dell'hashing bcrypt.
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
     throw createAuthError(
       400,
@@ -103,6 +105,10 @@ async function loginUser({ email, password }) {
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
     throw createAuthError(401, 'Credenziali non valide', 'INVALID_CREDENTIALS');
+  }
+
+  if (user.bannato) {
+    throw createAuthError(403, 'Account bannato', 'ACCOUNT_BANNED');
   }
 
   if (user.isSospeso) {

@@ -2,15 +2,27 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
 const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
+const corsOrigin =
+  process.env.NODE_ENV === 'production'
+    ? (process.env.FRONTEND_URL || '').split(',').map((origin) => origin.trim()).filter(Boolean)
+    : true;
+
+// Security middleware (RNF4/RNF10) — skip in test to avoid interfering with supertest
+if (process.env.NODE_ENV !== 'test') {
+  app.use(helmet());
+}
 
 // Middleware
 app.use(
   cors({
-    origin: true,
+    origin: corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -18,6 +30,11 @@ app.use(
 );
 app.use(express.json({ limit: requestBodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
+
+// mongoSanitize dopo i body parser — altrimenti il body JSON non è ancora parsato (RNF4)
+if (process.env.NODE_ENV !== 'test') {
+  app.use(mongoSanitize());
+}
 
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('combined'));
@@ -38,19 +55,28 @@ const adminRoutes = require('./src/routes/adminRoutes');
 const prenotazioniRoutes = require('./src/routes/prenotazioniRoutes');
 const qrRoutes = require('./src/routes/qrRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
+const premiRoutes = require('./src/routes/premiRoutes');
+const segnalazioniRoutes = require('./src/routes/segnalazioniRoutes');
+const recensioniRoutes = require('./src/routes/recensioniRoutes');
+const notificheRoutes = require('./src/routes/notificheRoutes');
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', utentiRoutes);
-app.use('/api/annunci', annunciRoutes);
-app.use('/api/wallet', walletRoutes);
-app.use('/api/scambi', scambiRoutes);
-app.use('/api/messaggi', messaggiRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/prenotazioni', prenotazioniRoutes);
-app.use('/api/qr', qrRoutes);
-app.use('/api/conversazioni', chatRoutes);
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false, skip: () => process.env.NODE_ENV === 'test' });
+app.use('/api/v1/auth', authLimiter, authRoutes);
+app.use('/api/v1/users', utentiRoutes);
+app.use('/api/v1/annunci', annunciRoutes);
+app.use('/api/v1/wallet', walletRoutes);
+app.use('/api/v1/scambi', scambiRoutes);
+app.use('/api/v1/messaggi', messaggiRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/prenotazioni', prenotazioniRoutes);
+app.use('/api/v1/qr', qrRoutes);
+app.use('/api/v1/conversazioni', chatRoutes);
+app.use('/api/v1/premi', premiRoutes);
+app.use('/api/v1/segnalazioni', segnalazioniRoutes);
+app.use('/api/v1/recensioni', recensioniRoutes);
+app.use('/api/v1/notifiche', notificheRoutes);
 
-app.use('/api', notFoundHandler);
+app.use('/api/v1', notFoundHandler);
 app.use(errorHandler);
 
 module.exports = app;
