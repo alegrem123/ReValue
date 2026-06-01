@@ -56,6 +56,16 @@ async function updateProfile(req, res) {
   }
 }
 
+async function getMe(req, res) {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+    return res.status(200).json({ user: sanitizePublicProfile(user) });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
 async function getPublicProfile(req, res) {
   try {
     const { id } = req.params;
@@ -110,4 +120,5 @@ async function getPublicProfile(req, res) {
 module.exports = {
   updateProfile,
   getPublicProfile,
+  getMe,
 };
