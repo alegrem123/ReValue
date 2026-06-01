@@ -11,7 +11,9 @@
  *  SCENARIO 5 – Prenotazione non ATTIVA (COMPLETATA)          → 409
  *  SCENARIO 6 – generaQR su prenotazione COMPLETATA           → 409
  *  SCENARIO 7 – generaQR su prenotazione ANNULLATA            → 409
- *  SCENARIO 8 – OCL #17: wallet saldo ≥ 0 dopo scambio       → verifica
+ *  SCENARIO 8 – acquirente tenta generaQR                     → 403
+ *  SCENARIO 9 – generaQR con prenotazioneId malformato        → 400
+ *  SCENARIO 10 – OCL #17: wallet saldo ≥ 0 dopo scambio      → verifica
  *
  * Riferimenti OCL: #13 (postcondizione generaQR), #14 (pre/post validaQR),
  *                  #15 (QR corrisponde alla prenotazione — enforced by findTokenByCodice),
@@ -353,12 +355,61 @@ describe('QR Edge Cases – copertura OCL #13, #14, #15', () => {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SCENARIO 8: OCL #17 – Wallet saldo ≥ 0 dopo scambio validato
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SCENARIO 8: generaQR richiesto dall'acquirente → 403
+  //             (RF17: solo il donatore puo' mostrare/generare il QR)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  describe('SCENARIO 8 – generaQR richiesto dall acquirente → 403', () => {
+    let tokenD, tokenA, annId, prenId;
+
+    beforeAll(async () => {
+      tokenD = await registra('d-genforbid.qredge@test.com', 'DonatoreGenForbidden');
+      tokenA = await registra('a-genforbid.qredge@test.com', 'AcquirenteGenForbidden');
+      annId = await creaAnnuncio(tokenD);
+      prenId = await prenota(tokenA, annId);
+    });
+
+    test('ritorna 403 quando l acquirente tenta di generare il QR', async () => {
+      const res = await request(app)
+        .post('/api/v1/qr/genera')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ prenotazioneId: prenId });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.body.error).toBe('Solo il donatore può generare il QR per questa prenotazione');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SCENARIO 9: generaQR con prenotazioneId malformato → 400
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  describe('SCENARIO 9 – generaQR con prenotazioneId malformato → 400', () => {
+    let tokenD;
+
+    beforeAll(async () => {
+      tokenD = await registra('d-invalidid.qredge@test.com', 'DonatoreInvalidId');
+    });
+
+    test('ritorna 400 prima di interrogare MongoDB', async () => {
+      const res = await request(app)
+        .post('/api/v1/qr/genera')
+        .set('Authorization', `Bearer ${tokenD}`)
+        .send({ prenotazioneId: 'non-object-id' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toBe('prenotazioneId non valido');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SCENARIO 10: OCL #17 – Wallet saldo ≥ 0 dopo scambio validato
   //             Verifica che i crediti vengano accreditati correttamente
   //             e che il bilancio non diventi mai negativo.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  describe('SCENARIO 8 – OCL #17: saldo wallet ≥ 0 dopo scambio con QR', () => {
+  describe('SCENARIO 10 – OCL #17: saldo wallet ≥ 0 dopo scambio con QR', () => {
     let tokenD, tokenA, annId, prenId, qrCode;
 
     beforeAll(async () => {

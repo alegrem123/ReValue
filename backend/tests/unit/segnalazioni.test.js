@@ -70,6 +70,16 @@ describe('POST /api/v1/segnalazioni', () => {
     expect(res.body.error).toMatch(/OCL #19/i);
   });
 
+  test('segnalazione con segnalato malformato → 400', async () => {
+    const res = await request(app)
+      .post('/api/v1/segnalazioni')
+      .set('Authorization', `Bearer ${tokenSegnalante}`)
+      .send({ segnalato: 'id-non-valido', tipo: 'altro', motivo: 'Test' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('segnalato non valido');
+  });
+
   test('segnalazione con motivo vuoto → 400 (OCL #18)', async () => {
     const res = await request(app)
       .post('/api/v1/segnalazioni')

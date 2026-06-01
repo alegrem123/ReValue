@@ -7,7 +7,9 @@ process.env.JWT_SECRET = 'test-secret-key-for-integration-tests';
 const app = require('../../app');
 const User = require('../../src/models/userModel');
 const Wallet = require('../../src/models/walletModel');
+const Segnalazione = require('../../src/models/segnalazioneModel');
 const { hashPassword } = require('../../src/utils/password');
+const { applicaMalus } = require('../../src/services/userService');
 
 let mongoServer;
 
@@ -25,6 +27,7 @@ beforeEach(async () => {
   await Promise.all([
     User.deleteMany({}),
     Wallet.deleteMany({}),
+    Segnalazione.deleteMany({}),
   ]);
 });
 
@@ -148,6 +151,7 @@ describe('Moderation and authentication integration', () => {
 
     const sospeso = await User.findById(user._id);
     expect(sospeso.isSospeso).toBe(true);
+    expect(sospeso.malusCount).toBe(1);
 
     const riabilita = await request(app)
       .post(`/api/v1/admin/utenti/${user._id}/riabilita`)
@@ -185,5 +189,64 @@ describe('Moderation and authentication integration', () => {
     const unchangedUser = await User.findById(user._id);
     expect(unchangedUser.isSospeso).toBe(true);
     expect(unchangedUser.bannato).toBe(true);
+  });
+
+  test('OCL #20: al quinto malus utente viene auto-sospeso', async () => {
+    const user = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Utente',
+      cognome: 'Malus',
+      email: 'malus-threshold@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+      malusCount: 4,
+      isSospeso: false,
+    });
+
+    const updated = await applicaMalus(user._id);
+
+    expect(updated.malusCount).toBe(5);
+    expect(updated.isSospeso).toBe(true);
+  });
+
+  test('admin malus distingue segnalazione inesistente da già risolta', async () => {
+    const { token, loginRes } = await createAdminAndLogin();
+    expect(loginRes.statusCode).toBe(200);
+
+    const segnalante = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Utente',
+      cognome: 'Segnalante',
+      email: 'segnalante-admin@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+    });
+    const segnalato = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Utente',
+      cognome: 'Segnalato',
+      email: 'segnalato-admin@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+    });
+    const segnalazione = await Segnalazione.create({
+      segnalante: segnalante._id,
+      segnalato: segnalato._id,
+      tipo: 'altro',
+      motivo: 'Comportamento scorretto',
+      stato: 'RISOLTA',
+    });
+
+    const inesistente = await request(app)
+      .post(`/api/v1/admin/segnalazioni/${new mongoose.Types.ObjectId()}/malus`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(inesistente.statusCode).toBe(404);
+    expect(inesistente.body.error).toBe('Segnalazione non trovata');
+
+    const giaRisolta = await request(app)
+      .post(`/api/v1/admin/segnalazioni/${segnalazione._id}/malus`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(giaRisolta.statusCode).toBe(409);
+    expect(giaRisolta.body.error).toBe('Segnalazione già risolta');
   });
 });
