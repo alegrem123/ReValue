@@ -13,6 +13,14 @@ const isViewsPage = window.location.pathname.includes('/views/');
 const homeUrl = isViewsPage ? '../index.html' : 'index.html';
 const viewUrl = (fileName) => (isViewsPage ? fileName : `views/${fileName}`);
 
+// API base URL: usa apiClient se disponibile, altrimenti rileva ambiente
+const _layoutApiBase = (function () {
+  if (typeof API_BASE !== 'undefined') return API_BASE;
+  if (window.REVALUE_API_BASE) return window.REVALUE_API_BASE;
+  if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://127.0.0.1:3000';
+  return 'https://revalue-backend-84jb.onrender.com';
+})();
+
 const NAVBAR_HTML = `
 <nav class="navbar navbar-expand-lg sticky-top rv-navbar">
   <div class="container">
@@ -47,6 +55,9 @@ const NAVBAR_HTML = `
         </li>
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('my-reports.html')}">Le mie segnalazioni</a>
+        </li>
+        <li class="nav-item nav-auth d-none">
+          <a class="nav-link text-white" href="${viewUrl('notifiche.html')}">Notifiche</a>
         </li>
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('messaggi.html')}">
@@ -160,13 +171,10 @@ function updateAuthUI(user) {
     const nameEl = document.getElementById('navbar-username');
     if (nameEl) nameEl.textContent = user.nome || 'Profilo';
 
-    fetch('/api/v1/wallet/saldo', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` },
-    })
-      .then((r) => r.json())
-      .then((data) => {
+    api.get('/api/v1/wallet/saldo')
+      .then((res) => {
         const el = document.getElementById('navbar-balance');
-        if (el) el.textContent = data.bilancio ?? 0;
+        if (el) el.textContent = res.data?.bilancio ?? 0;
       })
       .catch(() => {});
   } else {
@@ -180,17 +188,13 @@ function updateAuthUI(user) {
  * Chiama GET /api/v1/conversazioni/me/non-letti e mostra count nel badge navbar.
  */
 function updateUnreadBadge() {
-  const token = localStorage.getItem('jwt');
-  if (!token) return;
+  if (!localStorage.getItem('jwt')) return;
 
-  fetch('/api/v1/conversazioni/me/non-letti', {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then((r) => r.json())
-    .then((data) => {
+  api.get('/api/v1/conversazioni/me/non-letti')
+    .then((res) => {
       const badge = document.getElementById('unread-badge');
       if (!badge) return;
-      const count = data?.data?.nonLetti ?? data?.nonLetti ?? 0;
+      const count = res.data?.data?.nonLetti ?? res.data?.nonLetti ?? 0;
       if (count > 0) {
         badge.textContent = count > 99 ? '99+' : count;
         badge.classList.remove('d-none');
