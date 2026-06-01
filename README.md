@@ -152,8 +152,13 @@ Poi:
 
 ### Configurazione API
 
-L'app punta al backend tramite `API_BASE_URL` definita in `mobile/src/api/apiClient.js`.  
-In sviluppo locale cambia l'URL con l'IP della tua macchina (es. `http://192.168.1.x:3000`).
+Il client mobile e' in `mobile/src/api/client.js`. In sviluppo prova a derivare l'host dal dev server Expo e usa la porta `3000`; in alternativa puoi impostare `EXPO_PUBLIC_API_BASE_URL`.
+
+Per dispositivo fisico o rete LAN:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.x:3000 npm start
+```
 
 ---
 
