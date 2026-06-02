@@ -152,12 +152,12 @@ async function inviaMessaggio(req, res) {
       (p) => p.toString() !== req.user.id
     );
     if (destinatario) {
-      await notificheService.creaNotifica({
-        destinatario: destinatario.toString(),
-        tipo: 'messaggio',
-        testo: `Nuovo messaggio da ${req.user.nome || 'utente'}`,
-        link: `/conversazioni/${req.conversazione._id}`,
-      });
+      notificheService.creaNotifica(
+        destinatario.toString(),
+        'messaggio',
+        `Nuovo messaggio da ${req.user.nome || 'utente'}`,
+        `/conversazioni/${req.conversazione._id}`
+      ).catch(() => {});
     }
 
     return res.status(201).json({ ok: true, data: salvato });

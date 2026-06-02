@@ -49,9 +49,7 @@ async function createSegnalazione(req, res) {
     if (admin) {
       notificheService
         .creaNotifica(admin._id, 'segnalazione', `Nuova segnalazione da ${req.user.id}`, '/api/v1/admin/segnalazioni')
-        .catch((err) => {
-          console.error('Errore notifica segnalazione:', err);
-        });
+        .catch(() => {});
     }
 
     return res.status(201).json({ segnalazione });

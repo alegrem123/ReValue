@@ -55,6 +55,14 @@ async function creaPrenotazione(req, res) {
       await session.endSession();
     }
 
+    const notificheService = require('../services/notificheService');
+    notificheService.creaNotifica(
+      annuncio.donatore,
+      'prenotazione',
+      'Un utente ha prenotato il tuo annuncio',
+      `/prenotazioni/${prenotazione._id}`
+    ).catch(() => {});
+
     return res.status(201).json({
       prenotazione,
       indirizzo: { latitudine: lockedAnnuncio.latitudine, longitudine: lockedAnnuncio.longitudine },
@@ -88,6 +96,14 @@ async function annullaPrenotazione(req, res) {
     } finally {
       await session.endSession();
     }
+
+    const notificheService = require('../services/notificheService');
+    notificheService.creaNotifica(
+      prenotazione.donatore,
+      'prenotazione',
+      'Una prenotazione è stata annullata',
+      `/prenotazioni/${prenotazione._id}`
+    ).catch(() => {});
 
     return res.status(200).json({ message: 'Prenotazione annullata' });
   } catch (err) {
@@ -182,6 +198,14 @@ async function disdiciPrenotazione(req, res) {
     } finally {
       await session.endSession();
     }
+
+    const notificheService = require('../services/notificheService');
+    notificheService.creaNotifica(
+      prenotazione.acquirente,
+      'prenotazione',
+      'Il donatore ha disdetto il ritiro',
+      `/prenotazioni/${prenotazione._id}`
+    ).catch(() => {});
 
     return res.status(200).json({ message: 'Ritiro disdetto' });
   } catch (err) {

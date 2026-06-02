@@ -11,6 +11,14 @@ module.exports = {
     '!src/middleware/**',
   ],
   coveragePathIgnorePatterns: ['/node_modules/'],
+  coverageThreshold: {
+    global: {
+      statements: 55,
+      branches: 40,
+      functions: 45,
+      lines: 55,
+    },
+  },
   testTimeout: 30000,
   verbose: true,
 };

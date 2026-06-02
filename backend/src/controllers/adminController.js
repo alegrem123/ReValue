@@ -1,434 +1,88 @@
-const mongoose = require('mongoose');
-const User = require('../models/userModel');
-const { applicaMalus } = require('../services/userService');
-const Annuncio = require('../models/annuncioModel');
-const Prenotazione = require('../models/prenotazioneModel');
-const Segnalazione = require('../models/segnalazioneModel');
-const Wallet = require('../models/walletModel');
-const TokenQR = require('../models/tokenQRModel');
+const adminService = require('../services/adminService');
 
-/**
- * GET /api/v1/admin/statistiche
- * Dashboard con scambi mensili e totale crediti erogati (RF30, UC14).
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
+function sendControllerError(res, err) {
+  if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+  return res.status(500).json({ error: 'Errore interno del server' });
+}
+
 async function getStatistiche(req, res) {
   try {
-    const inizioMese = new Date();
-    inizioMese.setDate(1);
-    inizioMese.setHours(0, 0, 0, 0);
-
-    const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets, creditiErogati, storicoMensile] = await Promise.all([
-      Prenotazione.countDocuments({ stato: 'COMPLETATA', dataCompletamento: { $gte: inizioMese } }),
-      User.countDocuments({ ruolo: 'user' }),
-      Segnalazione.countDocuments({ stato: 'IN_ATTESA' }),
-      Wallet.aggregate([{ $group: { _id: null, liquiditaAttuale: { $sum: '$bilancio' } } }]),
-      Wallet.aggregate([
-        { $unwind: '$transazioni' },
-        {
-          $match: {
-            'transazioni.tipo': 'accredito',
-            'transazioni.motivo': { $regex: /^Scambio completato/ },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            creditiErogatiTotali: { $sum: '$transazioni.ammontare' },
-            creditiErogatiMese: {
-              $sum: {
-                $cond: [{ $gte: ['$transazioni.data', inizioMese] }, '$transazioni.ammontare', 0],
-              },
-            },
-          },
-        },
-      ]),
-      Prenotazione.aggregate([
-        { $match: { stato: 'COMPLETATA', dataCompletamento: { $ne: null } } },
-        {
-          $group: {
-            _id: {
-              anno: { $year: '$dataCompletamento' },
-              mese: { $month: '$dataCompletamento' },
-            },
-            totale: { $sum: 1 },
-          },
-        },
-        { $sort: { '_id.anno': 1, '_id.mese': 1 } },
-        { $limit: 12 },
-      ]),
-    ]);
-
-    const liquiditaAttuale = wallets[0]?.liquiditaAttuale ?? 0;
-    const creditiErogatiTotali = creditiErogati[0]?.creditiErogatiTotali ?? 0;
-    const creditiErogatiMese = creditiErogati[0]?.creditiErogatiMese ?? 0;
-
-    return res.status(200).json({
-      scambiMensili,
-      totaleUtenti,
-      segnalazioniPendenti,
-      liquiditaAttuale,
-      creditiErogatiTotali,
-      creditiErogatiMese,
-      totaleCrediti: liquiditaAttuale,
-      storicoMensile: storicoMensile.map((item) => ({
-        anno: item._id.anno,
-        mese: item._id.mese,
-        totale: item.totale,
-      })),
-    });
+    return res.status(200).json(await adminService.getStatistiche());
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * GET /api/v1/admin/users
- * Lista utenti paginata con search per nome/email (RF29).
- */
 async function listUsers(req, res) {
   try {
-    const { search = '', page = 1, limit = 20 } = req.query;
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
-    const skip = (pageNum - 1) * limitNum;
-
-    const query = { ruolo: 'user' };
-    const normalizedSearch = String(search).trim();
-    if (normalizedSearch) {
-      const pattern = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      query.$or = [{ email: pattern }, { nome: pattern }, { cognome: pattern }];
-    }
-
-    const [users, total] = await Promise.all([
-      User.find(query)
-        .select('idUtente nome cognome email malusCount isSospeso bannato ruolo createdAt')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      User.countDocuments(query),
-    ]);
-
-    return res.status(200).json({
-      users,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum) || 1,
-      },
-    });
+    return res.status(200).json(await adminService.listUsers(req.query));
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * GET /api/v1/admin/annunci
- * Lista annunci per dashboard admin con paginazione e filtro stato (RF31).
- */
 async function listAnnunci(req, res) {
   try {
-    const { stato, page = 1, limit = 20 } = req.query;
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
-    const skip = (pageNum - 1) * limitNum;
-
-    const query = {};
-    if (stato && ['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
-      query.stato = stato;
-    }
-
-    const [annunci, total] = await Promise.all([
-      Annuncio.find(query)
-        .populate('donatore', 'nome cognome email')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      Annuncio.countDocuments(query),
-    ]);
-
-    return res.status(200).json({
-      annunci,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum) || 1,
-      },
-    });
+    return res.status(200).json(await adminService.listAnnunci(req.query));
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * GET /api/v1/admin/segnalazioni
- * Lista tutte le segnalazioni ricevute (UC13).
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 async function getSegnalazioni(req, res) {
   try {
-    const segnalazioni = await Segnalazione.find()
-      .sort({ data: -1 })
-      .populate('segnalante', 'nome cognome email')
-      .populate('segnalato', 'nome cognome email')
-      .populate('annuncio', 'titolo stato');
-
-    return res.status(200).json(segnalazioni);
+    return res.status(200).json(await adminService.getSegnalazioni());
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * POST /api/v1/admin/segnalazioni/:id/malus
- * Applica un malus all'utente segnalato e marca la segnalazione come risolta.
- */
 async function applicaMalusSegnalazione(req, res) {
   try {
-    // OCL #20: malus + chiusura segnalazione atomici; findOneAndUpdate previene doppio malus
-    const session = await mongoose.startSession();
-    let utente, segnalazione;
-    try {
-      await session.withTransaction(async () => {
-        const existing = await Segnalazione.findById(req.params.id).session(session);
-        if (!existing) {
-          const err = new Error('Segnalazione non trovata');
-          err.statusCode = 404;
-          throw err;
-        }
-        if (existing.stato === 'RISOLTA') {
-          const err = new Error('Segnalazione già risolta');
-          err.statusCode = 409;
-          throw err;
-        }
-
-        existing.stato = 'RISOLTA';
-        segnalazione = await existing.save({ session });
-
-        if (!segnalazione) {
-          const err = new Error('Segnalazione non trovata o già risolta');
-          err.statusCode = 409;
-          throw err;
-        }
-        utente = await applicaMalus(segnalazione.segnalato, { session });
-      });
-    } finally {
-      await session.endSession();
-    }
-
-    return res.status(200).json({
-      message: `Malus applicato a ${utente.email}`,
-      segnalazione,
-      utente,
-    });
+    return res.status(200).json(await adminService.applicaMalusSegnalazione(req.params.id));
   } catch (err) {
-    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * POST /api/v1/admin/utenti/:id/ban
- * Banna permanentemente un account fraudolento (RF29, D2 §2.2.2).
- * L'utente bannato non può più accedere (isSospeso = true + ruolo marcato).
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 async function bannaUtente(req, res) {
   try {
-    const session = await mongoose.startSession();
-    let utente;
-    try {
-      await session.withTransaction(async () => {
-        utente = await User.findById(req.params.id).session(session);
-        if (!utente) {
-          const err = new Error('Utente non trovato');
-          err.statusCode = 404;
-          throw err;
-        }
-
-        // admin non può bannare altri admin
-        if (utente.ruolo === 'admin') {
-          const err = new Error('Non puoi bannare un amministratore');
-          err.statusCode = 403;
-          throw err;
-        }
-
-        utente.isSospeso = true;
-        utente.bannato = true;
-        await utente.save({ session });
-
-        await applicaMalus(utente._id, { session });
-      });
-    } finally {
-      await session.endSession();
-    }
-
-    return res.status(200).json({ message: `Utente ${utente.email} bannato` });
+    return res.status(200).json(await adminService.bannaUtente(req.params.id));
   } catch (err) {
-    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * POST /api/v1/admin/utenti/:id/sospendi
- * Sospende temporaneamente un account (RF29, D2 §2.2.2).
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 async function sospendiUtente(req, res) {
   try {
-    const session = await mongoose.startSession();
-    let utente;
-    try {
-      await session.withTransaction(async () => {
-        utente = await User.findById(req.params.id).session(session);
-        if (!utente) {
-          const err = new Error('Utente non trovato');
-          err.statusCode = 404;
-          throw err;
-        }
-
-        if (utente.ruolo === 'admin') {
-          const err = new Error('Non puoi sospendere un amministratore');
-          err.statusCode = 403;
-          throw err;
-        }
-
-        utente.isSospeso = true;
-        await utente.save({ session });
-
-        await applicaMalus(utente._id, { session });
-      });
-    } finally {
-      await session.endSession();
-    }
-
-    return res.status(200).json({ message: `Utente ${utente.email} sospeso` });
+    return res.status(200).json(await adminService.sospendiUtente(req.params.id));
   } catch (err) {
-    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * POST /api/v1/admin/utenti/:id/riabilita
- * Riabilita un account sospeso, ma non un account bannato.
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 async function riabilitaUtente(req, res) {
   try {
-    const utente = await User.findById(req.params.id);
-    if (!utente) {
-      return res.status(404).json({ error: 'Utente non trovato' });
-    }
-
-    if (utente.bannato) {
-      return res.status(403).json({ error: 'Account bannato non riabilitabile' });
-    }
-
-    if (!utente.isSospeso) {
-      return res.status(400).json({ error: 'Account non sospeso' });
-    }
-
-    utente.isSospeso = false;
-    await utente.save();
-
-    return res.status(200).json({ message: `Utente ${utente.email} riabilitato` });
+    return res.status(200).json(await adminService.riabilitaUtente(req.params.id));
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * PATCH /api/v1/admin/annunci/:id/forza
- * Forza lo stato di un annuncio bloccato riportandolo a DISPONIBILE (RF31, D2 §2.2.2).
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 async function forzaStatoAnnuncio(req, res) {
   try {
-    const statoRichiesto = req.body?.stato;
-    if (statoRichiesto && statoRichiesto !== 'DISPONIBILE') {
-      return res.status(400).json({ error: 'RF31 consente di forzare solo lo stato DISPONIBILE' });
-    }
-
-    const annuncio = await Annuncio.findById(req.params.id);
-    if (!annuncio) return res.status(404).json({ error: 'Annuncio non trovato' });
-
-    if (annuncio.stato === 'DISPONIBILE') {
-      return res.status(200).json({ message: 'Annuncio già in stato DISPONIBILE', annuncio });
-    }
-
-    const session = await mongoose.startSession();
-    let updated;
-    try {
-      await session.withTransaction(async () => {
-        // Cancel active prenotazioni and their QR tokens
-        const prenotazioniAttive = await Prenotazione.find(
-          { annuncio: req.params.id, stato: 'ATTIVA' },
-          '_id',
-          { session }
-        );
-        const ids = prenotazioniAttive.map((p) => p._id);
-        if (ids.length > 0) {
-          await Prenotazione.updateMany(
-            { _id: { $in: ids } },
-            { $set: { stato: 'ANNULLATA' } },
-            { session }
-          );
-          await TokenQR.deleteMany({ prenotazione: { $in: ids } }).session(session);
-        }
-        updated = await Annuncio.findByIdAndUpdate(
-          req.params.id,
-          { $set: { stato: 'DISPONIBILE' }, $inc: { versione: 1 } },
-          { new: true, session }
-        );
-      });
-    } finally {
-      await session.endSession();
-    }
-
-    return res.status(200).json({ message: 'Annuncio forzato a DISPONIBILE', annuncio: updated });
+    return res.status(200).json(await adminService.forzaStatoAnnuncio(req.params.id, req.body?.stato));
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 
-/**
- * DELETE /api/v1/admin/annunci/:id
- * Rimuove (soft-delete) un annuncio non conforme (UC13).
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 async function rimuoviAnnuncio(req, res) {
   try {
-    const annuncio = await Annuncio.findByIdAndUpdate(
-      req.params.id,
-      { $set: { isAttivo: false } },
-      { new: true }
-    );
-
-    if (!annuncio) return res.status(404).json({ error: 'Annuncio non trovato' });
-
+    await adminService.rimuoviAnnuncio(req.params.id);
     return res.status(204).send();
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return sendControllerError(res, err);
   }
 }
 

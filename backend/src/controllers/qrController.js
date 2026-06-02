@@ -138,6 +138,13 @@ async function validaQR(req, res) {
 
     const creditiAssegnati = await finalizzaScambioAtomico({ tokenId: token._id });
 
+    const notificheService = require('../services/notificheService');
+    const link = `/prenotazioni/${prenotazione._id}`;
+    Promise.allSettled([
+      notificheService.creaNotifica(prenotazione.annuncio.donatore, 'scambio', 'Scambio completato e crediti aggiornati', link),
+      notificheService.creaNotifica(prenotazione.acquirente, 'scambio', 'Scambio completato e crediti aggiornati', link),
+    ]);
+
     return res.status(200).json({
       message: 'Scambio validato con successo',
       prenotazione: prenotazione._id,
