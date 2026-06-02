@@ -55,9 +55,9 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
   }
 
 
-  const totPos = recensioni?.positive ?? recensioni?.recensioni?.filter((r) => r.positiva).length ?? 0;
-  const totNeg = recensioni?.negative ?? recensioni?.recensioni?.filter((r) => !r.positiva).length ?? 0;
-  const recenti = recensioni?.recenti ?? recensioni?.recensioni ?? [];
+  const totPos = recensioni?.riepilogo?.positive ?? recensioni?.positive ?? recensioni?.recensioni?.filter((r) => r.positiva).length ?? 0;
+  const totNeg = recensioni?.riepilogo?.negative ?? recensioni?.negative ?? recensioni?.recensioni?.filter((r) => !r.positiva).length ?? 0;
+  const recenti = recensioni?.data ?? recensioni?.recenti ?? recensioni?.recensioni ?? [];
 
   return (
     <Screen

@@ -18,6 +18,7 @@ function statoBadgeStyle(stato) {
     disponibile: { bg: colors.statoDisponibile,  tx: colors.statoDisponibileTx },
     prenotato:   { bg: colors.statoPrenotato,    tx: colors.statoPrenotatoTx   },
     scambiato:   { bg: colors.statoScambiato,    tx: colors.statoScambiatoTx   },
+    ritirato:    { bg: colors.statoScambiato,    tx: colors.statoScambiatoTx   },
     scaduto:     { bg: colors.statoScaduto,      tx: colors.statoScadutoTx     },
     sospeso:     { bg: colors.statoSospeso,      tx: colors.statoSospesoTx     },
   };

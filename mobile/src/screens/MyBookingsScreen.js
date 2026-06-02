@@ -64,6 +64,36 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
     ]);
   }
 
+  async function noShow(id) {
+    Alert.alert('Segnala mancato ritiro', "L'acquirente non si è presentato?", [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Sì, segnala',
+        style: 'destructive',
+        onPress: async () => {
+          const res = await api.post(`/api/v1/prenotazioni/${id}/no-show`, {});
+          if (!res.ok) { Alert.alert('Errore', res.error || 'Impossibile segnalare.'); return; }
+          load();
+        },
+      },
+    ]);
+  }
+
+  async function disdici(id) {
+    Alert.alert('Disdici ritiro', 'Vuoi disdire questo appuntamento di ritiro?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Sì, disdici',
+        style: 'destructive',
+        onPress: async () => {
+          const res = await api.post(`/api/v1/prenotazioni/${id}/disdici`, {});
+          if (!res.ok) { Alert.alert('Errore', res.error || 'Impossibile disdire.'); return; }
+          load();
+        },
+      },
+    ]);
+  }
+
   const visible = filter ? bookings.filter((b) => b.stato === filter) : bookings;
 
   return (
@@ -106,11 +136,23 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
             {b.stato === 'ATTIVA' && currentUserId ? (
               <View style={styles.actions}>
                 {b.donatore?._id === currentUserId ? (
-                  <Button
-                    title="Mostra QR"
-                    variant="primary"
-                    onPress={() => onOpenQRDisplay(b._id)}
-                  />
+                  <>
+                    <Button
+                      title="Mostra QR"
+                      variant="primary"
+                      onPress={() => onOpenQRDisplay(b._id)}
+                    />
+                    <Button
+                      title="Mancato ritiro"
+                      variant="danger"
+                      onPress={() => noShow(b._id)}
+                    />
+                    <Button
+                      title="Disdici ritiro"
+                      variant="secondary"
+                      onPress={() => disdici(b._id)}
+                    />
+                  </>
                 ) : (
                   <>
                     <Button

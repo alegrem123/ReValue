@@ -88,6 +88,16 @@ export function CreateAnnuncioScreen({ onCreated }) {
       return;
     }
 
+    const parsedDate = new Date(form.dataScadenza);
+    if (Number.isNaN(parsedDate.getTime())) {
+      Alert.alert('Data non valida', 'Inserisci una data di scadenza valida.');
+      return;
+    }
+    if (parsedDate <= new Date()) {
+      Alert.alert('Data non valida', 'La scadenza deve essere nel futuro.');
+      return;
+    }
+
     setLoading(true);
     const response = await api.post('/api/v1/annunci', buildPayload());
     setLoading(false);

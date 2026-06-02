@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { api } from '../api/client';
+import { api, getUserId } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
@@ -18,6 +18,7 @@ export function ChatListScreen({ onOpenChat }) {
   const [convs, setConvs]   = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState('');
+  const [myId, setMyId]     = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -28,7 +29,7 @@ export function ChatListScreen({ onOpenChat }) {
     setConvs(res.data || []);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); getUserId().then(setMyId); }, [load]);
 
   return (
     <Screen title="Messaggi" subtitle="Chat con donatori e acquirenti." scroll={false}>
@@ -44,7 +45,7 @@ export function ChatListScreen({ onOpenChat }) {
         ) : null}
 
         {convs.map((c) => {
-          const altri = (c.partecipanti || []).filter((p) => p._id !== c._me);
+          const altri = (c.partecipanti || []).filter((p) => p._id !== myId);
           const nomeAltro = altri[0] ? `${altri[0].nome} ${altri[0].cognome}` : 'Utente';
 
           return (
