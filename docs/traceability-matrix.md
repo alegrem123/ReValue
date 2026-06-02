@@ -1,0 +1,36 @@
+# RE-VALUE - Matrice di tracciabilita requisiti
+
+Questa matrice collega requisiti, use case e vincoli OCL ai moduli implementati,
+alle schermate disponibili e alla verifica automatica. Gli stati usati sono:
+`Completo`, `Parziale`, `Prototipale`, `Futuro`.
+
+| Area | RF/UC/OCL | Descrizione | Backend/API | Frontend/Mobile | Test/Evidenza | Stato | Note |
+|---|---|---|---|---|---|---|---|
+| Autenticazione | Auth | Registrazione, login, logout, JWT | `authRoutes`, `authController`, `authService`, `jwt.js` | `login.html`, `register.html`, `AuthScreen` | `auth.test.js`, `security.test.js` | Completo | Login bloccato per utenti bannati/sospesi. |
+| Sicurezza password | OCL #2 / RNF sicurezza | Password persistite come hash | `password.js`, `userModel.js` | Login/register web e mobile | `auth.test.js` | Prototipale | SHA-256 e' scelta accademica dichiarata; bcrypt/Argon2 consigliati per produzione. |
+| Profilo utente | Users | Profilo privato e aggiornamento dati | `usersRoutes`, `usersController` | `profile.html`, `ProfileScreen` | smoke frontend/mobile | Completo | Campi aggiornabili filtrati lato controller. |
+| Profilo pubblico | RF8 | Profilo pubblico con riepilogo reputazione | `GET /api/v1/users/:id/profilo`, `recensioniController` | `public-profile.html`, profilo mobile | `reviews.test.js` | Completo | Non espone password hash o dati privati. |
+| Catalogo | RF4 / UC8 / RF22 | Lista annunci pubblici, filtri, privacy coordinate | `GET /api/v1/annunci`, `annunciController` | `catalog.html`, `CatalogScreen` | `annunci.test.js`, `catalog_flow.test.js`, smoke | Completo | Ottimizzato per query base; distanza/valore possono restare piu costosi. |
+| Creazione annuncio | RF15 / RF16 / OCL #5 | Pubblicazione annuncio con dati oggetto e scadenza futura | `POST /api/v1/annunci`, `annuncioModel` | `create-annuncio.html`, `CreateAnnuncioScreen` | `annunci.test.js`, `catalog_flow.test.js` | Completo | Massimo 5 foto e data scadenza futura. |
+| Modifica annuncio | RF18 / OCL #7 | Modifica solo del donatore e solo se disponibile | `PUT /api/v1/annunci/:id` | `edit-annuncio.html`, `MyAnnunciScreen` | `annunci.test.js` | Completo | Stati non modificabili ritornano 409. |
+| Cancellazione annuncio | RF18 / OCL #8 | Soft-delete solo se annuncio disponibile | `DELETE /api/v1/annunci/:id` | `my-annunci.html`, `MyAnnunciScreen` | `annunci.test.js`, `catalog_flow.test.js` | Completo | Mantiene documento nel DB. |
+| Stato annuncio | State machine / OCL | Transizioni controllate degli annunci | `PATCH /api/v1/annunci/:id/stato` | gestione donor | `annunci.test.js` | Completo | Back-transition bloccate. |
+| Prenotazione | UC2 / OCL #4/#6/#9/#10 | Prenotazione oggetto disponibile, no self-booking | `prenotazioniRoutes`, `prenotazioniController` | `annuncio.html`, `mybookings.html`, `MyBookingsScreen` | `prenotazioni.test.js`, `concurrent.test.js`, `swap.test.js` | Completo | Usa transazioni MongoDB e optimistic locking. |
+| Concorrenza | OCL #9/#10 / RNF | Una sola prenotazione attiva per annuncio | update atomico con `versione` | n/a | `concurrent.test.js` | Completo | Stress test con 10 utenti concorrenti. |
+| Annullamento prenotazione | RF20 / OCL #11 | Ripristino disponibilita e cancellazione QR | `DELETE /api/v1/prenotazioni/:id`, disdetta/no-show | `mybookings.html`, `MyBookingsScreen` | `prenotazioni.test.js`, test integrazione | Completo | Finestre temporali gestite lato backend. |
+| QR scambio | UC3 / RF17 / RF27 / OCL #13/#14/#15 | Generazione e validazione QR | `qrRoutes`, `qrController`, `scambioQrService` | `qr-display.html`, `qr-scan.html`, `QRDisplayScreen`, `QRScanScreen` | `swap.test.js`, `qr_edge_cases.test.js` | Completo | Endpoint legacy `scambi` deprecati con 410. |
+| Wallet | RF5 / RF6 / UC10 / UC11 / OCL #16/#17 | Saldo e storico transazioni | `walletRoutes`, `walletService` | `wallethistory.html`, profilo/mobile premi | `wallet.test.js`, `swap.test.js`, `premi.test.js` | Completo | Saldo non negativo verificato. |
+| Premi | UC7 / OCL #17 | Coupon riscattabili con crediti | `premiRoutes`, `premiController`, `couponModel`, `riscattoModel` | `premi.html`, `my-premi.html`, `PremiScreen` | `premi.test.js` | Completo | Stock e saldo verificati. |
+| Recensioni | RF8 / RF21 / RF28 / OCL #21 | Recensioni solo post-scambio, una per utente/prenotazione | `recensioniRoutes`, `recensioniController` | `swap-success.html`, `public-profile.html`, `SwapSuccessScreen` | `reviews.test.js` | Completo | Recensioni bilaterali supportate. |
+| Chat | RF10 / RF11 / RF13 / RF14 | Messaggi tra partecipanti allo scambio | `chatRoutes`, `messaggiRoutes`, `requireParticipant` | `messaggi.html`, `chat.html`, `ChatListScreen`, `ChatScreen` | smoke + security auth tests | Completo | Accesso limitato ai partecipanti. |
+| Notifiche in-app | RF12 | Lista notifiche, lettura singola/tutte | `notificheRoutes`, `notificheService`, `notificaModel` | `notifiche.html`, `NotificheScreen` | `notifiche.test.js` | Completo | Persistenza notifiche in-app. |
+| Push native | RF12 esteso | Predisposizione Expo Push | `sendExpoPushIfConfigured`, `PATCH /users/me/push-token` | token registration mobile non completa | `support_push.test.js` | Parziale | Backend pronto; integrazione mobile futura. |
+| Email | Servizio esterno | Invio email opzionale SMTP | `emailService.js` | n/a | documentazione servizi | Prototipale | Adapter non blocca flussi se non configurato. |
+| Segnalazioni | RF9 / UC13 / OCL #18/#19 | Creazione segnalazioni e no auto-segnalazione | `segnalazioniRoutes`, `segnalazioniController` | `segnala.html`, `my-reports.html` | `segnalazioni.test.js`, `security.test.js` | Completo | Notifica admin fire-and-forget. |
+| Moderazione admin | RF29 / UC13 / OCL #20 | Malus, sospensione, ban, riabilitazione | `adminRoutes`, `adminController`, `userService` | `admin/dashboard.html` | `admin_moderation.test.js` | Completo | Auto-sospensione quando `malusCount` raggiunge 3. |
+| Dashboard admin | RF30 / RF31 / UC14 | Statistiche, lista utenti, lista annunci, forzatura stato | `GET /admin/statistiche`, `GET /admin/users`, `GET /admin/annunci` | dashboard admin | `admin_moderation.test.js`, frontend smoke | Completo | Gestione annunci non conformi via soft-delete. |
+| Supporto | Sprint 2 | Ticket supporto utente | `supportoRoutes`, `supportoController`, `ticketSupportoModel` | nessuna schermata dedicata rilevata | `support_push.test.js`, Apiary | Parziale | Backend implementato e testato; UI dedicata migliorabile. |
+| API contract | REST / Apiary | Contratto API ufficiale | `apiary.apib`, `app.js`, routes | client web/mobile `/api/v1` | smoke API client | Completo da mantenere | Apiary e' fonte di verita per l'esame. |
+| Mobile app | Prototipo mobile | Schermate principali Expo/React Native | API client mobile | `App.js`, `mobile/src/screens/*` | `mobile/tests/smoke.test.mjs` | Completo come prototipo | Push nativa non completa. |
+| CI/CD | Processo | Test automatici e smoke produzione | `.github/workflows/ci.yml` | backend/frontend deploy Render | GitHub Actions | Completo | Backend, frontend e mobile smoke. |
+| Servizi esterni ridimensionati | SSO/OSM | Funzioni non completate rispetto alla visione iniziale | n/a | n/a | dichiarazione D4 | Futuro | Da dichiarare esplicitamente nel report finale. |
