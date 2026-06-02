@@ -8,8 +8,15 @@
     alertBox.classList.remove('d-none');
   }
 
+  const ADMIN_API_BASE = (() => {
+    const explicit = window.REVALUE_API_BASE || (window.REVALUE_CONFIG && window.REVALUE_CONFIG.API_BASE);
+    if (explicit) return String(explicit).replace(/\/+$/, '');
+    if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://127.0.0.1:3000';
+    return 'https://revalue-backend-84jb.onrender.com';
+  })();
+
   async function login(email, password) {
-    const res = await fetch('/api/v1/auth/login', {
+    const res = await fetch(`${ADMIN_API_BASE}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

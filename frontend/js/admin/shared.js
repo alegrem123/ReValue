@@ -1,5 +1,11 @@
 (function () {
-  const API_PREFIX = '/api/v1';
+  const ADMIN_API_BASE = (() => {
+    const explicit = window.REVALUE_API_BASE || (window.REVALUE_CONFIG && window.REVALUE_CONFIG.API_BASE);
+    if (explicit) return String(explicit).replace(/\/+$/, '');
+    if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://127.0.0.1:3000';
+    return 'https://revalue-backend-84jb.onrender.com';
+  })();
+  const API_PREFIX = `${ADMIN_API_BASE}/api/v1`;
   const LOGIN_URL = 'login.html';
   const DASHBOARD_URL = 'dashboard.html';
 

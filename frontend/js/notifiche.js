@@ -36,13 +36,19 @@ function renderNotifiche(notifiche) {
     return;
   }
 
+  function escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c])
+    );
+  }
+
   notificheList.innerHTML = notifiche
     .map(
       (n) => `
     <div class="card notifica-card mb-3 ${n.letta ? 'letta' : 'non-letta'}" id="notifica-${n._id}">
       <div class="card-body d-flex justify-content-between align-items-start gap-3">
         <div class="flex-grow-1">
-          <p class="mb-1">${n.testo}</p>
+          <p class="mb-1">${escHtml(n.testo)}</p>
           <small class="text-muted"><i class="bi bi-clock me-1"></i>${formatData(n.data)}</small>
         </div>
         ${
