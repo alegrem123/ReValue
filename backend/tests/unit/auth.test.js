@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
+const express = require('express');
+const request = require('supertest');
 const User = require('../../src/models/userModel');
 const { hashPassword } = require('../../src/utils/password');
 
@@ -11,6 +13,7 @@ jest.mock('../../src/services/emailService', () => ({
 
 const emailService = require('../../src/services/emailService');
 const { register, login } = require('../../src/controllers/authController');
+const { authLimiter } = require('../../src/middleware/rateLimitMiddleware');
 const { verifyToken, signToken } = require('../../src/utils/jwt');
 
 let mongoServer;
@@ -183,6 +186,26 @@ describe('Auth flow', () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ error: 'Account bannato' })
     );
+  });
+});
+
+describe('Auth rate limiter', () => {
+  test('limita il sesto tentativo sullo stesso identificatore anche in NODE_ENV=test', async () => {
+    const app = express();
+    app.use(express.json());
+    app.post('/api/v1/auth/login', authLimiter, (req, res) => res.status(200).json({ ok: true }));
+
+    const email = 'limited@example.com';
+    await authLimiter.resetKey(`POST:/api/v1/auth/login:${email}`);
+
+    for (let i = 0; i < 5; i += 1) {
+      const res = await request(app).post('/api/v1/auth/login').send({ email });
+      expect(res.statusCode).toBe(200);
+    }
+
+    const limited = await request(app).post('/api/v1/auth/login').send({ email });
+    expect(limited.statusCode).toBe(429);
+    expect(limited.body.error).toMatch(/troppi tentativi/i);
   });
 });
 
