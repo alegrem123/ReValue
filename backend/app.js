@@ -4,8 +4,8 @@ const morgan = require('morgan');
 const path = require('path');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
-const rateLimit = require('express-rate-limit');
 const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler');
+const { authLimiter } = require('./src/middleware/rateLimitMiddleware');
 
 const app = express();
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
@@ -61,7 +61,6 @@ const recensioniRoutes = require('./src/routes/recensioniRoutes');
 const notificheRoutes = require('./src/routes/notificheRoutes');
 const supportoRoutes = require('./src/routes/supportoRoutes');
 
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false, skip: () => process.env.NODE_ENV === 'test' });
 app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/users', utentiRoutes);
 app.use('/api/v1/annunci', annunciRoutes);
