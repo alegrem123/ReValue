@@ -3,7 +3,9 @@ info:
   title: RE-VALUE API
   version: 1.0.0
   description: |
-    Specifica OpenAPI locale delle API REST implementate nello Sprint 1.
+    Specifica OpenAPI locale delle API REST implementate. Per l'esame la fonte
+    ufficiale del contratto API resta `apiary.apib`; questo file e' mantenuto
+    come specifica secondaria equivalente dove possibile.
     Il backend espone le route sotto il prefisso versionato `/api/v1`.
 
     Note D2/Sprint:
@@ -25,6 +27,10 @@ tags:
   - name: Conversazioni
   - name: Messaggi Legacy
   - name: Notifiche
+  - name: Premi
+  - name: Segnalazioni
+  - name: Recensioni
+  - name: Supporto
   - name: Admin
   - name: Scambi Legacy
 
@@ -130,6 +136,45 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/me/push-token:
+    patch:
+      tags: [Users]
+      summary: Registra il token Expo Push dell'utente autenticato
+      description: |
+        Endpoint backend predisposto per l'adapter Expo Push. La registrazione
+        automatica del token lato mobile e' considerata integrazione parziale.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expoPushToken]
+              properties:
+                expoPushToken:
+                  type: string
+                  example: ExpoPushToken[abcdefghijklmnopqrstuv]
+      responses:
+        '200':
+          description: Token push aggiornato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/PublicUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -851,7 +896,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [DISPONIBILE, PRENOTATO, CEDUTO, SCADUTO]
+            enum: [DISPONIBILE, PRENOTATO, RITIRATO, SCADUTO]
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Limit'
       responses:
@@ -987,7 +1032,7 @@ paths:
               properties:
                 stato:
                   type: string
-                  enum: [DISPONIBILE, SCADUTO, CEDUTO]
+                  enum: [DISPONIBILE]
               example:
                 stato: DISPONIBILE
       responses:
@@ -1331,8 +1376,8 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '204':
-          description: Recensione eliminata
+        '200':
+          $ref: '#/components/responses/Message'
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -1364,6 +1409,55 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/Recensione' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/supporto/ticket:
+    post:
+      tags: [Supporto]
+      summary: Crea un ticket di supporto
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [testo]
+              properties:
+                testo:
+                  type: string
+                  minLength: 1
+      responses:
+        '201':
+          description: Ticket creato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    $ref: '#/components/schemas/TicketSupporto'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/supporto/ticket/me:
+    get:
+      tags: [Supporto]
+      summary: Lista i ticket di supporto dell'utente autenticato
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Ticket dell'utente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TicketSupporto'
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
 components:
   securitySchemes:
@@ -1583,7 +1677,7 @@ components:
             additionalProperties: true
     StatoAnnuncio:
       type: string
-      enum: [DISPONIBILE, PRENOTATO, CEDUTO, SCADUTO]
+      enum: [DISPONIBILE, PRENOTATO, RITIRATO, SCADUTO]
     Oggetto:
       type: object
       required: [categoria, descrizione]
@@ -1767,9 +1861,11 @@ components:
         _id: { type: string }
         titolo: { type: string }
         descrizione: { type: string }
+        partner: { type: string }
         costoCrediti: { type: integer }
         stock: { type: integer, description: 'Stock disponibili; 0 = esaurito' }
         attivo: { type: boolean }
+        immagine: { type: string, nullable: true }
     Riscatto:
       type: object
       properties:
@@ -1815,3 +1911,20 @@ components:
         positiva: { type: boolean }
         testo: { type: string }
         data: { type: string, format: date-time }
+    TicketSupporto:
+      type: object
+      properties:
+        _id: { type: string }
+        utente: { type: string }
+        testo: { type: string }
+        stato:
+          type: string
+          enum: [APERTO, RISPOSTO, CHIUSO]
+        rispostaEntro: { type: string, format: date-time }
+        risposta: { type: string }
+        dataRisposta:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
