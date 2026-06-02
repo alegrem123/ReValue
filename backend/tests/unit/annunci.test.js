@@ -378,6 +378,21 @@ describe('Annunci - Filtri', () => {
     expect(result).toHaveLength(1);
     expect(result[0].titolo).toBe('Divano rosso');
   });
+
+  test('Catalogo API pagina e ordina lato backend senza filtri in-memory', async () => {
+    const res = await request(app).get('/api/v1/annunci?categoria=Mobili&page=1&limit=1&ordinamento=dataScadenza_asc');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].titolo).toBe('Divano rosso');
+    expect(res.body.data[0].latitudine).toBeUndefined();
+    expect(res.body.pagination).toEqual({
+      page: 1,
+      limit: 1,
+      total: 2,
+      pages: 2,
+    });
+  });
 });
 
 describe('Annunci - Optimistic Locking (OCL #7, UC2)', () => {

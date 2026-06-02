@@ -28,6 +28,10 @@ const messaggioSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    immagine: {
+      type: String,
+      default: null,
+    },
   },
   { _id: true }
 );

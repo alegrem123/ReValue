@@ -34,7 +34,7 @@ async function getPremi(req, res) {
 
 /**
  * POST /api/v1/premi/:id/riscatta
- * Riscatta coupon: verifica saldo (OCL #17), decrementa stock, crea Riscatto con UUID.
+ * Riscatta coupon: verifica saldo (OCL #17), decrementa stock finito, crea Riscatto con UUID.
  * UC7, OCL #17
  */
 async function riscattaCoupon(req, res) {
@@ -51,12 +51,18 @@ async function riscattaCoupon(req, res) {
         {
           _id: req.params.id,
           attivo: true,
-          stock: { $gt: 0 },
+          stock: { $gte: 0 },
         },
         [
           {
             $set: {
-              stock: { $subtract: ['$stock', 1] },
+              stock: {
+                $cond: [
+                  { $gt: ['$stock', 0] },
+                  { $subtract: ['$stock', 1] },
+                  '$stock',
+                ],
+              },
             },
           },
         ],

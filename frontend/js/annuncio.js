@@ -62,16 +62,10 @@ function normalizeDimensione(value) {
   }
 }
 
-function calculateEstimatedCredits(annuncio) {
-  const dimensione = normalizeDimensione(annuncio.oggetto?.dimensioni);
-  const giorni = annuncio.dataScadenza
-    ? Math.max(
-        0,
-        (new Date(annuncio.dataScadenza) - new Date()) / (1000 * 60 * 60 * 24)
-      )
-    : 0;
-  if (!annuncio.dataScadenza || giorni <= 0) return 'N/A';
-  return Math.max(1, Math.round(dimensione * giorni)).toString();
+const CREDITI_SCAMBIO = 50;
+
+function calculateEstimatedCredits() {
+  return CREDITI_SCAMBIO.toString();
 }
 
 function showAlert(message, type = 'danger') {

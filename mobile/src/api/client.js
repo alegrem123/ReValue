@@ -10,7 +10,9 @@ function cleanApiBase(value) {
 }
 
 function resolveApiBase() {
-  // In sviluppo: stesso IP del dev server Expo, porta 3000
+  const explicitBase = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (explicitBase) return cleanApiBase(explicitBase);
+
   if (__DEV__) {
     const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
     if (hostUri) {
@@ -18,7 +20,8 @@ function resolveApiBase() {
       return cleanApiBase(`http://${host}:3000`);
     }
   }
-  return cleanApiBase(process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL);
+
+  return cleanApiBase(DEFAULT_API_BASE_URL);
 }
 
 export const API_BASE_URL = resolveApiBase();

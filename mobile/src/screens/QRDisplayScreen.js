@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { api } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
 // QR generato come immagine via API pubblica — no dipendenze extra
-function qrImageUri(codice) {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(codice)}&color=1B5E20`;
-}
 
 function useCountdown(scadenzaISO) {
   const [label, setLabel] = useState('');
@@ -64,11 +62,7 @@ export function QRDisplayScreen({ prenotazioneId, onBack }) {
       {codice ? (
         <View style={styles.center}>
           <View style={styles.qrWrapper}>
-            <Image
-              source={{ uri: qrImageUri(codice) }}
-              style={styles.qrImage}
-              resizeMode="contain"
-            />
+            <QRCode value={codice} size={260} color="#1B5E20" backgroundColor="#FFFFFF" />
           </View>
 
           <View style={styles.infoCard}>

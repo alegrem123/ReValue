@@ -1,0 +1,237 @@
+{
+  "info": {
+    "name": "RE-VALUE Sprint 2 API",
+    "description": "Collection minima importabile per evidenza Sprint 2. Apiary resta la fonte ufficiale del contratto API; questa collection serve per demo e test manuali.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "userToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "annuncioId", "value": "" },
+    { "key": "prenotazioneId", "value": "" },
+    { "key": "conversazioneId", "value": "" },
+    { "key": "notificaId", "value": "" },
+    { "key": "couponId", "value": "" },
+    { "key": "riscattoId", "value": "" },
+    { "key": "segnalazioneId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Mario\",\n  \"cognome\": \"Rossi\",\n  \"email\": \"mario.rossi@example.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mario.rossi@example.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Annunci",
+      "item": [
+        {
+          "name": "Catalogo",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/annunci?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Crea annuncio",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/annunci",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titolo\": \"Sedia in legno\",\n  \"dataScadenza\": \"2026-12-31T23:00:00.000Z\",\n  \"latitudine\": 46.0667,\n  \"longitudine\": 11.1211,\n  \"oggetto\": {\n    \"descrizione\": \"Sedia usata in buono stato\",\n    \"categoria\": \"Casa\",\n    \"materiale\": \"Legno\",\n    \"dimensioni\": \"Media\",\n    \"foto\": []\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Dettaglio annuncio",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/annunci/{{annuncioId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Prenotazioni e QR",
+      "item": [
+        {
+          "name": "Prenota annuncio",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/prenotazioni",
+            "body": { "mode": "raw", "raw": "{\n  \"annuncioId\": \"{{annuncioId}}\"\n}" }
+          }
+        },
+        {
+          "name": "Le mie prenotazioni",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "url": "{{baseUrl}}/prenotazioni/me"
+          }
+        },
+        {
+          "name": "Genera QR",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/qr/genera",
+            "body": { "mode": "raw", "raw": "{\n  \"prenotazioneId\": \"{{prenotazioneId}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet, Premi, Recensioni",
+      "item": [
+        {
+          "name": "Saldo wallet",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "url": "{{baseUrl}}/wallet/saldo"
+          }
+        },
+        {
+          "name": "Lista premi",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "url": "{{baseUrl}}/premi"
+          }
+        },
+        {
+          "name": "Riscatta premio",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "url": "{{baseUrl}}/premi/{{couponId}}/riscatta"
+          }
+        },
+        {
+          "name": "Crea recensione",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/recensioni",
+            "body": { "mode": "raw", "raw": "{\n  \"prenotazioneId\": \"{{prenotazioneId}}\",\n  \"positiva\": true,\n  \"testo\": \"Scambio rapido e persona affidabile.\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat e Notifiche",
+      "item": [
+        {
+          "name": "Conversazioni",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "url": "{{baseUrl}}/conversazioni/me"
+          }
+        },
+        {
+          "name": "Invia messaggio",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/conversazioni/{{conversazioneId}}/messaggi",
+            "body": { "mode": "raw", "raw": "{\n  \"testo\": \"Ci vediamo alle 18?\",\n  \"immagine\": null\n}" }
+          }
+        },
+        {
+          "name": "Notifiche",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "url": "{{baseUrl}}/notifiche/me?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Registra push token",
+          "request": {
+            "method": "PATCH",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users/me/push-token",
+            "body": { "mode": "raw", "raw": "{\n  \"expoPushToken\": \"ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Segnalazioni, Supporto, Admin",
+      "item": [
+        {
+          "name": "Crea segnalazione",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/segnalazioni",
+            "body": { "mode": "raw", "raw": "{\n  \"segnalato\": \"{{userId}}\",\n  \"tipo\": \"comportamento\",\n  \"motivo\": \"Comportamento non corretto durante lo scambio.\"\n}" }
+          }
+        },
+        {
+          "name": "Crea ticket supporto",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/supporto/ticket",
+            "body": { "mode": "raw", "raw": "{\n  \"oggetto\": \"Problema prenotazione\",\n  \"testo\": \"Ho bisogno di assistenza su una prenotazione.\"\n}" }
+          }
+        },
+        {
+          "name": "Statistiche admin",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/statistiche"
+          }
+        },
+        {
+          "name": "Applica malus",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/segnalazioni/{{segnalazioneId}}/malus"
+          }
+        }
+      ]
+    }
+  ]
+}

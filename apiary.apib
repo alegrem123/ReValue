@@ -181,6 +181,42 @@ Gestione profilo utente e profilo pubblico con riepilogo recensioni.
           "error": "Nessun campo aggiornato"
         }
 
+## Aggiorna push token Expo [PATCH /api/v1/users/me/push-token]
+
+Registra il token Expo Push dell'utente autenticato. L'endpoint abilita
+l'adapter push lato backend, ma la registrazione automatica del token sul
+client mobile e' da considerarsi integrazione parziale/prototipale.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "expoPushToken": "ExpoPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "user": {
+            "idUtente": "664f1b7b1f8a2c0012345678",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "citta": "Milano",
+            "descrizione": "Recupero e dono oggetti usati.",
+            "createdAt": "2026-05-21T10:00:00.000Z"
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "expoPushToken non valido"
+        }
+
 ## Profilo pubblico [GET /api/v1/users/{id}/profilo]
 
 + Parameters
@@ -1634,6 +1670,66 @@ Endpoint riservati al ruolo `admin`.
             Authorization: Bearer jwt-admin-token
 
 + Response 204
+
+# Group Supporto
+
+Ticket di supporto utente. Il modulo e' implementato nel backend sotto
+`/api/v1/supporto` e consente all'utente autenticato di aprire ticket e
+consultare quelli creati.
+
+## Crea ticket supporto [POST /api/v1/supporto/ticket]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-token
+
+    + Body
+
+            {
+              "testo": "Ho bisogno di assistenza su una prenotazione."
+            }
+
++ Response 201 (application/json)
+
+        {
+          "ticket": {
+            "_id": "673000000000000000000001",
+            "utente": "664f1b7b1f8a2c0012345678",
+            "testo": "Ho bisogno di assistenza su una prenotazione.",
+            "stato": "APERTO",
+            "rispostaEntro": "2026-05-22T10:00:00.000Z",
+            "createdAt": "2026-05-21T10:00:00.000Z"
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "testo è obbligatorio"
+        }
+
+## I miei ticket supporto [GET /api/v1/supporto/ticket/me]
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "ticket": [
+            {
+              "_id": "673000000000000000000001",
+              "utente": "664f1b7b1f8a2c0012345678",
+              "testo": "Ho bisogno di assistenza su una prenotazione.",
+              "stato": "APERTO",
+              "rispostaEntro": "2026-05-22T10:00:00.000Z",
+              "createdAt": "2026-05-21T10:00:00.000Z"
+            }
+          ]
+        }
 
 # Group Scambi Legacy
 

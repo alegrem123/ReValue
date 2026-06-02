@@ -23,6 +23,24 @@ function sanitizePublicProfile(user) {
   };
 }
 
+function sanitizePrivateProfile(user) {
+  if (!user) return null;
+  return {
+    idUtente: user.idUtente,
+    nome: user.nome,
+    cognome: user.cognome,
+    email: user.email,
+    ruolo: user.ruolo,
+    malusCount: user.malusCount,
+    isSospeso: user.isSospeso,
+    telefono: user.telefono,
+    citta: user.citta,
+    descrizione: user.descrizione,
+    saldo: user.saldo,
+    createdAt: user.createdAt,
+  };
+}
+
 function buildUpdatePayload(body) {
   const allowedFields = ['nome', 'cognome', 'telefono', 'citta', 'descrizione'];
   return allowedFields.reduce((acc, field) => {
@@ -60,7 +78,7 @@ async function getMe(req, res) {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Utente non trovato' });
-    return res.status(200).json({ user: sanitizePublicProfile(user) });
+    return res.status(200).json({ user: sanitizePrivateProfile(user) });
   } catch (err) {
     return res.status(500).json({ error: 'Errore interno del server' });
   }

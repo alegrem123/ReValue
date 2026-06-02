@@ -115,6 +115,21 @@ describe('POST /api/v1/premi/:id/riscatta', () => {
     const couponAggiornato = await Coupon.findById(couponId);
     expect(couponAggiornato.stock).toBe(4);
   });
+
+  test('riscatto coupon con stock 0 → 201 senza decrementare stock illimitato', async () => {
+    await addPunti(userId, 50, 'test');
+    await Coupon.findByIdAndUpdate(couponId, { stock: 0 });
+
+    const res = await request(app)
+      .post(`/api/v1/premi/${couponId}/riscatta`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.codiceUnivoco).toBeDefined();
+
+    const couponAggiornato = await Coupon.findById(couponId);
+    expect(couponAggiornato.stock).toBe(0);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

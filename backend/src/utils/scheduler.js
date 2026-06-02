@@ -1,14 +1,18 @@
 const Annuncio = require('../models/annuncioModel');
+const Prenotazione = require('../models/prenotazioneModel');
 
 const HOUR_MS = 60 * 60 * 1000;
 
-/**
- * Aggiorna gli annunci scaduti e li marca come SCADUTO.
- * Viene eseguito sia all'avvio che periodicamente ogni ora.
- */
 async function expireAnnunciScaduti() {
   try {
     const now = new Date();
+
+    const annunciPrenotati = await Annuncio.find(
+      { isAttivo: true, stato: 'PRENOTATO', dataScadenza: { $lt: now } },
+      { _id: 1 }
+    ).lean();
+    const idsPrenotati = annunciPrenotati.map((a) => a._id);
+
     const result = await Annuncio.updateMany(
       {
         isAttivo: true,
@@ -17,6 +21,13 @@ async function expireAnnunciScaduti() {
       },
       { $set: { stato: 'SCADUTO' } }
     );
+
+    if (idsPrenotati.length > 0) {
+      await Prenotazione.updateMany(
+        { annuncio: { $in: idsPrenotati }, stato: 'ATTIVA' },
+        { $set: { stato: 'ANNULLATA' } }
+      );
+    }
 
     if (result.modifiedCount > 0) {
       if (process.env.NODE_ENV !== 'production') console.error(`Scheduler: ${result.modifiedCount} annunci scaduti aggiornati a SCADUTO`);

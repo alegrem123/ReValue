@@ -19,6 +19,7 @@ const bookingsAlert = document.getElementById('bookings-alert');
 let allBookings    = [];
 let filtroAttivo   = '';
 let pendingAnnulla = null;
+let currentUserId  = null;
 
 function showAlert(msg, type = 'danger') {
   bookingsAlert.textContent = msg;
@@ -48,6 +49,22 @@ function statoBadge(stato) {
 function entroQuindiciMinuti(dataPrenotazione) {
   const diff = Date.now() - new Date(dataPrenotazione).getTime();
   return diff <= 15 * 60 * 1000;
+}
+
+function buildNoShowButton(p) {
+  const donatoreId = p.donatore?._id || p.donatore;
+  if (p.stato !== 'ATTIVA' || String(donatoreId) !== String(currentUserId)) return '';
+  return `<button class="btn btn-outline-danger btn-sm btn-no-show mt-1" data-id="${p._id}">
+    <i class="bi bi-flag me-1"></i>Segnala mancato ritiro
+  </button>`;
+}
+
+function buildDisdiciButton(p) {
+  const donatoreId = p.donatore?._id || p.donatore;
+  if (p.stato !== 'ATTIVA' || String(donatoreId) !== String(currentUserId)) return '';
+  return `<button class="btn btn-outline-warning btn-sm btn-disdici mt-1" data-id="${p._id}">
+    <i class="bi bi-calendar-x me-1"></i>Disdici ritiro
+  </button>`;
 }
 
 function buildCard(p) {
@@ -83,6 +100,8 @@ function buildCard(p) {
           <span class="text-muted small align-self-center">
             <i class="bi bi-clock me-1"></i>Finestra annullamento scaduta
           </span>`}
+          ${buildNoShowButton(p)}
+          ${buildDisdiciButton(p)}
         </div>` : ''}
 
         ${p.stato === 'COMPLETATA' ? `
@@ -152,11 +171,37 @@ function applyFilter() {
   renderBookings(filtered);
 }
 
+async function segnalaNoShow(id) {
+  const res = await api.post(`/api/v1/prenotazioni/${id}/no-show`, {});
+  if (!res.ok) { showAlert(res.error || 'Impossibile segnalare il mancato ritiro.'); return; }
+  showAlert('Mancato ritiro segnalato.', 'success');
+  await loadBookings();
+}
+
+async function disdiciRitiro(id) {
+  const res = await api.post(`/api/v1/prenotazioni/${id}/disdici`, {});
+  if (!res.ok) { showAlert(res.error || 'Impossibile disdire il ritiro.'); return; }
+  showAlert('Ritiro disdetto.', 'success');
+  await loadBookings();
+}
+
+document.addEventListener('click', (e) => {
+  const noShow = e.target.closest('.btn-no-show');
+  if (noShow) { e.preventDefault(); segnalaNoShow(noShow.dataset.id); }
+  const disdici = e.target.closest('.btn-disdici');
+  if (disdici) { e.preventDefault(); disdiciRitiro(disdici.dataset.id); }
+});
+
 async function loadBookings() {
   if (!localStorage.getItem('jwt')) {
     window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname);
     return;
   }
+
+  try {
+    const payload = JSON.parse(atob(localStorage.getItem('jwt').split('.')[1]));
+    currentUserId = payload?.id || payload?.sub || null;
+  } catch { currentUserId = null; }
 
   const res = await api.get('/api/v1/prenotazioni/me');
   if (!res.ok) {

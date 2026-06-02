@@ -26,7 +26,8 @@ const recensioneSchema = new Schema(
     testo: {
       type: String,
       trim: true,
-      default: '', // facoltativo — RF21/RF28
+      maxlength: [1000, 'testo must be at most 1000 characters'],
+      default: '',
     },
     data: {
       type: Date,

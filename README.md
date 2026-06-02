@@ -173,6 +173,15 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.x:3000 npm start
 
 ---
 
+## Evidenze Sprint 2
+
+- Casi di test strutturati: `docs/test-cases-sprint2.md`
+- Evidenza RNF2 e piano load test: `docs/performance/rnf2-load-test.md`
+- Checklist Postman endpoint: `docs/postman/README.md`
+- Demo video: placeholder da compilare quando disponibile.
+
+---
+
 ## Autori
 
 Gruppo 21 — Università di Trento  

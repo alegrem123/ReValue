@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, View } from 'react-native';
-import { api } from '../api/client';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, View } from 'react-native';
+import { api, getUserId } from '../api/client';
 import { formatDate } from '../components/AnnuncioCard';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
@@ -13,6 +13,14 @@ export function AnnuncioDetailScreen({ id, onBack }) {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState('');
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [showReport, setShowReport] = useState(false);
+  const [motivo, setMotivo] = useState('');
+  const [reporting, setReporting] = useState(false);
+
+  useEffect(() => {
+    getUserId().then(setCurrentUserId);
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -30,6 +38,28 @@ export function AnnuncioDetailScreen({ id, onBack }) {
 
     load();
   }, [id]);
+
+  async function segnala() {
+    if (!motivo.trim()) {
+      Alert.alert('Motivo obbligatorio', 'Inserisci un motivo per la segnalazione.');
+      return;
+    }
+    setReporting(true);
+    const res = await api.post('/api/v1/segnalazioni', {
+      segnalato: annuncio.donatore._id,
+      tipo: 'comportamento',
+      motivo: motivo.trim(),
+      annuncio: id,
+    });
+    setReporting(false);
+    if (!res.ok) {
+      Alert.alert('Errore', res.error || 'Impossibile inviare la segnalazione.');
+      return;
+    }
+    setShowReport(false);
+    setMotivo('');
+    Alert.alert('Segnalazione inviata', 'La segnalazione è stata registrata.');
+  }
 
   async function prenota() {
     setBooking(true);
@@ -74,6 +104,29 @@ export function AnnuncioDetailScreen({ id, onBack }) {
               loading={booking}
               disabled={annuncio.stato !== 'DISPONIBILE'}
             />
+
+            {annuncio.donatore?._id && annuncio.donatore._id !== currentUserId ? (
+              showReport ? (
+                <View style={styles.reportBox}>
+                  <Text style={styles.reportTitle}>Segnala donatore</Text>
+                  <TextInput
+                    style={styles.reportInput}
+                    placeholder="Descrivi il problema…"
+                    placeholderTextColor={colors.muted}
+                    value={motivo}
+                    onChangeText={setMotivo}
+                    multiline
+                    numberOfLines={3}
+                  />
+                  <View style={styles.reportActions}>
+                    <Button title="Invia" variant="danger" onPress={segnala} loading={reporting} />
+                    <Button title="Annulla" variant="secondary" onPress={() => { setShowReport(false); setMotivo(''); }} />
+                  </View>
+                </View>
+              ) : (
+                <Button title="Segnala donatore" variant="secondary" onPress={() => setShowReport(true)} />
+              )
+            ) : null}
           </View>
         </View>
       ) : null}
@@ -139,5 +192,32 @@ const styles = StyleSheet.create({
   error: {
     color: colors.danger,
     fontWeight: '700',
+  },
+  reportBox: {
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: 8,
+    padding: 12,
+    gap: 10,
+    backgroundColor: colors.dangerLight,
+  },
+  reportTitle: {
+    fontWeight: '700',
+    color: colors.danger,
+  },
+  reportInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    padding: 10,
+    minHeight: 72,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  reportActions: {
+    flexDirection: 'row',
+    gap: 8,
   },
 });

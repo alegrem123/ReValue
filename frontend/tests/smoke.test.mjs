@@ -15,10 +15,25 @@ describe('frontend smoke', () => {
       'views/mybookings.html',
       'views/qr-display.html',
       'views/qr-scan.html',
+      'views/notifiche.html',
       'views/chat.html',
+      'views/messaggi.html',
+      'views/premi.html',
+      'views/my-premi.html',
+      'views/profile.html',
       'views/public-profile.html',
+      'views/swap-success.html',
       'views/admin/login.html',
       'views/admin/dashboard.html',
+      'js/layout.js',
+      'js/catalog.js',
+      'js/annuncio.js',
+      'js/mybookings.js',
+      'js/qr-display.js',
+      'js/qr-scan.js',
+      'js/notifiche.js',
+      'js/chat.js',
+      'js/premi.js',
       'js/admin/login.js',
       'js/admin/shared.js',
       'js/admin/stats.js',
@@ -28,6 +43,30 @@ describe('frontend smoke', () => {
     ].forEach((file) => {
       assert.equal(existsSync(join(root, file)), true, file);
     });
+  });
+
+  it('le viste principali caricano gli script funzionali attesi', () => {
+    const expectedScripts = {
+      'views/catalog.html': ['js/catalog.js'],
+      'views/annuncio.html': ['js/annuncio.js'],
+      'views/mybookings.html': ['js/mybookings.js'],
+      'views/qr-display.html': ['js/qr-display.js'],
+      'views/qr-scan.html': ['js/qr-scan.js'],
+      'views/notifiche.html': ['js/notifiche.js'],
+      'views/chat.html': ['js/chat.js'],
+      'views/messaggi.html': ['js/messaggi.js'],
+      'views/premi.html': ['js/premi.js'],
+      'views/my-premi.html': ['js/myPremi.js'],
+      'views/profile.html': ['js/layout.js'],
+      'views/swap-success.html': ['js/swap-success.js'],
+    };
+
+    for (const [view, scripts] of Object.entries(expectedScripts)) {
+      const html = readFileSync(join(root, view), 'utf8');
+      for (const script of scripts) {
+        assert.match(html, new RegExp(script.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `${view} -> ${script}`);
+      }
+    }
   });
 
   it('il client normalizza le risposte API standard', () => {

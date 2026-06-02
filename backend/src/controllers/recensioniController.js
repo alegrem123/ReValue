@@ -1,5 +1,6 @@
 const Recensione = require('../models/recensioneModel');
 const Prenotazione = require('../models/prenotazioneModel');
+const notificheService = require('../services/notificheService');
 
 /**
  * POST /api/v1/recensioni
@@ -56,6 +57,13 @@ async function createRecensione(req, res) {
       positiva,
       testo: testo || '',
     });
+
+    notificheService.creaNotifica(
+      recensitoId,
+      'sistema',
+      positiva ? 'Hai ricevuto una nuova recensione positiva.' : 'Hai ricevuto una nuova recensione negativa.',
+      `/users/${recensitoId}/recensioni`
+    ).catch(() => {});
 
     return res.status(201).json(recensione);
   } catch (err) {

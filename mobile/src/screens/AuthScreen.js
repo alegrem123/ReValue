@@ -4,6 +4,7 @@ import { api, setStoredUser, setToken } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { TextField } from '../components/TextField';
+import { registerForPushNotificationsAsync } from '../services/pushRegistration';
 import { colors } from '../theme/colors';
 
 export function AuthScreen({ onAuthenticated }) {
@@ -41,6 +42,7 @@ export function AuthScreen({ onAuthenticated }) {
 
     await setToken(response.data.token);
     await setStoredUser(response.data.user);
+    void registerForPushNotificationsAsync();
     onAuthenticated(response.data.user);
   }
 

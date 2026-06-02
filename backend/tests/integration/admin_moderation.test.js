@@ -191,7 +191,7 @@ describe('Moderation and authentication integration', () => {
     expect(unchangedUser.bannato).toBe(true);
   });
 
-  test('OCL #20: al quinto malus utente viene auto-sospeso', async () => {
+  test('OCL #20: al terzo malus utente viene auto-sospeso', async () => {
     const user = await User.create({
       idUtente: new mongoose.Types.ObjectId().toString(),
       nome: 'Utente',
@@ -199,13 +199,13 @@ describe('Moderation and authentication integration', () => {
       email: 'malus-threshold@test.com',
       passwordHash: await hashPassword('password123'),
       ruolo: 'user',
-      malusCount: 4,
+      malusCount: 2,
       isSospeso: false,
     });
 
     const updated = await applicaMalus(user._id);
 
-    expect(updated.malusCount).toBe(5);
+    expect(updated.malusCount).toBe(3);
     expect(updated.isSospeso).toBe(true);
   });
 

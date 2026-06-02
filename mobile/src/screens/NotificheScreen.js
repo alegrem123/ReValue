@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -85,7 +86,10 @@ function NotificaRow({ notifica, onRead }) {
   const unread = !notifica.letta;
 
   return (
-    <View style={[styles.row, unread && styles.rowUnread]}>
+    <Pressable
+      onPress={unread ? onRead : undefined}
+      style={({ pressed }) => [styles.row, unread && styles.rowUnread, pressed && unread && styles.rowPressed]}
+    >
       <View style={styles.rowContent}>
         <View style={styles.rowHeader}>
           <Text style={styles.tipo}>{labelTipo(notifica.tipo)}</Text>
@@ -97,7 +101,7 @@ function NotificaRow({ notifica, onRead }) {
       {unread ? (
         <Button title="✓" variant="secondary" onPress={onRead} />
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -140,6 +144,9 @@ const styles = StyleSheet.create({
   rowUnread: {
     borderColor: colors.green,
     backgroundColor: colors.greenXLight,
+  },
+  rowPressed: {
+    opacity: 0.75,
   },
   rowContent: {
     flex: 1,

@@ -1,6 +1,6 @@
 const User = require('../models/userModel');
 
-// OCL #20 — malusCount >= 5 → auto-sospensione (operazione atomica)
+// OCL #20 — malusCount >= 3 → auto-sospensione (operazione atomica)
 async function applicaMalus(idUtente, { session } = {}) {
   const opts = { new: true, ...(session ? { session } : {}) };
   const user = await User.findByIdAndUpdate(
@@ -12,7 +12,7 @@ async function applicaMalus(idUtente, { session } = {}) {
           isSospeso: {
             $or: [
               '$isSospeso',
-              { $gte: [{ $add: ['$malusCount', 1] }, 5] },
+              { $gte: [{ $add: ['$malusCount', 1] }, 3] },
             ],
           },
         },

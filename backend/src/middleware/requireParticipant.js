@@ -27,7 +27,7 @@ async function requireParticipant(req, res, next) {
     req.conversazione = conversazione;
     next();
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
