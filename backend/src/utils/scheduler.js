@@ -19,7 +19,7 @@ async function expireAnnunciScaduti() {
         stato: { $in: ['DISPONIBILE', 'PRENOTATO'] },
         dataScadenza: { $lt: now },
       },
-      { $set: { stato: 'SCADUTO' } }
+      { $set: { stato: 'SCADUTO', isAttivo: false } }
     );
 
     if (idsPrenotati.length > 0) {
