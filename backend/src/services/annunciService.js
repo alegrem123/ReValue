@@ -139,13 +139,84 @@ function hasDistanceFilter(query) {
   return Boolean(query.lat && query.lng && query.raggio);
 }
 
+/**
+ * Aggregation pipeline per ordinamento per valore (RNF1).
+ * Calcola `valore = dimensioniNum * giorniRimanenti` lato MongoDB ed esegue
+ * sort + paginazione a livello DB, evitando il caricamento in memoria di
+ * tutti i documenti (limite del precedente approccio in-memory).
+ *
+ * Limite noto: non combinabile con filtro haversine (distanza geografica);
+ * in quel caso si ricade sul path in-memory che post-filtra per raggio.
+ */
+async function getCatalogoPerValore(filtro, skip, limit, sortKey) {
+  const now = new Date();
+  const DAY_MS = 1000 * 60 * 60 * 24;
+  const sortDir = sortKey === 'valore_asc' ? 1 : -1;
+
+  // Replica di normalizeDimensione() in linguaggio aggregation MongoDB.
+  const dimensioniNumExpr = {
+    $let: {
+      vars: {
+        dim: { $toLower: { $trim: { input: { $ifNull: ['$oggetto.dimensioni', ''] } } } },
+      },
+      in: {
+        $switch: {
+          branches: [
+            { case: { $in: ['$$dim', ['piccolo', 'small', 's']] }, then: 1 },
+            { case: { $in: ['$$dim', ['medio', 'medium', 'm']] }, then: 2 },
+            { case: { $in: ['$$dim', ['grande', 'large', 'l']] }, then: 3 },
+            { case: { $in: ['$$dim', ['molto grande', 'extra large', 'xl', 'xlarge']] }, then: 4 },
+          ],
+          // Stringa numerica (es. "2.5") → conversione diretta; fallback a 1
+          default: {
+            $convert: { input: { $ifNull: ['$oggetto.dimensioni', '1'] }, to: 'double', onError: 1, onNull: 1 },
+          },
+        },
+      },
+    },
+  };
+
+  const giorniRimanentiExpr = {
+    $max: [0, { $divide: [{ $subtract: ['$dataScadenza', now] }, DAY_MS] }],
+  };
+
+  const [result] = await Annuncio.aggregate([
+    { $match: filtro },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'donatore',
+        foreignField: '_id',
+        as: 'donatore',
+        pipeline: [{ $project: { nome: 1, cognome: 1 } }],
+      },
+    },
+    { $unwind: { path: '$donatore', preserveNullAndEmptyArrays: true } },
+    { $addFields: { _valore: { $multiply: [dimensioniNumExpr, giorniRimanentiExpr] } } },
+    { $sort: { _valore: sortDir } },
+    {
+      $facet: {
+        data: [{ $skip: skip }, { $limit: limit }, { $project: { _valore: 0, __v: 0 } }],
+        count: [{ $count: 'total' }],
+      },
+    },
+  ]);
+
+  return {
+    annunci: result?.data ?? [],
+    total: result?.count?.[0]?.total ?? 0,
+  };
+}
+
 async function getCatalogo(query, user) {
   const filtro = buildCatalogFilter(query);
   const { page, limit, skip } = parsePagination(query);
   const { sortKey, dbSort } = resolveSort(query.ordinamento);
-  const needsInMemoryProcessing = hasDistanceFilter(query) || !dbSort;
+  const isValoreSort = sortKey === 'valore_asc' || sortKey === 'valore_desc';
+  const needsHaversine = hasDistanceFilter(query);
 
-  if (!needsInMemoryProcessing) {
+  // Fast path: sort nativo DB, nessun filtro geografico
+  if (!isValoreSort && !needsHaversine) {
     const [annunci, total] = await Promise.all([
       Annuncio.find(filtro, '-__v')
         .populate('donatore', 'nome cognome')
@@ -161,11 +232,23 @@ async function getCatalogo(query, user) {
     };
   }
 
+  // Valore sort senza haversine: aggregation pipeline (sort + paginazione DB-side)
+  if (isValoreSort && !needsHaversine) {
+    const { annunci, total } = await getCatalogoPerValore(filtro, skip, limit, sortKey);
+    return {
+      data: await applyCoordinatePrivacy(annunci, user),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  // Path in-memory: haversine post-filtra per raggio geografico.
+  // Il filtro di distanza riduce il dataset prima della paginazione;
+  // il caricamento integrale è accettabile per ricerche geografiche circoscritte.
   let dbQuery = Annuncio.find(filtro, '-__v').populate('donatore', 'nome cognome');
   if (dbSort) dbQuery = dbQuery.sort(dbSort);
   let annunci = await dbQuery;
 
-  if (hasDistanceFilter(query)) {
+  if (needsHaversine) {
     const userLat = parseFloat(query.lat);
     const userLng = parseFloat(query.lng);
     const maxDist = parseFloat(query.raggio);
@@ -175,7 +258,7 @@ async function getCatalogo(query, user) {
     });
   }
 
-  if (sortKey === 'valore_asc' || sortKey === 'valore_desc') {
+  if (isValoreSort) {
     annunci = annunci
       .map((annuncio) => ({ annuncio, valore: calcolaValoreAnnuncio(annuncio) }))
       .sort((a, b) => (sortKey === 'valore_asc' ? a.valore - b.valore : b.valore - a.valore))
