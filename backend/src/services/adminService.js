@@ -270,7 +270,7 @@ async function forzaStatoAnnuncio(id, statoRichiesto) {
 
       updated = await Annuncio.findByIdAndUpdate(
         id,
-        { $set: { stato: 'DISPONIBILE' }, $inc: { versione: 1 } },
+        { $set: { stato: 'DISPONIBILE', isAttivo: true }, $inc: { versione: 1 } },
         { new: true, session }
       );
     });
