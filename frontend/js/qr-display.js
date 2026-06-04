@@ -8,6 +8,7 @@ const qrLoading       = document.getElementById('qr-loading');
 const qrContent       = document.getElementById('qr-content');
 const qrAlert         = document.getElementById('qr-alert');
 const qrCanvas        = document.getElementById('qr-canvas');
+const qrFallbackImg   = document.getElementById('qr-fallback-img');
 const qrCodeText      = document.getElementById('qr-code-text');
 const qrAnnuncioTitle = document.getElementById('qr-annuncio-title');
 const qrCountdown     = document.getElementById('qr-countdown');
@@ -85,6 +86,7 @@ async function generaQR(prenotazioneId) {
   qrContent.classList.add('d-none');
   qrAlert.classList.add('d-none');
   qrCanvas.classList.remove('d-none');
+  qrFallbackImg.classList.add('d-none');
 
   const res = await api.post('/api/v1/qr/genera', { prenotazioneId });
 
@@ -103,6 +105,8 @@ async function generaQR(prenotazioneId) {
   }
 
   qrCodeText.textContent = codice;
+  qrFallbackImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(codice)}`;
+  qrFallbackImg.classList.remove('d-none');
 
   try {
     const hasLibrary = await ensureQrLibrary();
@@ -111,9 +115,12 @@ async function generaQR(prenotazioneId) {
       width: 280,
       color: { dark: '#1B5E20', light: '#ffffff' },
     });
+    qrFallbackImg.classList.add('d-none');
+    qrCanvas.classList.remove('d-none');
   } catch {
     qrCanvas.classList.add('d-none');
-    showAlert('QR grafico non disponibile: usa il codice testuale qui sotto.', 'warning');
+    qrFallbackImg.classList.remove('d-none');
+    showAlert('QR generato tramite immagine di fallback.', 'warning');
   }
 
   scadenzaDate = scadenza ? new Date(scadenza) : null;

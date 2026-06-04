@@ -58,11 +58,11 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label for="annuncio-category" class="form-label">Categoria</label>
-              <input id="annuncio-category" name="categoria" type="text" class="form-control" placeholder="Es. Mobili" required />
+              <input id="annuncio-category" name="categoria" type="text" class="form-control" list="categorie-list" placeholder="Es. Mobili" required />
             </div>
             <div class="col-md-6">
               <label for="annuncio-material" class="form-label">Materiale</label>
-              <input id="annuncio-material" name="materiale" type="text" class="form-control" placeholder="Es. Legno" />
+              <input id="annuncio-material" name="materiale" type="text" class="form-control" list="materiali-list" placeholder="Es. Legno" />
             </div>
             <div class="col-md-6">
               <label for="annuncio-size" class="form-label">Dimensione</label>
@@ -85,19 +85,19 @@
           <div class="row g-3">
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-paese" class="form-label">Paese</label>
-              <input id="annuncio-paese" name="paese" type="text" class="form-control" value="Italia" required />
+              <input id="annuncio-paese" name="paese" type="text" class="form-control" list="paesi-list" value="Italia" required />
             </div>
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-regione" class="form-label">Regione</label>
-              <input id="annuncio-regione" name="regione" type="text" class="form-control" placeholder="Es. Trentino-Alto Adige" required />
+              <input id="annuncio-regione" name="regione" type="text" class="form-control" list="regioni-list" placeholder="Es. Trentino-Alto Adige" required />
             </div>
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-provincia" class="form-label">Provincia</label>
-              <input id="annuncio-provincia" name="provincia" type="text" class="form-control" placeholder="Es. Trento" required />
+              <input id="annuncio-provincia" name="provincia" type="text" class="form-control" list="province-list" placeholder="Es. Trento" required />
             </div>
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-comune" class="form-label">Comune</label>
-              <input id="annuncio-comune" name="comune" type="text" class="form-control" placeholder="Es. Trento" required />
+              <input id="annuncio-comune" name="comune" type="text" class="form-control" list="comuni-list" placeholder="Es. Trento" required />
             </div>
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-via" class="form-label">Via</label>
@@ -137,6 +137,45 @@
         </button>
       </div>
     </form>
+    <datalist id="categorie-list">
+      <option value="Mobili"></option>
+      <option value="Elettrodomestici"></option>
+      <option value="Elettronica"></option>
+      <option value="Abbigliamento"></option>
+      <option value="Libri"></option>
+      <option value="Giocattoli"></option>
+      <option value="Attrezzi"></option>
+      <option value="Altro"></option>
+    </datalist>
+    <datalist id="materiali-list">
+      <option value="Legno"></option>
+      <option value="Metallo"></option>
+      <option value="Plastica"></option>
+      <option value="Vetro"></option>
+      <option value="Tessuto"></option>
+      <option value="Carta"></option>
+      <option value="Misto"></option>
+    </datalist>
+    <datalist id="paesi-list"><option value="Italia"></option></datalist>
+    <datalist id="regioni-list">
+      <option value="Trentino-Alto Adige"></option>
+      <option value="Veneto"></option>
+      <option value="Lombardia"></option>
+      <option value="Emilia-Romagna"></option>
+    </datalist>
+    <datalist id="province-list">
+      <option value="Trento"></option>
+      <option value="Bolzano"></option>
+      <option value="Verona"></option>
+      <option value="Brescia"></option>
+    </datalist>
+    <datalist id="comuni-list">
+      <option value="Trento"></option>
+      <option value="Rovereto"></option>
+      <option value="Pergine Valsugana"></option>
+      <option value="Riva del Garda"></option>
+      <option value="Arco"></option>
+    </datalist>
   </main>
 
   <div id="footer-container"></div>

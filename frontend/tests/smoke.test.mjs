@@ -129,6 +129,8 @@ describe('frontend smoke', () => {
     assert.match(css, /\.catalog-pin/);
     assert.match(css, /\.catalog-map-popup/);
     assert.match(css, /\.leaflet-popup/);
+    assert.match(css, /background: #fff !important/);
+    assert.match(css, /\.map-popup-card\s*\{[\s\S]*background: #fff/);
     assert.match(css, /max-width: none !important/);
     assert.match(css, /\.location-map/);
     assert.match(picker, /updateInputs\(fallbackPosition\[0\], fallbackPosition\[1\]\)/);
@@ -137,19 +139,27 @@ describe('frontend smoke', () => {
     assert.match(picker, /location-picker-pin/);
     assert.match(create, /indirizzo:/);
     assert.match(create, /latitudineComune/);
+    assert.match(createView, /categorie-list/);
+    assert.match(createView, /materiali-list/);
+    assert.match(createView, /regioni-list/);
+    assert.match(createView, /province-list/);
+    assert.match(createView, /comuni-list/);
     assert.match(createView, /annuncio-comune/);
     assert.match(createView, /annuncio-via/);
     assert.doesNotMatch(createView, /type="number"[^>]+name="latitudine"/);
   });
 
-  it('il QR web mostra un fallback testuale', () => {
+  it('il QR web mostra canvas, immagine QR di fallback e codice testuale', () => {
     const qrDisplay = readFileSync(join(root, 'js/qr-display.js'), 'utf8');
     const qrView = readFileSync(join(root, 'views/qr-display.html'), 'utf8');
 
     assert.match(qrDisplay, /qrCodeText/);
+    assert.match(qrDisplay, /qrFallbackImg/);
+    assert.match(qrDisplay, /api\.qrserver\.com/);
     assert.match(qrDisplay, /ensureQrLibrary/);
     assert.match(qrDisplay, /unpkg\.com\/qrcode/);
     assert.match(qrDisplay, /Libreria QR non caricata/);
+    assert.match(qrView, /qr-fallback-img/);
     assert.match(qrView, /qr-code-text/);
   });
 });
