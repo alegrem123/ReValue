@@ -15,7 +15,7 @@ function addBusinessHours(start, hours) {
   return result;
 }
 
-async function creaTicket(req, res) {
+async function creaTicket(req, res, next) {
   try {
     const { testo } = req.body || {};
     if (!testo || typeof testo !== 'string' || testo.trim().length === 0) {
@@ -30,16 +30,16 @@ async function creaTicket(req, res) {
 
     return res.status(201).json({ ticket });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
-async function getMieiTicket(req, res) {
+async function getMieiTicket(req, res, next) {
   try {
     const ticket = await TicketSupporto.find({ utente: req.user.id }).sort({ createdAt: -1 });
     return res.status(200).json({ ticket });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 

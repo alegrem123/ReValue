@@ -3,6 +3,7 @@ function toErrorCode(err, statusCode) {
   if (err.name === 'ValidationError') return 'VALIDATION_ERROR';
   if (err.name === 'CastError') return 'INVALID_ID';
   if (err.code === 11000) return 'DUPLICATE_KEY';
+  if (statusCode === 400) return 'BAD_REQUEST';
   if (statusCode === 404) return 'NOT_FOUND';
   if (statusCode === 401) return 'UNAUTHORIZED';
   if (statusCode === 403) return 'FORBIDDEN';

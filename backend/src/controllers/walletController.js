@@ -1,4 +1,8 @@
-const { getSaldo, getStorico } = require('../services/walletService');
+const {
+  getSaldo,
+  getStorico,
+  MAX_STORICO_TRANSAZIONI,
+} = require('../services/walletService');
 
 /**
  * Applica filtri e paginazione all'array di transazioni.
@@ -38,6 +42,7 @@ function filtraEPagina(transazioni, query) {
     totale,
     pagina,
     totalePagine,
+    limitato: transazioni.length >= MAX_STORICO_TRANSAZIONI,
   };
 }
 
@@ -55,8 +60,9 @@ function filtraEPagina(transazioni, query) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function me(req, res) {
+async function me(req, res, next) {
   try {
     const [bilancio, transazioni] = await Promise.all([
       getSaldo(req.user.id),
@@ -70,7 +76,7 @@ async function me(req, res) {
       storico,
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -80,13 +86,14 @@ async function me(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function saldo(req, res) {
+async function saldo(req, res, next) {
   try {
     const bilancio = await getSaldo(req.user.id);
     return res.status(200).json({ bilancio });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -104,14 +111,15 @@ async function saldo(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function storico(req, res) {
+async function storico(req, res, next) {
   try {
     const transazioni = await getStorico(req.user.id);
     const risultato = filtraEPagina(transazioni, req.query);
     return res.status(200).json(risultato);
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 

@@ -4,7 +4,7 @@ const emailService = require('../services/emailService');
 async function register(req, res) {
   try {
     const result = await registerUser(req.body);
-    emailService.sendWelcome(result.user).catch(() => {});
+    emailService.sendWelcome(result.user).catch((e) => console.error('[email] sendWelcome fallita', e));
     return res.status(201).json(result);
   } catch (err) {
     if (err.code === 11000) {

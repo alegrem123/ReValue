@@ -19,8 +19,9 @@ function generaCodiceQR() {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function generaQR(req, res) {
+async function generaQR(req, res, next) {
   try {
     const { prenotazioneId } = req.body;
     if (!prenotazioneId) {
@@ -67,7 +68,7 @@ async function generaQR(req, res) {
 
     return res.status(201).json({ codice: token.codice, scadenza: token.scadenza });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -78,8 +79,9 @@ async function generaQR(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function validaQR(req, res) {
+async function validaQR(req, res, next) {
   try {
     const { codice } = req.body;
     if (!codice) {
@@ -143,7 +145,11 @@ async function validaQR(req, res) {
     Promise.allSettled([
       notificheService.creaNotifica(prenotazione.annuncio.donatore, 'scambio', 'Scambio completato e crediti aggiornati', link),
       notificheService.creaNotifica(prenotazione.acquirente, 'scambio', 'Scambio completato e crediti aggiornati', link),
-    ]);
+    ]).then((results) => {
+      for (const r of results) {
+        if (r.status === 'rejected') console.error('[notifica] validaQR fallita', r.reason);
+      }
+    });
 
     return res.status(200).json({
       message: 'Scambio validato con successo',
@@ -151,10 +157,7 @@ async function validaQR(req, res) {
       creditiAssegnati
     });
   } catch (err) {
-    if (err.statusCode) {
-      return res.status(err.statusCode).json({ error: err.message });
-    }
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 

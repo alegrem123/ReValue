@@ -8,7 +8,7 @@ const { isValidObjectId } = require('../middleware/validateObjectId');
  * Crea segnalazione. OCL #18: motivo non vuoto. OCL #19: segnalante !== segnalato.
  * RF9
  */
-async function createSegnalazione(req, res) {
+async function createSegnalazione(req, res, next) {
   try {
     const { segnalato, tipo, motivo, annuncio } = req.body;
 
@@ -49,12 +49,12 @@ async function createSegnalazione(req, res) {
     if (admin) {
       notificheService
         .creaNotifica(admin._id, 'segnalazione', `Nuova segnalazione da ${req.user.id}`, '/api/v1/admin/segnalazioni')
-        .catch(() => {});
+        .catch((e) => console.error('[notifica] createSegnalazione fallita', e));
     }
 
     return res.status(201).json({ segnalazione });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -63,10 +63,10 @@ async function createSegnalazione(req, res) {
  * Lista segnalazioni inviate dall'utente autenticato.
  * RF9
  */
-async function getMieSegnalazioni(req, res) {
+async function getMieSegnalazioni(req, res, next) {
   try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit, 10) || 20);
     const skip = (page - 1) * limit;
 
     const [segnalazioni, totale] = await Promise.all([
@@ -81,7 +81,7 @@ async function getMieSegnalazioni(req, res) {
 
     return res.status(200).json({ segnalazioni, totale, page, limit });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 

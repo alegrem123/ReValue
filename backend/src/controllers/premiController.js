@@ -11,13 +11,13 @@ const walletService = require('../services/walletService');
  */
 async function getPremi(req, res) {
   try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit, 10) || 20);
     const skip = (page - 1) * limit;
 
     const filter = { attivo: true };
     if (req.query.costoMax) {
-      const costoMax = parseInt(req.query.costoMax);
+      const costoMax = parseInt(req.query.costoMax, 10);
       if (!isNaN(costoMax)) filter.costoCrediti = { $lte: costoMax };
     }
 
@@ -38,13 +38,14 @@ async function getPremi(req, res) {
  * UC7, OCL #17
  */
 async function riscattaCoupon(req, res) {
-  // Pre-check: existence and availability (outside transaction for clear error codes)
-  const existing = await Coupon.findById(req.params.id);
-  if (!existing) return res.status(404).json({ error: 'Coupon non trovato' });
-  if (!existing.attivo) return res.status(409).json({ error: 'Coupon non disponibile' });
-
-  const session = await mongoose.startSession();
+  let session;
   try {
+    // Pre-check: existence and availability (outside transaction for clear error codes)
+    const existing = await Coupon.findById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Coupon non trovato' });
+    if (!existing.attivo) return res.status(409).json({ error: 'Coupon non disponibile' });
+
+    session = await mongoose.startSession();
     let riscatto;
     await session.withTransaction(async () => {
       const coupon = await Coupon.findOneAndUpdate(
@@ -101,7 +102,7 @@ async function riscattaCoupon(req, res) {
     const message = status < 500 ? err.message : 'Errore interno del server';
     return res.status(status).json({ error: message });
   } finally {
-    await session.endSession();
+    if (session) await session.endSession();
   }
 }
 
@@ -112,8 +113,8 @@ async function riscattaCoupon(req, res) {
  */
 async function getMieiRiscatti(req, res) {
   try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit, 10) || 20);
     const skip = (page - 1) * limit;
 
     const [riscatti, totale] = await Promise.all([

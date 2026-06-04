@@ -77,24 +77,30 @@ async function creaNotifica(idUtenteOrPayload, tipo, testo, link = null, options
 }
 
 async function sendExpoPushIfConfigured(idUtente, testo) {
-  if (!global.fetch) return;
-  const user = await User.findById(idUtente).select('expoPushToken').lean();
-  if (!user?.expoPushToken) return;
+  if (process.env.EXPO_PUSH_ENABLED !== 'true' || !global.fetch) return false;
 
-  await fetch('https://exp.host/--/api/v2/push/send', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Accept-Encoding': 'gzip, deflate',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      to: user.expoPushToken,
-      sound: 'default',
-      title: 'RE-VALUE',
-      body: testo,
-    }),
-  });
+  try {
+    const user = await User.findById(idUtente).select('expoPushToken').lean();
+    if (!user?.expoPushToken) return false;
+
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: user.expoPushToken,
+        sound: 'default',
+        title: 'RE-VALUE',
+        body: testo,
+      }),
+    });
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 async function getNotifiche(idUtente, page = 1, options = {}) {

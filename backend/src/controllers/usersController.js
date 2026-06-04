@@ -101,14 +101,23 @@ async function getPublicProfile(req, res) {
       return res.status(404).json({ error: 'Profilo utente non trovato' });
     }
 
-    const [positive, negative, recentReviews] = await Promise.all([
-      Recensione.countDocuments({ recensito: user._id, positiva: true }),
-      Recensione.countDocuments({ recensito: user._id, positiva: false }),
+    const [conteggi, recentReviews] = await Promise.all([
+      Recensione.aggregate([
+        { $match: { recensito: user._id } },
+        {
+          $group: {
+            _id: null,
+            positive: { $sum: { $cond: ['$positiva', 1, 0] } },
+            negative: { $sum: { $cond: ['$positiva', 0, 1] } },
+          },
+        },
+      ]),
       Recensione.find({ recensito: user._id })
         .sort({ data: -1 })
         .limit(5)
         .populate('recensore', 'nome cognome'),
     ]);
+    const { positive = 0, negative = 0 } = conteggi[0] || {};
 
     return res.status(200).json({
       user: sanitizePublicProfile(user),

@@ -1,6 +1,19 @@
 const Conversazione = require('../models/conversazioneModel');
 const notificheService = require('../services/notificheService');
 
+function getImageUsage(messaggi = []) {
+  return messaggi.reduce(
+    (acc, messaggio) => {
+      if (messaggio.immagine) {
+        acc.count += 1;
+        acc.totalLength += messaggio.immagine.length;
+      }
+      return acc;
+    },
+    { count: 0, totalLength: 0 }
+  );
+}
+
 /**
  * GET /api/v1/conversazioni/me
  * Lista conversazioni dell'utente autenticato.
@@ -8,8 +21,9 @@ const notificheService = require('../services/notificheService');
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function getConversazioniMe(req, res) {
+async function getConversazioniMe(req, res, next) {
   try {
     const conversazioni = await Conversazione.find({
       partecipanti: req.user.id,
@@ -55,7 +69,7 @@ async function getConversazioniMe(req, res) {
 
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -69,7 +83,7 @@ async function getConversazioniMe(req, res) {
  *   limit (default 20)
  *   q     (opzionale) — ricerca testo: $regex su campo testo, $options: 'i'
  */
-async function getMessaggi(req, res) {
+async function getMessaggi(req, res, next) {
   try {
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
@@ -103,7 +117,7 @@ async function getMessaggi(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -115,7 +129,7 @@ async function getMessaggi(req, res) {
  *
  * Body: { testo: string, immagine?: string (base64) }
  */
-async function inviaMessaggio(req, res) {
+async function inviaMessaggio(req, res, next) {
   try {
     const { testo, immagine } = req.body;
 
@@ -123,15 +137,27 @@ async function inviaMessaggio(req, res) {
       return res.status(400).json({ ok: false, error: 'testo è obbligatorio' });
     }
 
-    // Validazione immagine base64: max 1 MB (1 048 576 byte ≈ 1 398 101 char base64)
-    const MAX_BASE64_LENGTH = Math.ceil((1024 * 1024 * 4) / 3); // ~1.33 MB in base64
     if (immagine != null) {
       if (typeof immagine !== 'string') {
         return res.status(400).json({ ok: false, error: 'immagine deve essere una stringa base64' });
       }
-      if (immagine.length > MAX_BASE64_LENGTH) {
+      if (immagine.length > Conversazione.MAX_IMMAGINE_BASE64_LENGTH) {
         return res.status(400).json({ ok: false, error: 'immagine supera il limite di 1 MB' });
       }
+      const usage = getImageUsage(req.conversazione.messaggi);
+      if (usage.count + 1 > Conversazione.MAX_MESSAGGI_CON_IMMAGINE) {
+        return res.status(413).json({ ok: false, error: 'limite immagini conversazione raggiunto' });
+      }
+      if (
+        usage.totalLength + immagine.length >
+        Conversazione.MAX_IMMAGINI_BASE64_TOTAL_LENGTH
+      ) {
+        return res.status(413).json({ ok: false, error: 'dimensione totale immagini conversazione superata' });
+      }
+    }
+
+    if ((req.conversazione.messaggi || []).length + 1 > Conversazione.MAX_MESSAGGI_CONVERSAZIONE) {
+      return res.status(413).json({ ok: false, error: 'limite messaggi conversazione raggiunto' });
     }
 
     const nuovoMessaggio = {
@@ -157,12 +183,12 @@ async function inviaMessaggio(req, res) {
         'messaggio',
         `Nuovo messaggio da ${req.user.nome || 'utente'}`,
         `/conversazioni/${req.conversazione._id}`
-      ).catch(() => {});
+      ).catch((e) => console.error('[notifica] inviaMessaggio fallita', e));
     }
 
     return res.status(201).json({ ok: true, data: salvato });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -177,7 +203,7 @@ async function inviaMessaggio(req, res) {
  *   page  (default 1)
  *   limit (default 50, max 100)
  */
-async function getMessaggiRecenti(req, res) {
+async function getMessaggiRecenti(req, res, next) {
   try {
     const { since } = req.query;
 
@@ -235,7 +261,7 @@ async function getMessaggiRecenti(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -244,7 +270,7 @@ async function getMessaggiRecenti(req, res) {
  * Count totale messaggi non letti su tutte le conversazioni dell'utente (RF12).
  * Usato per badge navbar.
  */
-async function getNonLettiCount(req, res) {
+async function getNonLettiCount(req, res, next) {
   try {
     const conversazioni = await Conversazione.find({
       partecipanti: req.user.id,
@@ -259,7 +285,7 @@ async function getNonLettiCount(req, res) {
 
     return res.status(200).json({ ok: true, data: { nonLetti: totale } });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -269,14 +295,22 @@ async function getNonLettiCount(req, res) {
  * Aggiorna il campo typing[userId] con il timestamp corrente.
  * requireParticipant attacca req.conversazione.
  */
-async function setTyping(req, res) {
+async function setTyping(req, res, next) {
   try {
     req.conversazione.typing.set(req.user.id, new Date());
     await req.conversazione.save();
     return res.status(204).end();
   } catch (err) {
-    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
-module.exports = { getConversazioniMe, getMessaggi, getMessaggiRecenti, inviaMessaggio, getNonLettiCount, setTyping };
+module.exports = {
+  getConversazioniMe,
+  getMessaggi,
+  getMessaggiRecenti,
+  inviaMessaggio,
+  getNonLettiCount,
+  setTyping,
+  getImageUsage,
+};

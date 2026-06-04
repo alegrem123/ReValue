@@ -61,7 +61,7 @@ async function creaPrenotazione(req, res) {
       'prenotazione',
       'Un utente ha prenotato il tuo annuncio',
       `/prenotazioni/${prenotazione._id}`
-    ).catch(() => {});
+    ).catch((e) => console.error('[notifica] creaPrenotazione fallita', e));
 
     return res.status(201).json({
       prenotazione,
@@ -69,6 +69,11 @@ async function creaPrenotazione(req, res) {
     });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+    console.error('creaPrenotazione: errore interno', {
+      userId: req.user?.id,
+      annuncioId: req.body?.annuncioId,
+      error: err,
+    });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
@@ -103,10 +108,15 @@ async function annullaPrenotazione(req, res) {
       'prenotazione',
       'Una prenotazione è stata annullata',
       `/prenotazioni/${prenotazione._id}`
-    ).catch(() => {});
+    ).catch((e) => console.error('[notifica] annullaPrenotazione fallita', e));
 
     return res.status(200).json({ message: 'Prenotazione annullata' });
   } catch (err) {
+    console.error('annullaPrenotazione: errore interno', {
+      userId: req.user?.id,
+      prenotazioneId: req.params.id,
+      error: err,
+    });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
@@ -123,6 +133,11 @@ async function getMiePrenotazioni(req, res) {
       .sort({ dataPrenotazione: -1 });
     return res.status(200).json(prenotazioni);
   } catch (err) {
+    console.error('getMiePrenotazioni: errore interno', {
+      userId: req.user?.id,
+      stato: req.query?.stato,
+      error: err,
+    });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
@@ -136,6 +151,11 @@ async function getPrenotazione(req, res) {
       return res.status(403).json({ error: 'Non autorizzato' });
     return res.status(200).json(prenotazione);
   } catch (err) {
+    console.error('getPrenotazione: errore interno', {
+      userId: req.user?.id,
+      prenotazioneId: req.params.id,
+      error: err,
+    });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
@@ -171,6 +191,11 @@ async function segnalaMancatoRitiro(req, res) {
 
     return res.status(200).json({ message: 'Mancato ritiro segnalato con successo' });
   } catch (err) {
+    console.error('segnalaMancatoRitiro: errore interno', {
+      userId: req.user?.id,
+      prenotazioneId: req.params.id,
+      error: err,
+    });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
@@ -205,10 +230,15 @@ async function disdiciPrenotazione(req, res) {
       'prenotazione',
       'Il donatore ha disdetto il ritiro',
       `/prenotazioni/${prenotazione._id}`
-    ).catch(() => {});
+    ).catch((e) => console.error('[notifica] disdiciPrenotazione fallita', e));
 
     return res.status(200).json({ message: 'Ritiro disdetto' });
   } catch (err) {
+    console.error('disdiciPrenotazione: errore interno', {
+      userId: req.user?.id,
+      prenotazioneId: req.params.id,
+      error: err,
+    });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }

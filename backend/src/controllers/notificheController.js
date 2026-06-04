@@ -16,7 +16,7 @@ function parseBoolean(value) {
  * GET /api/v1/notifiche/me
  * Restituisce le notifiche dell'utente autenticato con paginazione e filtro letta.
  */
-async function getNotificheMe(req, res) {
+async function getNotificheMe(req, res, next) {
   try {
     const letta = parseBoolean(req.query.letta);
     if (letta === null) {
@@ -37,7 +37,7 @@ async function getNotificheMe(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -45,13 +45,12 @@ async function getNotificheMe(req, res) {
  * PATCH /api/v1/notifiche/:id/letta
  * Marca come letta una singola notifica dell'utente autenticato.
  */
-async function marcaLetta(req, res) {
+async function marcaLetta(req, res, next) {
   try {
     const notifica = await marcaLettaService(req.user.id, req.params.id);
     return res.status(200).json({ ok: true, data: notifica });
   } catch (err) {
-    const statusCode = err.statusCode || (err.name === 'CastError' ? 404 : 500);
-    return res.status(statusCode).json({ ok: false, error: statusCode < 500 ? err.message : 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -59,12 +58,12 @@ async function marcaLetta(req, res) {
  * PATCH /api/v1/notifiche/me/leggi-tutte
  * Marca come lette tutte le notifiche non lette dell'utente autenticato.
  */
-async function marcaTutteLette(req, res) {
+async function marcaTutteLette(req, res, next) {
   try {
     const aggiornate = await marcaTutteLetteService(req.user.id);
     return res.status(200).json({ ok: true, data: { aggiornate } });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: 'Errore interno del server' });
+    return next(err);
   }
 }
 

@@ -39,6 +39,10 @@ async function authenticate(req, res, next) {
     if (err.name === 'CastError') {
       return res.status(401).json({ error: 'Invalid token' });
     }
+    console.error('authenticate: errore durante il caricamento utente', {
+      userId: payload?.id,
+      error: err,
+    });
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }

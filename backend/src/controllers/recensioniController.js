@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Recensione = require('../models/recensioneModel');
 const Prenotazione = require('../models/prenotazioneModel');
 const notificheService = require('../services/notificheService');
@@ -10,8 +11,9 @@ const notificheService = require('../services/notificheService');
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function createRecensione(req, res) {
+async function createRecensione(req, res, next) {
   try {
     const { prenotazioneId, positiva, testo } = req.body;
 
@@ -63,7 +65,7 @@ async function createRecensione(req, res) {
       'sistema',
       positiva ? 'Hai ricevuto una nuova recensione positiva.' : 'Hai ricevuto una nuova recensione negativa.',
       `/users/${recensitoId}/recensioni`
-    ).catch(() => {});
+    ).catch((e) => console.error('[notifica] createRecensione fallita', e));
 
     return res.status(201).json(recensione);
   } catch (err) {
@@ -73,7 +75,7 @@ async function createRecensione(req, res) {
         .status(409)
         .json({ error: 'Hai già lasciato una recensione per questo scambio' });
     }
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -84,24 +86,35 @@ async function createRecensione(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function getRecensioniUtente(req, res) {
+async function getRecensioniUtente(req, res, next) {
   try {
     const { id } = req.params;
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip = (page - 1) * limit;
+    const recensitoId = new mongoose.Types.ObjectId(id);
 
-    const [recensioni, totale, positive, negative] = await Promise.all([
+    const [recensioni, conteggi] = await Promise.all([
       Recensione.find({ recensito: id })
         .populate('recensore', 'nome cognome')
         .sort({ data: -1 })
         .skip(skip)
         .limit(limit),
-      Recensione.countDocuments({ recensito: id }),
-      Recensione.countDocuments({ recensito: id, positiva: true }),
-      Recensione.countDocuments({ recensito: id, positiva: false }),
+      Recensione.aggregate([
+        { $match: { recensito: recensitoId } },
+        {
+          $group: {
+            _id: null,
+            totale: { $sum: 1 },
+            positive: { $sum: { $cond: ['$positiva', 1, 0] } },
+            negative: { $sum: { $cond: ['$positiva', 0, 1] } },
+          },
+        },
+      ]),
     ]);
+    const { totale = 0, positive = 0, negative = 0 } = conteggi[0] || {};
 
     return res.status(200).json({
       data: recensioni,
@@ -114,7 +127,7 @@ async function getRecensioniUtente(req, res) {
       riepilogo: { positive, negative },
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -124,8 +137,9 @@ async function getRecensioniUtente(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function getRecensioniRicevute(req, res) {
+async function getRecensioniRicevute(req, res, next) {
   try {
     const recensioni = await Recensione.find({ recensito: req.user.id })
       .populate('recensore', 'nome cognome')
@@ -133,7 +147,7 @@ async function getRecensioniRicevute(req, res) {
 
     return res.status(200).json(recensioni);
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -143,8 +157,9 @@ async function getRecensioniRicevute(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function getRecensioniScritte(req, res) {
+async function getRecensioniScritte(req, res, next) {
   try {
     const recensioni = await Recensione.find({ recensore: req.user.id })
       .populate('recensito', 'nome cognome')
@@ -152,7 +167,7 @@ async function getRecensioniScritte(req, res) {
 
     return res.status(200).json(recensioni);
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -162,8 +177,9 @@ async function getRecensioniScritte(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function deleteRecensione(req, res) {
+async function deleteRecensione(req, res, next) {
   try {
     const recensione = await Recensione.findById(req.params.id);
 
@@ -188,7 +204,7 @@ async function deleteRecensione(req, res) {
 
     return res.status(200).json({ message: 'Recensione eliminata' });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 

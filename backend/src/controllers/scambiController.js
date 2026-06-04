@@ -12,8 +12,9 @@ const {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function getQR(req, res) {
+async function getQR(req, res, next) {
   try {
     const prenotazione = await Prenotazione.findById(req.params.prenotazioneId)
       .populate('annuncio');
@@ -39,7 +40,7 @@ async function getQR(req, res) {
 
     return res.status(200).json({ codice: tokenQR.codice, scadenza: tokenQR.scadenza });
   } catch (err) {
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
@@ -54,8 +55,9 @@ async function getQR(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function validaScambio(req, res) {
+async function validaScambio(req, res, next) {
   try {
     const { codice } = req.body;
 
@@ -102,10 +104,7 @@ async function validaScambio(req, res) {
 
     return res.status(200).json({ message: 'Scambio confermato', crediti });
   } catch (err) {
-    if (err.statusCode) {
-      return res.status(err.statusCode).json({ error: err.message });
-    }
-    return res.status(500).json({ error: 'Errore interno del server' });
+    return next(err);
   }
 }
 
