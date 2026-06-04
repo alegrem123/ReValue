@@ -90,4 +90,27 @@ describe('mobile smoke', () => {
     assert.match(qrDisplay, /Codice QR/);
     assert.match(qrDisplay, /selectable/);
   });
+
+  it('la creazione annuncio mobile usa preset e indirizzo geocodificato', () => {
+    const create = readFileSync(join(root, 'src/screens/CreateAnnuncioScreen.js'), 'utf8');
+
+    assert.match(create, /CATEGORIE/);
+    assert.match(create, /MATERIALI/);
+    assert.match(create, /DIMENSIONI/);
+    assert.match(create, /PAESI/);
+    assert.match(create, /REGIONI/);
+    assert.match(create, /PROVINCE/);
+    assert.match(create, /COMUNI/);
+    assert.match(create, /PresetChips/);
+    assert.match(create, /reverseGeocodeAsync/);
+    assert.match(create, /geocodeAsync/);
+    assert.match(create, /indirizzo:/);
+    assert.match(create, /paese/);
+    assert.match(create, /regione/);
+    assert.match(create, /provincia/);
+    assert.match(create, /comune/);
+    assert.match(create, /via/);
+    assert.doesNotMatch(create, /label="Latitudine"/);
+    assert.doesNotMatch(create, /label="Longitudine"/);
+  });
 });
