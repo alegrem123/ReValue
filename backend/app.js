@@ -32,8 +32,14 @@ app.use(express.json({ limit: requestBodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
 
 // mongoSanitize dopo i body parser — altrimenti il body JSON non è ancora parsato (RNF4)
+// Express 5: req.query è un getter read-only, il middleware non può scriverci.
+// Sanitizziamo body e params inline, skippiamo query (Express 5 la parsa già safe).
 if (process.env.NODE_ENV !== 'test') {
-  app.use(mongoSanitize());
+  app.use((req, _res, next) => {
+    mongoSanitize.sanitize(req.body);
+    mongoSanitize.sanitize(req.params);
+    next();
+  });
 }
 
 if (process.env.NODE_ENV === 'production') {
