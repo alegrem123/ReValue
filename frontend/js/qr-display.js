@@ -50,10 +50,41 @@ function startCountdown() {
   countdownTimer = setInterval(tick, 1000);
 }
 
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureQrLibrary() {
+  if (window.QRCode?.toCanvas) return true;
+
+  const fallbacks = [
+    'https://unpkg.com/qrcode@1.5.4/build/qrcode.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.4/qrcode.min.js',
+  ];
+
+  for (const src of fallbacks) {
+    try {
+      await loadScript(src);
+      if (window.QRCode?.toCanvas) return true;
+    } catch {
+      // Prova il CDN successivo.
+    }
+  }
+
+  return false;
+}
+
 async function generaQR(prenotazioneId) {
   qrLoading.classList.remove('d-none');
   qrContent.classList.add('d-none');
   qrAlert.classList.add('d-none');
+  qrCanvas.classList.remove('d-none');
 
   const res = await api.post('/api/v1/qr/genera', { prenotazioneId });
 
@@ -74,7 +105,8 @@ async function generaQR(prenotazioneId) {
   qrCodeText.textContent = codice;
 
   try {
-    if (!window.QRCode?.toCanvas) throw new Error('Libreria QR non caricata');
+    const hasLibrary = await ensureQrLibrary();
+    if (!hasLibrary) throw new Error('Libreria QR non caricata');
     await QRCode.toCanvas(qrCanvas, codice, {
       width: 280,
       color: { dark: '#1B5E20', light: '#ffffff' },

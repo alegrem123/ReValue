@@ -29,6 +29,16 @@
   let marker = null;
   let geocodeTimer = null;
 
+  function createLocationIcon() {
+    return L.divIcon({
+      className: 'catalog-pin catalog-pin-active location-picker-pin',
+      html: '<span></span>',
+      iconSize: [34, 42],
+      iconAnchor: [17, 40],
+      popupAnchor: [0, -36],
+    });
+  }
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
   }).addTo(map);
@@ -38,7 +48,7 @@
 
     const position = [lat, lng];
     if (!marker) {
-      marker = L.marker(position).addTo(map);
+      marker = L.marker(position, { icon: createLocationIcon() }).addTo(map);
     } else {
       marker.setLatLng(position);
     }
@@ -106,6 +116,50 @@
     return { lat, lng };
   }
 
+  async function reverseGeocode(lat, lng) {
+    const url = new URL('https://nominatim.openstreetmap.org/reverse');
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('lat', String(lat));
+    url.searchParams.set('lon', String(lng));
+    url.searchParams.set('zoom', '18');
+    url.searchParams.set('addressdetails', '1');
+
+    const response = await fetch(url.toString());
+    const result = await response.json().catch(() => null);
+    return result?.address || null;
+  }
+
+  function setAddressField(id, value) {
+    const input = document.getElementById(id);
+    if (!input || !value) return;
+    input.value = value;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  async function updateAddressFromPosition(lat, lng) {
+    try {
+      const address = await reverseGeocode(lat, lng);
+      if (!address) return;
+
+      const roadParts = [
+        address.road || address.pedestrian || address.footway || address.path,
+        address.house_number,
+      ].filter(Boolean);
+
+      setAddressField('annuncio-paese', address.country);
+      setAddressField('annuncio-regione', address.state || address.region);
+      setAddressField('annuncio-provincia', address.province || address.county);
+      setAddressField('annuncio-comune', address.city || address.town || address.village || address.municipality);
+      setAddressField('annuncio-via', roadParts.join(' '));
+
+      const cityQuery = buildAddressQuery({ includeStreet: false });
+      const cityPosition = await geocode(cityQuery);
+      if (cityPosition) setCityCoordinates(cityPosition.lat, cityPosition.lng);
+    } catch {
+      // Reverse geocoding opzionale: il pin resta comunque selezionato.
+    }
+  }
+
   async function updatePreviewFromAddress() {
     const cityQuery = buildAddressQuery({ includeStreet: false });
     const fullQuery = buildAddressQuery({ includeStreet: true });
@@ -137,6 +191,7 @@
     const { lat, lng } = event.latlng;
     updateInputs(lat, lng);
     setMarker(lat, lng);
+    updateAddressFromPosition(lat, lng);
   });
 
   latInput.addEventListener('input', syncFromInputs);

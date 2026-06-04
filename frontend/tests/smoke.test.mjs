@@ -123,14 +123,18 @@ describe('frontend smoke', () => {
     assert.match(map, /createMarkerIcon/);
     assert.match(map, /catalog-pin-active/);
     assert.match(map, /map-popup-card/);
+    assert.match(map, /openPopup/);
     assert.match(map, /invalidateSize/);
     assert.match(map, /requestAnimationFrame/);
     assert.match(css, /\.catalog-pin/);
     assert.match(css, /\.catalog-map-popup/);
+    assert.match(css, /\.leaflet-popup/);
     assert.match(css, /max-width: none !important/);
     assert.match(css, /\.location-map/);
     assert.match(picker, /updateInputs\(fallbackPosition\[0\], fallbackPosition\[1\]\)/);
     assert.match(picker, /nominatim\.openstreetmap\.org\/search/);
+    assert.match(picker, /nominatim\.openstreetmap\.org\/reverse/);
+    assert.match(picker, /location-picker-pin/);
     assert.match(create, /indirizzo:/);
     assert.match(create, /latitudineComune/);
     assert.match(createView, /annuncio-comune/);
@@ -143,6 +147,8 @@ describe('frontend smoke', () => {
     const qrView = readFileSync(join(root, 'views/qr-display.html'), 'utf8');
 
     assert.match(qrDisplay, /qrCodeText/);
+    assert.match(qrDisplay, /ensureQrLibrary/);
+    assert.match(qrDisplay, /unpkg\.com\/qrcode/);
     assert.match(qrDisplay, /Libreria QR non caricata/);
     assert.match(qrView, /qr-code-text/);
   });

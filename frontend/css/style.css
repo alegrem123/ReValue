@@ -444,6 +444,48 @@ a:hover { color: var(--rv-green-dark); }
 .location-map img.leaflet-tile {
   display: block !important;
 }
+.leaflet-popup {
+  position: absolute !important;
+  text-align: center;
+  margin-bottom: 20px;
+  z-index: 700 !important;
+}
+.leaflet-popup-content-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+.leaflet-popup-content {
+  text-align: left;
+}
+.leaflet-popup-tip-container {
+  position: absolute !important;
+  left: 50%;
+  margin-left: -20px;
+  width: 40px;
+  height: 20px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.leaflet-popup-tip {
+  width: 17px;
+  height: 17px;
+  padding: 1px;
+  margin: -10px auto 0;
+  transform: rotate(45deg);
+  background: #fff;
+}
+.leaflet-popup-close-button {
+  position: absolute !important;
+  top: 6px;
+  right: 8px;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  font-size: 20px;
+  line-height: 1;
+  text-decoration: none;
+}
 .catalog-map .leaflet-container,
 .leaflet-container.catalog-map {
   font-family: inherit;

@@ -138,7 +138,10 @@ function updateCatalogMap(annunci = []) {
       })
       .addTo(markerLayer);
 
-    marker.on('click', () => setActiveMarker(marker));
+    marker.on('click', () => {
+      setActiveMarker(marker);
+      marker.openPopup();
+    });
     marker.on('popupopen', () => setActiveMarker(marker));
     marker.on('popupclose', () => {
       if (activeMarker === marker) {
