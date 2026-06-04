@@ -67,6 +67,27 @@ function buildDisdiciButton(p) {
   </button>`;
 }
 
+function buildQrButtons(p) {
+  if (p.stato !== 'ATTIVA') return '';
+
+  const donatoreId = p.donatore?._id || p.donatore;
+  const acquirenteId = p.acquirente?._id || p.acquirente;
+
+  if (String(donatoreId) === String(currentUserId)) {
+    return `<a href="qr-display.html?prenotazione=${encodeURIComponent(p._id)}" class="btn btn-success btn-sm">
+      <i class="bi bi-qr-code me-1"></i>Mostra QR
+    </a>`;
+  }
+
+  if (String(acquirenteId) === String(currentUserId)) {
+    return `<a href="qr-scan.html" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-qr-code-scan me-1"></i>Scansiona QR
+    </a>`;
+  }
+
+  return '';
+}
+
 function buildCard(p) {
   const titolo   = escapeHtml(p.annuncio?.titolo) || 'Annuncio rimosso';
   const donatore = p.donatore ? escapeHtml(`${p.donatore.nome} ${p.donatore.cognome}`) : '—';
@@ -93,6 +114,7 @@ function buildCard(p) {
           <a href="annuncio.html?id=${p.annuncio?._id}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-eye me-1"></i>Vedi annuncio
           </a>
+          ${buildQrButtons(p)}
           ${puoAnnullare ? `
           <button class="btn btn-outline-danger btn-sm btn-annulla" data-id="${p._id}" data-titolo="${titolo}">
             <i class="bi bi-x-circle me-1"></i>Annulla

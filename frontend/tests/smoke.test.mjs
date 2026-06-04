@@ -103,4 +103,13 @@ describe('frontend smoke', () => {
     assert.match(dashboard, /js\/admin\/coupon\.js/);
     assert.match(dashboard, /coupon-panel/);
   });
+
+  it('le prenotazioni web espongono il flusso QR', () => {
+    const mybookings = readFileSync(join(root, 'js/mybookings.js'), 'utf8');
+
+    assert.match(mybookings, /qr-display\.html\?prenotazione=/);
+    assert.match(mybookings, /qr-scan\.html/);
+    assert.match(mybookings, /bi-qr-code/);
+    assert.match(mybookings, /bi-qr-code-scan/);
+  });
 });
