@@ -172,6 +172,27 @@ describe('RF13/RF14 — requireParticipant: accesso chat solo per partecipanti',
     expect(res.statusCode).toBe(201);
   });
 
+  test('POST immagine oltre limite totale conversazione → 413', async () => {
+    const conv = await Conversazione.findById(conversazioneId);
+    conv.messaggi = Array.from(
+      { length: Conversazione.MAX_MESSAGGI_CON_IMMAGINE },
+      (_, i) => ({
+        mittente: new mongoose.Types.ObjectId(),
+        testo: `immagine ${i}`,
+        immagine: 'a',
+      })
+    );
+    await conv.save();
+
+    const res = await request(app)
+      .post(`/api/v1/conversazioni/${conversazioneId}/messaggi`)
+      .set('Authorization', `Bearer ${tokenDonatore}`)
+      .send({ testo: 'Altra immagine', immagine: 'a' });
+
+    expect(res.statusCode).toBe(413);
+    expect(res.body.error).toMatch(/limite immagini/i);
+  });
+
   // ── Conversazione inesistente ──────────────────────────────────────────────
 
   test('GET messaggi conversazione inesistente (ObjectId valido) → 404', async () => {

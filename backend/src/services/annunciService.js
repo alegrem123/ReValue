@@ -61,14 +61,26 @@ function buildCatalogFilter(query) {
   const { categoria, dimensione, materiale, scadenzaDopo, scadenzaPrima } = query;
   const filtro = { isAttivo: true, stato: 'DISPONIBILE' };
 
-  if (categoria) filtro['oggetto.categoria'] = categoria;
-  if (dimensione) filtro['oggetto.dimensioni'] = dimensione;
-  if (materiale) filtro['oggetto.materiale'] = materiale;
+  if (categoria) filtro['oggetto.categoria'] = String(categoria);
+  if (dimensione) filtro['oggetto.dimensioni'] = String(dimensione);
+  if (materiale) filtro['oggetto.materiale'] = String(materiale);
 
   if (scadenzaDopo || scadenzaPrima) {
     filtro.dataScadenza = {};
-    if (scadenzaDopo) filtro.dataScadenza.$gte = new Date(scadenzaDopo);
-    if (scadenzaPrima) filtro.dataScadenza.$lte = new Date(scadenzaPrima);
+    if (scadenzaDopo) {
+      const d = new Date(scadenzaDopo);
+      if (Number.isNaN(d.getTime())) {
+        throw new AnnunciError(400, 'Parametro scadenzaDopo non valido');
+      }
+      filtro.dataScadenza.$gte = d;
+    }
+    if (scadenzaPrima) {
+      const d = new Date(scadenzaPrima);
+      if (Number.isNaN(d.getTime())) {
+        throw new AnnunciError(400, 'Parametro scadenzaPrima non valido');
+      }
+      filtro.dataScadenza.$lte = d;
+    }
   }
 
   return filtro;
@@ -188,10 +200,10 @@ async function getCatalogoPerValore(filtro, skip, limit, sortKey) {
         localField: 'donatore',
         foreignField: '_id',
         as: 'donatore',
-        pipeline: [{ $project: { nome: 1, cognome: 1 } }],
       },
     },
     { $unwind: { path: '$donatore', preserveNullAndEmptyArrays: true } },
+    { $project: { 'donatore.email': 0, 'donatore.passwordHash': 0, 'donatore.__v': 0 } },
     { $addFields: { _valore: { $multiply: [dimensioniNumExpr, giorniRimanentiExpr] } } },
     { $sort: { _valore: sortDir } },
     {

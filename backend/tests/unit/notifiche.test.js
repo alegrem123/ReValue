@@ -1,12 +1,14 @@
 const mongoose = require('mongoose');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const Notifica = require('../../src/models/notificaModel');
+const User = require('../../src/models/userModel');
 const {
   creaNotifica,
   getNotifiche,
   contaNonLette,
   marcaLetta,
   marcaTutteLette,
+  sendExpoPushIfConfigured,
 } = require('../../src/services/notificheService');
 
 let mongoServer;
@@ -24,6 +26,9 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await Notifica.deleteMany({});
+  await User.deleteMany({});
+  delete process.env.EXPO_PUSH_ENABLED;
+  delete global.fetch;
   userId = new mongoose.Types.ObjectId();
 });
 
@@ -121,5 +126,32 @@ describe('notificheService', () => {
     await expect(marcaTutteLette(userId)).resolves.toBe(2);
     expect(await Notifica.countDocuments({ utente: userId, letta: false })).toBe(0);
     expect(await Notifica.countDocuments({ utente: altroUtente, letta: false })).toBe(1);
+  });
+
+  test('sendExpoPushIfConfigured non invia se EXPO_PUSH_ENABLED non e true', async () => {
+    global.fetch = jest.fn();
+
+    await expect(sendExpoPushIfConfigured(userId, 'Test')).resolves.toBe(false);
+
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('sendExpoPushIfConfigured non propaga errori Expo quando abilitato', async () => {
+    process.env.EXPO_PUSH_ENABLED = 'true';
+    global.fetch = jest.fn().mockRejectedValue(new Error('Expo down'));
+    await User.create({
+      _id: userId,
+      idUtente: 'push-test-user',
+      nome: 'Push',
+      cognome: 'Test',
+      email: 'push-test@example.com',
+      passwordHash: 'a'.repeat(64),
+      ruolo: 'user',
+      expoPushToken: 'ExpoPushToken[abcdefghijklmnopqrstuv]',
+    });
+
+    await expect(sendExpoPushIfConfigured(userId, 'Test')).resolves.toBe(false);
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });

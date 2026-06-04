@@ -3,7 +3,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const express = require('express');
 const request = require('supertest');
 const User = require('../../src/models/userModel');
-const { hashPassword } = require('../../src/utils/password');
+const { hashPassword, comparePassword } = require('../../src/utils/password');
 
 jest.mock('../../src/services/emailService', () => ({
   sendWelcome: jest.fn(() => Promise.resolve({ skipped: true })),
@@ -128,6 +128,46 @@ describe('Auth flow', () => {
     const response = res.json.mock.calls[0][0];
     expect(response.token).toBeDefined();
     expect(response.user).toMatchObject({ nome: 'Luca', cognome: 'Bianchi' });
+  });
+
+  test('password hash usa SHA-256 salato', async () => {
+    const hashA = await hashPassword('Password123!');
+    const hashB = await hashPassword('Password123!');
+
+    expect(hashA).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/i);
+    expect(hashB).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/i);
+    expect(hashA).not.toBe(hashB);
+    await expect(comparePassword('Password123!', hashA)).resolves.toBe(true);
+  });
+
+  test('login migra hash SHA-256 legacy a hash salato', async () => {
+    const password = 'Password123!';
+    const legacyHash = 'a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea';
+    const user = new User({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Legacy',
+      cognome: 'User',
+      email: 'legacy.user@example.com',
+      passwordHash: legacyHash,
+      ruolo: 'user',
+    });
+    await user.save();
+
+    const req = {
+      body: {
+        email: 'legacy.user@example.com',
+        password,
+      },
+    };
+    const res = createMockRes();
+
+    await login(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const updated = await User.findById(user._id);
+    expect(updated.passwordHash).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/i);
+    expect(updated.passwordHash).not.toBe(legacyHash);
+    await expect(comparePassword(password, updated.passwordHash)).resolves.toBe(true);
   });
 
   test('login fail con password errata', async () => {

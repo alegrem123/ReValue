@@ -393,6 +393,24 @@ describe('Annunci - Filtri', () => {
       pages: 2,
     });
   });
+
+  test('Catalogo API rifiuta parametri data scadenza non validi', async () => {
+    const dopo = await request(app).get('/api/v1/annunci?scadenzaDopo=not-a-date');
+    expect(dopo.status).toBe(400);
+    expect(dopo.body).toMatchObject({
+      ok: false,
+      error: 'BAD_REQUEST',
+      message: 'Parametro scadenzaDopo non valido',
+    });
+
+    const prima = await request(app).get('/api/v1/annunci?scadenzaPrima=not-a-date');
+    expect(prima.status).toBe(400);
+    expect(prima.body).toMatchObject({
+      ok: false,
+      error: 'BAD_REQUEST',
+      message: 'Parametro scadenzaPrima non valido',
+    });
+  });
 });
 
 describe('Annunci - Optimistic Locking (OCL #7, UC2)', () => {
