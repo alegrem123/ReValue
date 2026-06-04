@@ -22,6 +22,7 @@ function errorHandler(err, _req, res, _next) {
   const statusCode = err.statusCode || err.status || 500;
   const safeStatusCode = statusCode >= 400 && statusCode < 600 ? statusCode : 500;
   const message = safeStatusCode === 500 ? 'Errore interno del server' : err.message;
+  if (safeStatusCode === 500) console.error('[errorHandler]', err);
 
   return res.status(safeStatusCode).json({
     ok: false,
