@@ -116,12 +116,34 @@ describe('frontend smoke', () => {
   it('la mappa catalogo usa pin custom e popup dettagliati', () => {
     const map = readFileSync(join(root, 'js/map.js'), 'utf8');
     const css = readFileSync(join(root, 'css/style.css'), 'utf8');
+    const picker = readFileSync(join(root, 'js/locationPicker.js'), 'utf8');
+    const create = readFileSync(join(root, 'js/createAnnuncio.js'), 'utf8');
+    const createView = readFileSync(join(root, 'views/create-annuncio.html'), 'utf8');
 
     assert.match(map, /createMarkerIcon/);
     assert.match(map, /catalog-pin-active/);
     assert.match(map, /map-popup-card/);
     assert.match(map, /invalidateSize/);
+    assert.match(map, /requestAnimationFrame/);
     assert.match(css, /\.catalog-pin/);
     assert.match(css, /\.catalog-map-popup/);
+    assert.match(css, /max-width: none !important/);
+    assert.match(css, /\.location-map/);
+    assert.match(picker, /updateInputs\(fallbackPosition\[0\], fallbackPosition\[1\]\)/);
+    assert.match(picker, /nominatim\.openstreetmap\.org\/search/);
+    assert.match(create, /indirizzo:/);
+    assert.match(create, /latitudineComune/);
+    assert.match(createView, /annuncio-comune/);
+    assert.match(createView, /annuncio-via/);
+    assert.doesNotMatch(createView, /type="number"[^>]+name="latitudine"/);
+  });
+
+  it('il QR web mostra un fallback testuale', () => {
+    const qrDisplay = readFileSync(join(root, 'js/qr-display.js'), 'utf8');
+    const qrView = readFileSync(join(root, 'views/qr-display.html'), 'utf8');
+
+    assert.match(qrDisplay, /qrCodeText/);
+    assert.match(qrDisplay, /Libreria QR non caricata/);
+    assert.match(qrView, /qr-code-text/);
   });
 });

@@ -8,6 +8,7 @@ const qrLoading       = document.getElementById('qr-loading');
 const qrContent       = document.getElementById('qr-content');
 const qrAlert         = document.getElementById('qr-alert');
 const qrCanvas        = document.getElementById('qr-canvas');
+const qrCodeText      = document.getElementById('qr-code-text');
 const qrAnnuncioTitle = document.getElementById('qr-annuncio-title');
 const qrCountdown     = document.getElementById('qr-countdown');
 const btnRigenera     = document.getElementById('btn-rigenera');
@@ -63,18 +64,30 @@ async function generaQR(prenotazioneId) {
     return;
   }
 
-  const { codice, scadenza, annuncio } = res.data ?? res;
+  const payload = res.data ?? res;
+  const { codice, scadenza, annuncio } = payload;
+  if (!codice) {
+    showAlert('QR generato ma codice non ricevuto dal server.');
+    return;
+  }
 
-  // Render QR su canvas
-  await QRCode.toCanvas(qrCanvas, codice, {
-    width: 280,
-    color: { dark: '#1B5E20', light: '#ffffff' },
-  });
+  qrCodeText.textContent = codice;
 
-  scadenzaDate = new Date(scadenza);
+  try {
+    if (!window.QRCode?.toCanvas) throw new Error('Libreria QR non caricata');
+    await QRCode.toCanvas(qrCanvas, codice, {
+      width: 280,
+      color: { dark: '#1B5E20', light: '#ffffff' },
+    });
+  } catch {
+    qrCanvas.classList.add('d-none');
+    showAlert('QR grafico non disponibile: usa il codice testuale qui sotto.', 'warning');
+  }
+
+  scadenzaDate = scadenza ? new Date(scadenza) : null;
   if (annuncio?.titolo) qrAnnuncioTitle.textContent = annuncio.titolo;
 
-  startCountdown();
+  if (scadenzaDate) startCountdown();
   qrContent.classList.remove('d-none');
 }
 

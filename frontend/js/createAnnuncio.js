@@ -11,6 +11,8 @@ const previewGrid = document.getElementById('photo-preview-grid');
 const useLocationBtn = document.getElementById('use-location-btn');
 const latInput = document.getElementById('annuncio-lat');
 const lngInput = document.getElementById('annuncio-lng');
+const cityLatInput = document.getElementById('annuncio-city-lat');
+const cityLngInput = document.getElementById('annuncio-city-lng');
 const deadlineInput = document.getElementById('annuncio-deadline');
 
 let photoBase64 = [];
@@ -104,6 +106,64 @@ function useCurrentLocation() {
   );
 }
 
+function addressValue(data, key) {
+  return String(data.get(key) || '').trim();
+}
+
+function buildAddressQuery(data, { includeStreet = true } = {}) {
+  return [
+    includeStreet ? addressValue(data, 'via') : '',
+    addressValue(data, 'comune'),
+    addressValue(data, 'provincia'),
+    addressValue(data, 'regione'),
+    addressValue(data, 'paese'),
+  ].filter(Boolean).join(', ');
+}
+
+async function geocodeAddress(query) {
+  if (!query) return null;
+  const url = new URL('https://nominatim.openstreetmap.org/search');
+  url.searchParams.set('format', 'json');
+  url.searchParams.set('limit', '1');
+  url.searchParams.set('q', query);
+
+  const response = await fetch(url.toString());
+  const results = await response.json().catch(() => []);
+  const first = Array.isArray(results) ? results[0] : null;
+  if (!first) return null;
+
+  const lat = Number(first.lat);
+  const lng = Number(first.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
+async function ensureGeocoded(data) {
+  const cityHasCoordinates = cityLatInput.value && cityLngInput.value;
+  const exactHasCoordinates = latInput.value && lngInput.value;
+  if (cityHasCoordinates && exactHasCoordinates) return true;
+
+  const cityQuery = buildAddressQuery(data, { includeStreet: false });
+  const fullQuery = buildAddressQuery(data, { includeStreet: true });
+  const [cityPosition, exactPosition] = await Promise.all([
+    cityHasCoordinates ? null : geocodeAddress(cityQuery),
+    exactHasCoordinates ? null : geocodeAddress(fullQuery),
+  ]);
+
+  if (cityPosition) {
+    cityLatInput.value = cityPosition.lat.toFixed(6);
+    cityLngInput.value = cityPosition.lng.toFixed(6);
+  }
+
+  const position = exactPosition || cityPosition;
+  if (position && !exactHasCoordinates) {
+    latInput.value = position.lat.toFixed(6);
+    lngInput.value = position.lng.toFixed(6);
+  }
+
+  return Boolean(latInput.value && lngInput.value && cityLatInput.value && cityLngInput.value);
+}
+
 function buildPayload() {
   const data = new FormData(form);
   const deadline = new Date(data.get('dataScadenza'));
@@ -113,6 +173,15 @@ function buildPayload() {
     dataScadenza: deadline.toISOString(),
     latitudine: data.get('latitudine') ? Number(data.get('latitudine')) : undefined,
     longitudine: data.get('longitudine') ? Number(data.get('longitudine')) : undefined,
+    indirizzo: {
+      paese: addressValue(data, 'paese'),
+      regione: addressValue(data, 'regione'),
+      provincia: addressValue(data, 'provincia'),
+      comune: addressValue(data, 'comune'),
+      via: addressValue(data, 'via'),
+      latitudineComune: data.get('latitudineComune') ? Number(data.get('latitudineComune')) : undefined,
+      longitudineComune: data.get('longitudineComune') ? Number(data.get('longitudineComune')) : undefined,
+    },
     oggetto: {
       categoria: String(data.get('categoria')).trim(),
       descrizione: String(data.get('descrizione')).trim(),
@@ -133,6 +202,17 @@ async function handleSubmit(event) {
   }
 
   submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Geocodifica...';
+
+  const data = new FormData(form);
+  const geocoded = await ensureGeocoded(data);
+  if (!geocoded) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Pubblica annuncio';
+    showAlert('Non riesco a localizzare l’indirizzo. Controlla comune e via, oppure clicca sulla mappa.');
+    return;
+  }
+
   submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Pubblicazione...';
 
   const response = await api.post('/api/v1/annunci', buildPayload());

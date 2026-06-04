@@ -24,7 +24,6 @@
   />
   <style>
     .photo-preview { aspect-ratio: 1; object-fit: cover; width: 100%; }
-    .location-map { min-height: 260px; border: 1px solid var(--rv-border, #DDD8CF); }
   </style>
 </head>
 <body>
@@ -85,12 +84,24 @@
           <h2 class="h5 fw-bold mb-3">Posizione e foto</h2>
           <div class="row g-3">
             <div class="col-md-6 col-lg-12">
-              <label for="annuncio-lat" class="form-label">Latitudine</label>
-              <input id="annuncio-lat" name="latitudine" type="number" step="any" class="form-control" placeholder="46.0667" />
+              <label for="annuncio-paese" class="form-label">Paese</label>
+              <input id="annuncio-paese" name="paese" type="text" class="form-control" value="Italia" required />
             </div>
             <div class="col-md-6 col-lg-12">
-              <label for="annuncio-lng" class="form-label">Longitudine</label>
-              <input id="annuncio-lng" name="longitudine" type="number" step="any" class="form-control" placeholder="11.1211" />
+              <label for="annuncio-regione" class="form-label">Regione</label>
+              <input id="annuncio-regione" name="regione" type="text" class="form-control" placeholder="Es. Trentino-Alto Adige" required />
+            </div>
+            <div class="col-md-6 col-lg-12">
+              <label for="annuncio-provincia" class="form-label">Provincia</label>
+              <input id="annuncio-provincia" name="provincia" type="text" class="form-control" placeholder="Es. Trento" required />
+            </div>
+            <div class="col-md-6 col-lg-12">
+              <label for="annuncio-comune" class="form-label">Comune</label>
+              <input id="annuncio-comune" name="comune" type="text" class="form-control" placeholder="Es. Trento" required />
+            </div>
+            <div class="col-md-6 col-lg-12">
+              <label for="annuncio-via" class="form-label">Via</label>
+              <input id="annuncio-via" name="via" type="text" class="form-control" placeholder="Es. Via Verdi 10" required />
             </div>
             <div class="col-12">
               <button id="use-location-btn" type="button" class="btn btn-outline-success w-100">
@@ -101,7 +112,11 @@
             <div class="col-12">
               <label for="annuncio-location-map" class="form-label">Seleziona sulla mappa</label>
               <div id="annuncio-location-map" class="location-map rounded-3 overflow-hidden"></div>
-              <div class="form-text">Clicca sulla mappa per compilare latitudine e longitudine.</div>
+              <div class="form-text">La preview usa l'indirizzo. Puoi cliccare sulla mappa per correggere il pin.</div>
+              <input id="annuncio-lat" name="latitudine" type="hidden" />
+              <input id="annuncio-lng" name="longitudine" type="hidden" />
+              <input id="annuncio-city-lat" name="latitudineComune" type="hidden" />
+              <input id="annuncio-city-lng" name="longitudineComune" type="hidden" />
             </div>
             <div class="col-12">
               <label for="annuncio-photos" class="form-label">Foto</label>

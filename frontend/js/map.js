@@ -24,6 +24,10 @@ function buildPopupContent(annuncio) {
   const descrizione = annuncio.oggetto?.descrizione || 'Descrizione non disponibile';
   const materiale = annuncio.oggetto?.materiale || 'N/D';
   const dimensioni = annuncio.oggetto?.dimensioni || 'N/D';
+  const posizione = [
+    annuncio.indirizzo?.comune,
+    annuncio.indirizzo?.provincia,
+  ].filter(Boolean).join(', ');
   const distanza = Number.isFinite(Number(annuncio.distanza))
     ? `${Number(annuncio.distanza).toFixed(1)} km`
     : null;
@@ -39,6 +43,7 @@ function buildPopupContent(annuncio) {
         ${distanza ? `<span class="map-popup-distance">${distanza}</span>` : ''}
       </div>
       <p class="map-popup-description">${descrizione}</p>
+      ${posizione ? `<p class="map-popup-location">${posizione}${annuncio.posizioneApprossimata ? ' · posizione approssimata' : ''}</p>` : ''}
       <dl class="map-popup-meta">
         <div><dt>Materiale</dt><dd>${materiale}</dd></div>
         <div><dt>Dimensioni</dt><dd>${dimensioni}</dd></div>
