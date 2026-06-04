@@ -64,6 +64,15 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
         dataScadenza,
         latitudine: 46.0667,
         longitudine: 11.1211,
+        indirizzo: {
+          paese: 'Italia',
+          regione: 'Trentino-Alto Adige',
+          provincia: 'Trento',
+          comune: 'Trento',
+          via: 'Via Verdi 10',
+          latitudineComune: 46.066,
+          longitudineComune: 11.121,
+        },
         oggetto: {
           categoria: 'Mobili',
           descrizione: 'Scrivania in legno con due cassetti',
@@ -82,22 +91,26 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
     expect(publicCatalog.statusCode).toBe(200);
     expect(publicCatalog.body.data).toHaveLength(1);
     expect(publicCatalog.body.data[0]._id).toBe(annuncioId);
-    expect(publicCatalog.body.data[0].latitudine).toBeUndefined();
-    expect(publicCatalog.body.data[0].longitudine).toBeUndefined();
+    expect(publicCatalog.body.data[0].latitudine).toBe(46.066);
+    expect(publicCatalog.body.data[0].longitudine).toBe(11.121);
+    expect(publicCatalog.body.data[0].posizioneApprossimata).toBe(true);
+    expect(publicCatalog.body.data[0].indirizzo.via).toBeUndefined();
 
     const privateCatalog = await request(app)
       .get('/api/v1/annunci?categoria=Mobili&limit=20')
       .set('Authorization', `Bearer ${viewerToken}`);
     expect(privateCatalog.statusCode).toBe(200);
-    expect(privateCatalog.body.data[0].latitudine).toBeUndefined();
-    expect(privateCatalog.body.data[0].longitudine).toBeUndefined();
+    expect(privateCatalog.body.data[0].latitudine).toBe(46.066);
+    expect(privateCatalog.body.data[0].longitudine).toBe(11.121);
+    expect(privateCatalog.body.data[0].indirizzo.via).toBeUndefined();
 
     const detail = await request(app)
       .get(`/api/v1/annunci/${annuncioId}`)
       .set('Authorization', `Bearer ${viewerToken}`);
     expect(detail.statusCode).toBe(200);
-    expect(detail.body.latitudine).toBeUndefined();
-    expect(detail.body.longitudine).toBeUndefined();
+    expect(detail.body.latitudine).toBe(46.066);
+    expect(detail.body.longitudine).toBe(11.121);
+    expect(detail.body.indirizzo.via).toBeUndefined();
     expect(detail.body.oggetto.descrizione).toContain('Scrivania');
 
     const updatedDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
@@ -109,6 +122,15 @@ describe('Frontend-backend catalog flow: crea -> pubblica -> catalogo', () => {
         dataScadenza: updatedDeadline,
         latitudine: 46.07,
         longitudine: 11.13,
+        indirizzo: {
+          paese: 'Italia',
+          regione: 'Trentino-Alto Adige',
+          provincia: 'Trento',
+          comune: 'Trento',
+          via: 'Via Roma 5',
+          latitudineComune: 46.066,
+          longitudineComune: 11.121,
+        },
         oggetto: {
           categoria: 'Mobili',
           descrizione: 'Scrivania aggiornata',

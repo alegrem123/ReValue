@@ -38,6 +38,43 @@ const oggettoSchema = new Schema(
   { _id: false }
 );
 
+const indirizzoSchema = new Schema(
+  {
+    paese: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    regione: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    provincia: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    comune: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    via: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    latitudineComune: {
+      type: Number,
+    },
+    longitudineComune: {
+      type: Number,
+    },
+  },
+  { _id: false }
+);
+
 const annuncioSchema = new Schema(
   {
     donatore: {
@@ -79,6 +116,10 @@ const annuncioSchema = new Schema(
     },
     longitudine: {
       type: Number,
+    },
+    indirizzo: {
+      type: indirizzoSchema,
+      default: () => ({}),
     },
     oggetto: {
       type: oggettoSchema,

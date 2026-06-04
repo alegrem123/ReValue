@@ -125,9 +125,46 @@ function isDonatoreOfAnnuncio(annuncio, userId) {
 }
 
 function removeExactCoordinates(annuncio) {
-  delete annuncio.latitudine;
-  delete annuncio.longitudine;
+  const indirizzo = annuncio.indirizzo || {};
+
+  if (
+    Number.isFinite(Number(indirizzo.latitudineComune)) &&
+    Number.isFinite(Number(indirizzo.longitudineComune))
+  ) {
+    annuncio.latitudine = indirizzo.latitudineComune;
+    annuncio.longitudine = indirizzo.longitudineComune;
+    annuncio.posizioneApprossimata = true;
+  } else {
+    delete annuncio.latitudine;
+    delete annuncio.longitudine;
+  }
+
+  if (annuncio.indirizzo) {
+    delete annuncio.indirizzo.via;
+    delete annuncio.indirizzo.latitudineComune;
+    delete annuncio.indirizzo.longitudineComune;
+  }
+
   return annuncio;
+}
+
+function normalizeIndirizzo(indirizzo = {}) {
+  const normalized = {
+    paese: String(indirizzo.paese || '').trim(),
+    regione: String(indirizzo.regione || '').trim(),
+    provincia: String(indirizzo.provincia || '').trim(),
+    comune: String(indirizzo.comune || '').trim(),
+    via: String(indirizzo.via || '').trim(),
+  };
+
+  if (indirizzo.latitudineComune !== undefined) {
+    normalized.latitudineComune = Number(indirizzo.latitudineComune);
+  }
+  if (indirizzo.longitudineComune !== undefined) {
+    normalized.longitudineComune = Number(indirizzo.longitudineComune);
+  }
+
+  return normalized;
 }
 
 async function applyCoordinatePrivacy(annunci, user) {
@@ -309,7 +346,7 @@ async function creaAnnuncio(body, user) {
     throw new AnnunciError(403, 'Gli amministratori non possono pubblicare annunci');
   }
 
-  const { titolo, dataScadenza, latitudine, longitudine, oggetto } = body;
+  const { titolo, dataScadenza, latitudine, longitudine, indirizzo, oggetto } = body;
   if (!titolo || !dataScadenza || !oggetto) {
     throw new AnnunciError(400, 'titolo, dataScadenza e oggetto sono obbligatori');
   }
@@ -323,6 +360,7 @@ async function creaAnnuncio(body, user) {
     dataScadenza,
     latitudine,
     longitudine,
+    indirizzo: normalizeIndirizzo(indirizzo),
     oggetto,
   });
 }
@@ -335,7 +373,7 @@ async function modificaAnnuncio(id, body, user) {
     throw new AnnunciError(409, `Annuncio non modificabile: stato ${annuncio.stato}`);
   }
 
-  const { titolo, dataScadenza, latitudine, longitudine, oggetto } = body;
+  const { titolo, dataScadenza, latitudine, longitudine, indirizzo, oggetto } = body;
   if (dataScadenza && new Date(dataScadenza) <= new Date()) {
     throw new AnnunciError(400, 'dataScadenza deve essere nel futuro');
   }
@@ -345,6 +383,7 @@ async function modificaAnnuncio(id, body, user) {
     ...(dataScadenza && { dataScadenza }),
     ...(latitudine !== undefined && { latitudine }),
     ...(longitudine !== undefined && { longitudine }),
+    ...(indirizzo && { indirizzo: normalizeIndirizzo(indirizzo) }),
     ...(oggetto && { oggetto }),
   });
 
