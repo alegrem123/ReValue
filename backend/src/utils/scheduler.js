@@ -2,6 +2,8 @@ const Annuncio = require('../models/annuncioModel');
 const Prenotazione = require('../models/prenotazioneModel');
 
 const HOUR_MS = 60 * 60 * 1000;
+const STARTUP_RETRY_MS = 5000;
+const STARTUP_ATTEMPTS = 3;
 
 async function expireAnnunciScaduti() {
   try {
@@ -30,16 +32,24 @@ async function expireAnnunciScaduti() {
     }
 
     if (result.modifiedCount > 0) {
-      if (process.env.NODE_ENV !== 'production') console.error(`Scheduler: ${result.modifiedCount} annunci scaduti aggiornati a SCADUTO`);
+      if (process.env.NODE_ENV !== 'production') console.log(`Scheduler: ${result.modifiedCount} annunci scaduti aggiornati a SCADUTO`);
     }
   } catch (error) {
     console.error('Scheduler: errore durante l aggiornamento degli annunci scaduti:', error);
   }
 }
 
-function startExpiryScheduler() {
-  // Esegue subito al lancio
+function runStartupExpiryAttempts(attempt = 1) {
   expireAnnunciScaduti();
+
+  if (attempt < STARTUP_ATTEMPTS) {
+    setTimeout(() => runStartupExpiryAttempts(attempt + 1), STARTUP_RETRY_MS);
+  }
+}
+
+function startExpiryScheduler() {
+  // Esegue più tentativi al lancio per coprire cold start/connessione DB.
+  runStartupExpiryAttempts();
   // Poi ripete ogni ora
   setInterval(expireAnnunciScaduti, HOUR_MS);
 }

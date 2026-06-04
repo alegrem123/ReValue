@@ -7,6 +7,15 @@ const { startExpiryScheduler } = require('./src/utils/scheduler');
 
 const PORT = process.env.PORT || 3000;
 
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET non configurato');
+  process.exit(1);
+}
+if (!process.env.MONGODB_URI) {
+  console.error('FATAL: MONGODB_URI non configurato');
+  process.exit(1);
+}
+
 connectDB()
   .then(() => {
     startExpiryScheduler();

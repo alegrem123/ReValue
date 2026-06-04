@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 let mongoServer;
-const MONGODB_URI = process.env.MONGODB_URI;
 const isPlaceholderUri = (uri) =>
   !uri || uri.includes('<') || uri.includes('your-cluster-host');
 
@@ -10,11 +9,11 @@ mongoose.connection.on('error', (err) => {
 });
 
 mongoose.connection.once('open', () => {
-  if (process.env.NODE_ENV !== 'production') console.error('Connesso a MongoDB');
+  if (process.env.NODE_ENV !== 'production') console.log('Connesso a MongoDB');
 });
 
 async function connectDB() {
-  let uri = MONGODB_URI;
+  let uri = process.env.MONGODB_URI;
 
   if (isPlaceholderUri(uri) && process.env.NODE_ENV !== 'production') {
     const { MongoMemoryServer } = require('mongodb-memory-server');
@@ -31,7 +30,11 @@ async function connectDB() {
     );
   }
 
-  await mongoose.connect(uri);
+  await mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 10000,
+    bufferCommands: false,
+  });
 }
 
 async function stopDB() {

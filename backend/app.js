@@ -8,6 +8,7 @@ const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler
 const { authLimiter } = require('./src/middleware/rateLimitMiddleware');
 
 const app = express();
+app.set('trust proxy', 1);
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
 const corsOrigin =
   process.env.NODE_ENV === 'production'
@@ -83,7 +84,7 @@ app.use('/api/v1/recensioni', recensioniRoutes);
 app.use('/api/v1/notifiche', notificheRoutes);
 app.use('/api/v1/supporto', supportoRoutes);
 
-app.use('/api/v1', notFoundHandler);
+app.use(notFoundHandler);
 app.use(errorHandler);
 
 module.exports = app;
