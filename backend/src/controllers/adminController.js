@@ -1,8 +1,14 @@
 const adminService = require('../services/adminService');
 
 function sendControllerError(res, err) {
-  if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
-  return res.status(500).json({ error: 'Errore interno del server' });
+  const status = err.statusCode || 500;
+  const message = status === 500 ? 'Errore interno del server' : err.message;
+  if (status === 500) console.error('[adminController]', err);
+  return res.status(status).json({
+    ok: false,
+    error: status === 500 ? 'INTERNAL_ERROR' : message,
+    message,
+  });
 }
 
 async function getStatistiche(req, res) {

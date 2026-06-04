@@ -1,71 +1,65 @@
 const annunciService = require('../services/annunciService');
 
-function sendControllerError(res, err) {
-  if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
-  if (err.name === 'ValidationError') return res.status(400).json({ error: err.message });
-  return res.status(500).json({ error: 'Errore interno del server' });
-}
-
-async function getCatalogo(req, res) {
+async function getCatalogo(req, res, next) {
   try {
     const result = await annunciService.getCatalogo(req.query, req.user);
     return res.status(200).json(result);
   } catch (err) {
-    return sendControllerError(res, err);
+    return next(err);
   }
 }
 
-async function getAnnuncio(req, res) {
+async function getAnnuncio(req, res, next) {
   try {
     const annuncio = await annunciService.getAnnuncio(req.params.id, req.user);
     return res.status(200).json(annuncio);
   } catch (err) {
-    return sendControllerError(res, err);
+    return next(err);
   }
 }
 
-async function creaAnnuncio(req, res) {
+async function creaAnnuncio(req, res, next) {
   try {
     const annuncio = await annunciService.creaAnnuncio(req.body, req.user);
     return res.status(201).json(annuncio);
   } catch (err) {
-    return sendControllerError(res, err);
+    return next(err);
   }
 }
 
-async function modificaAnnuncio(req, res) {
+async function modificaAnnuncio(req, res, next) {
   try {
     const annuncio = await annunciService.modificaAnnuncio(req.params.id, req.body, req.user);
     return res.status(200).json(annuncio);
   } catch (err) {
-    return sendControllerError(res, err);
+    return next(err);
   }
 }
 
-async function cancellaAnnuncio(req, res) {
+async function cancellaAnnuncio(req, res, next) {
   try {
     const result = await annunciService.cancellaAnnuncio(req.params.id, req.user);
     return res.status(200).json(result);
   } catch (err) {
-    return sendControllerError(res, err);
+    return next(err);
   }
 }
 
-async function cambiaStatoAnnuncio(req, res) {
+async function cambiaStatoAnnuncio(req, res, next) {
   try {
     const annuncio = await annunciService.cambiaStatoAnnuncio(req.params.id, req.body?.stato, req.user);
     return res.status(200).json(annuncio);
   } catch (err) {
-    return sendControllerError(res, err);
+    return next(err);
   }
 }
 
-async function getMieiAnnunci(req, res) {
+async function getMieiAnnunci(req, res, next) {
   try {
     const annunci = await annunciService.getMieiAnnunci(req.user);
     return res.status(200).json(annunci);
   } catch (err) {
-    return sendControllerError(res, err);
+    return next(err);
   }
 }
 
