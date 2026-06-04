@@ -8,7 +8,11 @@ const app = require('../../app');
 const User = require('../../src/models/userModel');
 const Wallet = require('../../src/models/walletModel');
 const Segnalazione = require('../../src/models/segnalazioneModel');
+const Annuncio = require('../../src/models/annuncioModel');
+const Prenotazione = require('../../src/models/prenotazioneModel');
+const Coupon = require('../../src/models/couponModel');
 const { hashPassword } = require('../../src/utils/password');
+const { signToken } = require('../../src/utils/jwt');
 const { applicaMalus } = require('../../src/services/userService');
 
 let mongoServer;
@@ -28,6 +32,9 @@ beforeEach(async () => {
     User.deleteMany({}),
     Wallet.deleteMany({}),
     Segnalazione.deleteMany({}),
+    Annuncio.deleteMany({}),
+    Prenotazione.deleteMany({}),
+    Coupon.deleteMany({}),
   ]);
 });
 
@@ -248,5 +255,124 @@ describe('Moderation and authentication integration', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(giaRisolta.statusCode).toBe(409);
     expect(giaRisolta.body.error).toBe('Segnalazione già risolta');
+  });
+
+  test('admin forza stato annuncio e annulla prenotazioni attive', async () => {
+    const { token, loginRes } = await createAdminAndLogin();
+    expect(loginRes.statusCode).toBe(200);
+
+    const donatore = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Donatore',
+      cognome: 'Annuncio',
+      email: 'donatore-admin@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+    });
+    const acquirente = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Acquirente',
+      cognome: 'Annuncio',
+      email: 'acquirente-admin@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'user',
+    });
+    const annuncio = await Annuncio.create({
+      donatore: donatore._id,
+      titolo: 'Sedia da moderare',
+      stato: 'PRENOTATO',
+      dataScadenza: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      oggetto: {
+        categoria: 'Arredamento',
+        descrizione: 'Sedia in buono stato',
+      },
+    });
+    const prenotazione = await Prenotazione.create({
+      annuncio: annuncio._id,
+      acquirente: acquirente._id,
+      donatore: donatore._id,
+      stato: 'ATTIVA',
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/admin/annunci/${annuncio._id}/forza`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ stato: 'SCADUTO' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toBe('Annuncio forzato a SCADUTO');
+
+    const updatedAnnuncio = await Annuncio.findById(annuncio._id);
+    expect(updatedAnnuncio.stato).toBe('SCADUTO');
+    expect(updatedAnnuncio.isAttivo).toBe(false);
+
+    const updatedPrenotazione = await Prenotazione.findById(prenotazione._id);
+    expect(updatedPrenotazione.stato).toBe('ANNULLATA');
+  });
+
+  test('admin gestisce coupon premio dalla dashboard', async () => {
+    const admin = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Admin',
+      cognome: 'Coupon',
+      email: 'admin-coupon@test.com',
+      passwordHash: await hashPassword('password123'),
+      ruolo: 'admin',
+    });
+    const token = signToken({ id: admin._id.toString(), ruolo: 'admin' });
+
+    const createRes = await request(app)
+      .post('/api/v1/admin/coupon')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        titolo: 'Buono mercato',
+        descrizione: 'Sconto presso partner locale',
+        partner: 'Mercato Trento',
+        costoCrediti: 15,
+        stock: 0,
+        attivo: true,
+      });
+
+    expect(createRes.statusCode).toBe(201);
+    expect(createRes.body.coupon).toMatchObject({
+      titolo: 'Buono mercato',
+      partner: 'Mercato Trento',
+      costoCrediti: 15,
+      stock: 0,
+      attivo: true,
+    });
+
+    const couponId = createRes.body.coupon._id;
+    const listRes = await request(app)
+      .get('/api/v1/admin/coupon?search=mercato')
+      .set('Authorization', `Bearer ${token}`);
+    expect(listRes.statusCode).toBe(200);
+    expect(listRes.body.coupon).toHaveLength(1);
+
+    const updateRes = await request(app)
+      .patch(`/api/v1/admin/coupon/${couponId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        titolo: 'Buono mercato aggiornato',
+        descrizione: 'Sconto aggiornato',
+        partner: 'Mercato Trento',
+        costoCrediti: 20,
+        stock: 12,
+        attivo: true,
+      });
+    expect(updateRes.statusCode).toBe(200);
+    expect(updateRes.body.coupon).toMatchObject({
+      titolo: 'Buono mercato aggiornato',
+      costoCrediti: 20,
+      stock: 12,
+    });
+
+    const disableRes = await request(app)
+      .patch(`/api/v1/admin/coupon/${couponId}/disattiva`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(disableRes.statusCode).toBe(200);
+
+    const disabled = await Coupon.findById(couponId);
+    expect(disabled.attivo).toBe(false);
   });
 });

@@ -7,12 +7,50 @@ const Prenotazione = require('../models/prenotazioneModel');
 const Segnalazione = require('../models/segnalazioneModel');
 const Wallet = require('../models/walletModel');
 const TokenQR = require('../models/tokenQRModel');
+const Coupon = require('../models/couponModel');
 
 class AdminError extends Error {
   constructor(statusCode, message) {
     super(message);
     this.statusCode = statusCode;
   }
+}
+
+function isTransactionUnsupportedError(err) {
+  const message = String(err?.message || '');
+  return (
+    err?.code === 20 ||
+    /Transaction numbers are only allowed/i.test(message) ||
+    /transactions? are not supported/i.test(message) ||
+    /replica set member or mongos/i.test(message)
+  );
+}
+
+async function runWithOptionalTransaction(operation) {
+  const session = await mongoose.startSession();
+  let result;
+
+  try {
+    try {
+      await session.withTransaction(async () => {
+        result = await operation(session);
+      });
+      return result;
+    } catch (err) {
+      if (!isTransactionUnsupportedError(err)) throw err;
+      return operation(null);
+    }
+  } finally {
+    await session.endSession();
+  }
+}
+
+function maybeSession(query, session) {
+  return session ? query.session(session) : query;
+}
+
+function sessionOptions(session) {
+  return session ? { session } : {};
 }
 
 async function getStatistiche() {
@@ -148,24 +186,19 @@ async function getSegnalazioni() {
 }
 
 async function applicaMalusSegnalazione(id) {
-  const session = await mongoose.startSession();
   let utente, segnalazione;
 
-  try {
-    await session.withTransaction(async () => {
-      const existing = await Segnalazione.findById(id).session(session);
-      if (!existing) throw new AdminError(404, 'Segnalazione non trovata');
-      if (existing.stato === 'RISOLTA') throw new AdminError(409, 'Segnalazione già risolta');
+  await runWithOptionalTransaction(async (session) => {
+    const existing = await maybeSession(Segnalazione.findById(id), session);
+    if (!existing) throw new AdminError(404, 'Segnalazione non trovata');
+    if (existing.stato === 'RISOLTA') throw new AdminError(409, 'Segnalazione già risolta');
 
-      existing.stato = 'RISOLTA';
-      segnalazione = await existing.save({ session });
-      if (!segnalazione) throw new AdminError(409, 'Segnalazione non trovata o già risolta');
+    existing.stato = 'RISOLTA';
+    segnalazione = await existing.save(sessionOptions(session));
+    if (!segnalazione) throw new AdminError(409, 'Segnalazione non trovata o già risolta');
 
-      utente = await applicaMalus(segnalazione.segnalato, { session });
-    });
-  } finally {
-    await session.endSession();
-  }
+    utente = await applicaMalus(segnalazione.segnalato, sessionOptions(session));
+  });
 
   notificheService.creaNotifica(
     utente._id,
@@ -182,44 +215,34 @@ async function applicaMalusSegnalazione(id) {
 }
 
 async function bannaUtente(id) {
-  const session = await mongoose.startSession();
   let utente;
 
-  try {
-    await session.withTransaction(async () => {
-      utente = await User.findById(id).session(session);
-      if (!utente) throw new AdminError(404, 'Utente non trovato');
-      if (utente.ruolo === 'admin') throw new AdminError(403, 'Non puoi bannare un amministratore');
+  await runWithOptionalTransaction(async (session) => {
+    utente = await maybeSession(User.findById(id), session);
+    if (!utente) throw new AdminError(404, 'Utente non trovato');
+    if (utente.ruolo === 'admin') throw new AdminError(403, 'Non puoi bannare un amministratore');
 
-      utente.isSospeso = true;
-      utente.bannato = true;
-      await utente.save({ session });
-      await applicaMalus(utente._id, { session });
-    });
-  } finally {
-    await session.endSession();
-  }
+    utente.isSospeso = true;
+    utente.bannato = true;
+    await utente.save(sessionOptions(session));
+    await applicaMalus(utente._id, sessionOptions(session));
+  });
 
   return { message: `Utente ${utente.email} bannato` };
 }
 
 async function sospendiUtente(id) {
-  const session = await mongoose.startSession();
   let utente;
 
-  try {
-    await session.withTransaction(async () => {
-      utente = await User.findById(id).session(session);
-      if (!utente) throw new AdminError(404, 'Utente non trovato');
-      if (utente.ruolo === 'admin') throw new AdminError(403, 'Non puoi sospendere un amministratore');
+  await runWithOptionalTransaction(async (session) => {
+    utente = await maybeSession(User.findById(id), session);
+    if (!utente) throw new AdminError(404, 'Utente non trovato');
+    if (utente.ruolo === 'admin') throw new AdminError(403, 'Non puoi sospendere un amministratore');
 
-      utente.isSospeso = true;
-      await utente.save({ session });
-      await applicaMalus(utente._id, { session });
-    });
-  } finally {
-    await session.endSession();
-  }
+    utente.isSospeso = true;
+    await utente.save(sessionOptions(session));
+    await applicaMalus(utente._id, sessionOptions(session));
+  });
 
   return { message: `Utente ${utente.email} sospeso` };
 }
@@ -237,48 +260,49 @@ async function riabilitaUtente(id) {
 }
 
 async function forzaStatoAnnuncio(id, statoRichiesto) {
-  if (statoRichiesto && statoRichiesto !== 'DISPONIBILE') {
-    throw new AdminError(400, 'RF31 consente di forzare solo lo stato DISPONIBILE');
+  const statoFinale = statoRichiesto || 'DISPONIBILE';
+  const statiForzabili = ['DISPONIBILE', 'SCADUTO', 'RITIRATO'];
+
+  if (!statiForzabili.includes(statoFinale)) {
+    throw new AdminError(400, 'Stato annuncio non valido');
   }
 
   const annuncio = await Annuncio.findById(id);
   if (!annuncio) throw new AdminError(404, 'Annuncio non trovato');
-  if (annuncio.stato === 'DISPONIBILE') {
-    return { message: 'Annuncio già in stato DISPONIBILE', annuncio };
+  if (annuncio.stato === statoFinale) {
+    return { message: `Annuncio già in stato ${statoFinale}`, annuncio };
   }
 
-  const session = await mongoose.startSession();
   let updated;
 
-  try {
-    await session.withTransaction(async () => {
-      const prenotazioniAttive = await Prenotazione.find(
-        { annuncio: id, stato: 'ATTIVA' },
-        '_id',
-        { session }
+  await runWithOptionalTransaction(async (session) => {
+    const prenotazioniAttive = await Prenotazione.find(
+      { annuncio: id, stato: 'ATTIVA' },
+      '_id',
+      sessionOptions(session)
+    );
+    const ids = prenotazioniAttive.map((prenotazione) => prenotazione._id);
+
+    if (ids.length > 0) {
+      await Prenotazione.updateMany(
+        { _id: { $in: ids } },
+        { $set: { stato: 'ANNULLATA' } },
+        sessionOptions(session)
       );
-      const ids = prenotazioniAttive.map((prenotazione) => prenotazione._id);
+      await maybeSession(TokenQR.deleteMany({ prenotazione: { $in: ids } }), session);
+    }
 
-      if (ids.length > 0) {
-        await Prenotazione.updateMany(
-          { _id: { $in: ids } },
-          { $set: { stato: 'ANNULLATA' } },
-          { session }
-        );
-        await TokenQR.deleteMany({ prenotazione: { $in: ids } }).session(session);
-      }
+    updated = await Annuncio.findByIdAndUpdate(
+      id,
+      {
+        $set: { stato: statoFinale, isAttivo: statoFinale === 'DISPONIBILE' },
+        $inc: { versione: 1 },
+      },
+      { new: true, ...sessionOptions(session) }
+    );
+  });
 
-      updated = await Annuncio.findByIdAndUpdate(
-        id,
-        { $set: { stato: 'DISPONIBILE', isAttivo: true }, $inc: { versione: 1 } },
-        { new: true, session }
-      );
-    });
-  } finally {
-    await session.endSession();
-  }
-
-  return { message: 'Annuncio forzato a DISPONIBILE', annuncio: updated };
+  return { message: `Annuncio forzato a ${statoFinale}`, annuncio: updated };
 }
 
 async function rimuoviAnnuncio(id) {
@@ -289,6 +313,71 @@ async function rimuoviAnnuncio(id) {
   );
 
   if (!annuncio) throw new AdminError(404, 'Annuncio non trovato');
+}
+
+function buildCouponPayload(body) {
+  const titolo = String(body?.titolo || '').trim();
+  const descrizione = String(body?.descrizione || '').trim();
+  const partner = String(body?.partner || '').trim();
+  const costoCrediti = Number.parseInt(body?.costoCrediti, 10);
+  const stock = Number.parseInt(body?.stock, 10);
+  const immagine = body?.immagine ? String(body.immagine).trim() : null;
+  const attivo = typeof body?.attivo === 'boolean' ? body.attivo : true;
+
+  if (!titolo || !descrizione || !partner) {
+    throw new AdminError(400, 'Titolo, descrizione e partner sono obbligatori');
+  }
+  if (!Number.isInteger(costoCrediti) || costoCrediti < 1) {
+    throw new AdminError(400, 'Il costo in crediti deve essere almeno 1');
+  }
+  if (!Number.isInteger(stock) || stock < 0) {
+    throw new AdminError(400, 'Lo stock deve essere un numero maggiore o uguale a 0');
+  }
+
+  return { titolo, descrizione, partner, costoCrediti, stock, attivo, immagine };
+}
+
+async function listCoupon(queryParams) {
+  const { search = '', attivo = '' } = queryParams;
+  const { page, limit, skip } = parsePagination(queryParams);
+  const query = {};
+  const normalizedSearch = String(search).trim();
+
+  if (attivo === 'true') query.attivo = true;
+  if (attivo === 'false') query.attivo = false;
+
+  if (normalizedSearch) {
+    const pattern = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    query.$or = [{ titolo: pattern }, { partner: pattern }, { descrizione: pattern }];
+  }
+
+  const [coupon, total] = await Promise.all([
+    Coupon.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Coupon.countDocuments(query),
+  ]);
+
+  return {
+    coupon,
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) || 1 },
+  };
+}
+
+async function creaCoupon(body) {
+  const coupon = await Coupon.create(buildCouponPayload(body));
+  return { message: `Coupon "${coupon.titolo}" creato`, coupon };
+}
+
+async function aggiornaCoupon(id, body) {
+  const payload = buildCouponPayload(body);
+  const coupon = await Coupon.findByIdAndUpdate(id, { $set: payload }, { new: true });
+  if (!coupon) throw new AdminError(404, 'Coupon non trovato');
+  return { message: `Coupon "${coupon.titolo}" aggiornato`, coupon };
+}
+
+async function disattivaCoupon(id) {
+  const coupon = await Coupon.findByIdAndUpdate(id, { $set: { attivo: false } }, { new: true });
+  if (!coupon) throw new AdminError(404, 'Coupon non trovato');
+  return { message: `Coupon "${coupon.titolo}" disattivato`, coupon };
 }
 
 module.exports = {
@@ -303,4 +392,8 @@ module.exports = {
   riabilitaUtente,
   forzaStatoAnnuncio,
   rimuoviAnnuncio,
+  listCoupon,
+  creaCoupon,
+  aggiornaCoupon,
+  disattivaCoupon,
 };
