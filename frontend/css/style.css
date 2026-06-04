@@ -417,6 +417,33 @@ a:hover { color: var(--rv-green-dark); }
   background: #dfe9e2;
   isolation: isolate;
 }
+.catalog-map .leaflet-pane,
+.catalog-map .leaflet-tile,
+.catalog-map .leaflet-marker-icon,
+.catalog-map .leaflet-marker-shadow,
+.catalog-map .leaflet-tile-container,
+.location-map .leaflet-pane,
+.location-map .leaflet-tile,
+.location-map .leaflet-marker-icon,
+.location-map .leaflet-marker-shadow,
+.location-map .leaflet-tile-container {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+}
+.catalog-map .leaflet-tile,
+.location-map .leaflet-tile {
+  width: 256px !important;
+  height: 256px !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+.catalog-map img.leaflet-tile,
+.location-map img.leaflet-tile {
+  display: block !important;
+}
 .catalog-map .leaflet-container,
 .leaflet-container.catalog-map {
   font-family: inherit;
@@ -549,6 +576,16 @@ a:hover { color: var(--rv-green-dark); }
   .catalog-map-popup .leaflet-popup-content {
     width: 250px !important;
   }
+}
+
+.location-map {
+  min-height: 320px;
+  height: 320px;
+  width: 100%;
+  border-radius: var(--rv-radius-sm);
+  border: 1px solid var(--rv-border);
+  overflow: hidden;
+  background: #dfe9e2;
 }
 
 /* ── Annuncio card (prodotto) ── */

@@ -16,7 +16,11 @@
   const hasInitialPosition = Number.isFinite(startLat) && Number.isFinite(startLng);
   const initialPosition = hasInitialPosition ? [startLat, startLng] : fallbackPosition;
 
-  const map = L.map(mapElement).setView(initialPosition, hasInitialPosition ? 15 : 12);
+  const map = L.map(mapElement, {
+    center: initialPosition,
+    zoom: hasInitialPosition ? 15 : 13,
+    scrollWheelZoom: false,
+  });
   let marker = null;
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -51,6 +55,13 @@
     setMarker(lat, lng, true);
   }
 
+  function repairMapSize() {
+    map.invalidateSize();
+    window.requestAnimationFrame(() => map.invalidateSize());
+    window.setTimeout(() => map.invalidateSize(), 150);
+    window.setTimeout(() => map.invalidateSize(), 500);
+  }
+
   map.on('click', (event) => {
     const { lat, lng } = event.latlng;
     updateInputs(lat, lng);
@@ -62,7 +73,11 @@
 
   if (hasInitialPosition) {
     setMarker(startLat, startLng);
+  } else {
+    updateInputs(fallbackPosition[0], fallbackPosition[1]);
+    setMarker(fallbackPosition[0], fallbackPosition[1]);
   }
 
-  window.setTimeout(() => map.invalidateSize(), 150);
+  repairMapSize();
+  window.addEventListener('resize', repairMapSize);
 })();

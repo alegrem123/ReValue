@@ -66,6 +66,14 @@ function setActiveMarker(marker) {
   if (activeMarker) activeMarker.setIcon(createMarkerIcon(true));
 }
 
+function repairCatalogMapSize() {
+  if (!catalogMap) return;
+  catalogMap.invalidateSize();
+  window.requestAnimationFrame(() => catalogMap?.invalidateSize());
+  window.setTimeout(() => catalogMap?.invalidateSize(), 150);
+  window.setTimeout(() => catalogMap?.invalidateSize(), 500);
+}
+
 function initCatalogMap(containerId = 'catalog-map') {
   const container = document.getElementById(containerId);
   if (!container || !window.L) return null;
@@ -85,7 +93,8 @@ function initCatalogMap(containerId = 'catalog-map') {
   }).addTo(catalogMap);
 
   markerLayer = L.layerGroup().addTo(catalogMap);
-  window.setTimeout(() => catalogMap.invalidateSize(), 150);
+  repairCatalogMapSize();
+  window.addEventListener('resize', repairCatalogMapSize);
   return catalogMap;
 }
 
@@ -101,10 +110,10 @@ function updateCatalogMap(annunci = []) {
   const annunciConCoordinate = annunci.filter(hasCoordinates);
   if (annunciConCoordinate.length === 0) {
     map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-    window.setTimeout(() => map.invalidateSize(), 100);
+    repairCatalogMapSize();
     if (status) {
       status.textContent =
-        'Nessuna posizione disponibile per gli annunci mostrati.';
+        `Nessuna posizione disponibile per gli annunci mostrati (${annunci.length} senza coordinate).`;
     }
     return;
   }
@@ -135,7 +144,7 @@ function updateCatalogMap(annunci = []) {
     markerByAnnuncioId.set(String(annuncio._id), marker);
   });
 
-  window.setTimeout(() => map.invalidateSize(), 100);
+  repairCatalogMapSize();
   map.fitBounds(bounds, {
     padding: [32, 32],
     maxZoom: 15,

@@ -294,6 +294,56 @@ function injectGlobalStyles() {
         transform: translate(-50%, -50%);
       }
       @keyframes btn-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+      /* Leaflet repair: evita che Bootstrap o CSS CDN mancanti rompano le tile. */
+      .leaflet-container {
+        position: relative !important;
+        overflow: hidden !important;
+        background: #dfe9e2 !important;
+        outline-offset: 1px;
+      }
+      .leaflet-pane,
+      .leaflet-tile,
+      .leaflet-marker-icon,
+      .leaflet-marker-shadow,
+      .leaflet-tile-container,
+      .leaflet-pane > svg,
+      .leaflet-pane > canvas,
+      .leaflet-zoom-box,
+      .leaflet-image-layer,
+      .leaflet-layer {
+        position: absolute !important;
+        left: 0;
+        top: 0;
+      }
+      .leaflet-tile {
+        width: 256px !important;
+        height: 256px !important;
+        max-width: none !important;
+        max-height: none !important;
+        border: 0 !important;
+        padding: 0 !important;
+      }
+      .leaflet-container img.leaflet-tile {
+        display: block !important;
+      }
+      .leaflet-control {
+        position: relative !important;
+        z-index: 800 !important;
+        pointer-events: auto;
+      }
+      .leaflet-top,
+      .leaflet-bottom {
+        position: absolute !important;
+        z-index: 1000 !important;
+        pointer-events: none;
+      }
+      .leaflet-top { top: 0; }
+      .leaflet-right { right: 0; }
+      .leaflet-bottom { bottom: 0; }
+      .leaflet-left { left: 0; }
+      .leaflet-top .leaflet-control { margin-top: 10px; }
+      .leaflet-left .leaflet-control { margin-left: 10px; }
     `;
     document.head.appendChild(style);
   }
