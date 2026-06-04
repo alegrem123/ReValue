@@ -39,13 +39,11 @@ const userSchema = new Schema(
     passwordHash: {
       type: String,
       required: [true, 'passwordHash is required'],
-      minlength: [64, 'passwordHash must be at least 64 characters long'],
-      maxlength: [64, 'passwordHash must be exactly 64 characters long'],
       validate: {
         validator(value) {
-          return /^[a-f0-9]{64}$/i.test(value);
+          return /^[a-f0-9]{64}$/i.test(value) || /^[a-f0-9]{32}:[a-f0-9]{64}$/i.test(value);
         },
-        message: 'passwordHash must be a SHA-256 hexadecimal digest (OCL #2)',
+        message: 'passwordHash must be a SHA-256 digest, optionally salted (OCL #2)',
       },
     },
     malusCount: {
@@ -104,5 +102,9 @@ const userSchema = new Schema(
     versionKey: false,
   }
 );
+
+userSchema.index({ createdAt: -1 });
+userSchema.index({ nome: 1 });
+userSchema.index({ cognome: 1 });
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);

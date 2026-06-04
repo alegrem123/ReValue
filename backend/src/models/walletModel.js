@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 
 const { Schema } = mongoose;
 
+const MAX_STORICO_TRANSAZIONI = 1000;
+
 const transazioneSchema = new Schema(
   {
     tipo: {
@@ -47,6 +49,10 @@ const walletSchema = new Schema(
     transazioni: {
       type: [transazioneSchema],
       default: [],
+      validate: {
+        validator: (v) => v.length <= MAX_STORICO_TRANSAZIONI,
+        message: `storico wallet limitato a ${MAX_STORICO_TRANSAZIONI} transazioni`,
+      },
     },
   },
   {
@@ -55,4 +61,7 @@ const walletSchema = new Schema(
   }
 );
 
-module.exports = mongoose.models.Wallet || mongoose.model('Wallet', walletSchema);
+const Wallet = mongoose.models.Wallet || mongoose.model('Wallet', walletSchema);
+Wallet.MAX_STORICO_TRANSAZIONI = MAX_STORICO_TRANSAZIONI;
+
+module.exports = Wallet;

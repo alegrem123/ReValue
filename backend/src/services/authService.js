@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../models/userModel');
-const { hashPassword, comparePassword } = require('../utils/password');
+const { hashPassword, comparePassword, isLegacySha256Hash } = require('../utils/password');
 const { signToken } = require('../utils/jwt');
 const { creaWallet } = require('./walletService');
 
@@ -118,6 +118,11 @@ async function loginUser({ email, password }) {
   const valida = await comparePassword(password, user.passwordHash);
   if (!valida) {
     throw createAuthError(401, 'Credenziali non valide', 'INVALID_CREDENTIALS');
+  }
+
+  if (isLegacySha256Hash(user.passwordHash)) {
+    user.passwordHash = await hashPassword(password);
+    await user.save();
   }
 
   return buildAuthResponse(user);

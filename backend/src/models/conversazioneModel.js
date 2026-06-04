@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 
 const { Schema } = mongoose;
 
+const MAX_IMMAGINE_BASE64_LENGTH = Math.ceil((1024 * 1024 * 4) / 3);
+const MAX_MESSAGGI_CON_IMMAGINE = 20;
+const MAX_IMMAGINI_BASE64_TOTAL_LENGTH = MAX_IMMAGINE_BASE64_LENGTH * 5;
+const MAX_MESSAGGI_CONVERSAZIONE = 1000;
+
 const messaggioSchema = new Schema(
   {
     mittente: {
@@ -25,7 +30,8 @@ const messaggioSchema = new Schema(
     },
     immagine: {
       type: String,
-      default: null, // base64, max 1 MB — validato nel controller
+      default: null,
+      maxlength: [MAX_IMMAGINE_BASE64_LENGTH, 'immagine supera il limite di 1 MB'],
     },
   },
   { _id: true }
@@ -49,6 +55,20 @@ const conversazioneSchema = new Schema(
     messaggi: {
       type: [messaggioSchema],
       default: [],
+      validate: [
+        {
+          validator: (v) => v.length <= MAX_MESSAGGI_CONVERSAZIONE,
+          message: `conversazione limitata a ${MAX_MESSAGGI_CONVERSAZIONE} messaggi`,
+        },
+        {
+          validator: (v) => v.filter((m) => m.immagine).length <= MAX_MESSAGGI_CON_IMMAGINE,
+          message: `conversazione limitata a ${MAX_MESSAGGI_CON_IMMAGINE} immagini`,
+        },
+        {
+          validator: (v) => v.reduce((sum, m) => sum + (m.immagine ? m.immagine.length : 0), 0) <= MAX_IMMAGINI_BASE64_TOTAL_LENGTH,
+          message: 'dimensione totale immagini conversazione superata',
+        },
+      ],
     },
     // Mappa userId → timestamp ultimo evento "sta scrivendo" (transiente, TTL ~3s)
     typing: {
@@ -66,5 +86,14 @@ const conversazioneSchema = new Schema(
 // RNF9: messaggi persistiti e recuperabili — garantito da embedding
 // RF13: solo partecipanti possono inviare — enforced nel service
 
-module.exports =
+conversazioneSchema.index({ partecipanti: 1 });
+
+const Conversazione =
   mongoose.models.Conversazione || mongoose.model('Conversazione', conversazioneSchema);
+
+Conversazione.MAX_IMMAGINE_BASE64_LENGTH = MAX_IMMAGINE_BASE64_LENGTH;
+Conversazione.MAX_MESSAGGI_CON_IMMAGINE = MAX_MESSAGGI_CON_IMMAGINE;
+Conversazione.MAX_IMMAGINI_BASE64_TOTAL_LENGTH = MAX_IMMAGINI_BASE64_TOTAL_LENGTH;
+Conversazione.MAX_MESSAGGI_CONVERSAZIONE = MAX_MESSAGGI_CONVERSAZIONE;
+
+module.exports = Conversazione;

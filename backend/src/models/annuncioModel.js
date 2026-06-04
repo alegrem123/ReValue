@@ -91,9 +91,9 @@ const annuncioSchema = new Schema(
   }
 );
 
-// Indici: filtraggio per stato+isAttivo (catalogo) e scadenza (soft-delete automatico)
-annuncioSchema.index({ stato: 1, isAttivo: 1 });
-annuncioSchema.index({ dataScadenza: 1 });
+// Indici: catalogo pubblico, scadenza (soft-delete automatico) e annunci per donatore
+annuncioSchema.index({ isAttivo: 1, stato: 1, dataScadenza: 1 });
+annuncioSchema.index({ 'oggetto.categoria': 1, stato: 1, isAttivo: 1 });
 annuncioSchema.index({ donatore: 1 });
 
 module.exports = mongoose.models.Annuncio || mongoose.model('Annuncio', annuncioSchema);
