@@ -50,20 +50,30 @@ jobs:
     steps:
       - name: Health check backend
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://revalue-backend-84jb.onrender.com/api/v1/annunci)
-          echo "HTTP status: $STATUS"
-          if [ "$STATUS" -ne 200 ]; then
-            echo "Backend smoke test FAILED — HTTP $STATUS"
-            exit 1
-          fi
-          echo "Backend smoke test PASSED"
+          STATUS=000
+          for ATTEMPT in 1 2 3; do
+            STATUS=$(curl --max-time 20 -s -o /dev/null -w "%{http_code}" https://revalue-backend-84jb.onrender.com/api/v1/annunci) || STATUS=000
+            echo "Attempt $ATTEMPT HTTP status: $STATUS"
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Backend smoke test PASSED"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Backend smoke test FAILED — HTTP $STATUS"
+          exit 1
 
       - name: Health check frontend
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://revalue-frontend.onrender.com)
-          echo "HTTP status: $STATUS"
-          if [ "$STATUS" -ne 200 ]; then
-            echo "Frontend smoke test FAILED — HTTP $STATUS"
-            exit 1
-          fi
-          echo "Frontend smoke test PASSED"
+          STATUS=000
+          for ATTEMPT in 1 2 3; do
+            STATUS=$(curl --max-time 20 -s -o /dev/null -w "%{http_code}" https://revalue-frontend.onrender.com) || STATUS=000
+            echo "Attempt $ATTEMPT HTTP status: $STATUS"
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Frontend smoke test PASSED"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Frontend smoke test FAILED — HTTP $STATUS"
+          exit 1
