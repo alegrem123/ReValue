@@ -81,4 +81,13 @@ describe('mobile smoke', () => {
     assert.match(auth, /registerForPushNotificationsAsync/);
     assert.match(auth, /await setToken\(response\.data\.token\);[\s\S]*await setStoredUser\(response\.data\.user\);[\s\S]*void registerForPushNotificationsAsync\(\);[\s\S]*onAuthenticated\(response\.data\.user\);/);
   });
+
+  it('la schermata QR mobile mostra anche il codice testuale', () => {
+    const qrDisplay = readFileSync(join(root, 'src/screens/QRDisplayScreen.js'), 'utf8');
+
+    assert.match(qrDisplay, /react-native-qrcode-svg/);
+    assert.match(qrDisplay, /payload\?\.codice/);
+    assert.match(qrDisplay, /Codice QR/);
+    assert.match(qrDisplay, /selectable/);
+  });
 });

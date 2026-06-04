@@ -44,8 +44,15 @@ export function QRDisplayScreen({ prenotazioneId, onBack }) {
     const res = await api.post('/api/v1/qr/genera', { prenotazioneId });
     setLoading(false);
     if (!res.ok) { setError(res.error || 'Impossibile generare il QR.'); return; }
-    setCodice(res.data.codice);
-    setScadenza(res.data.scadenza);
+
+    const payload = res.data ?? res;
+    if (!payload?.codice) {
+      setError('QR generato ma codice non ricevuto dal server.');
+      return;
+    }
+
+    setCodice(payload.codice);
+    setScadenza(payload.scadenza || null);
   }
 
   useEffect(() => { genera(); }, [prenotazioneId]);
@@ -65,12 +72,19 @@ export function QRDisplayScreen({ prenotazioneId, onBack }) {
             <QRCode value={codice} size={260} color="#1B5E20" backgroundColor="#FFFFFF" />
           </View>
 
+          <View style={styles.codeCard}>
+            <Text style={styles.infoLabel}>Codice QR</Text>
+            <Text style={styles.codeText} selectable>{codice}</Text>
+          </View>
+
+          {scadenza ? (
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Scadenza QR</Text>
             <Text style={[styles.countdown, countdown === 'QR scaduto' && styles.expired]}>
               {countdown}
             </Text>
           </View>
+          ) : null}
 
           <Button title="Rigenera QR" variant="secondary" onPress={genera} loading={loading} />
         </View>
@@ -105,10 +119,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  codeCard: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    gap: 6,
+  },
   infoLabel: {
     color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
+  },
+  codeText: {
+    color: colors.text,
+    fontFamily: 'monospace',
+    fontSize: 13,
+    lineHeight: 18,
   },
   countdown: {
     fontSize: 28,
