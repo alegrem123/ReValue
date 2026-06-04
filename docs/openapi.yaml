@@ -1032,9 +1032,9 @@ paths:
               properties:
                 stato:
                   type: string
-                  enum: [DISPONIBILE]
+                  enum: [DISPONIBILE, SCADUTO, RITIRATO]
               example:
-                stato: DISPONIBILE
+                stato: SCADUTO
       responses:
         '200':
           description: Stato annuncio aggiornato
@@ -1045,7 +1045,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Annuncio forzato a DISPONIBILE
+                    example: Annuncio forzato a SCADUTO
                   annuncio:
                     type: object
                     additionalProperties: true
@@ -1065,6 +1065,114 @@ paths:
       responses:
         '204':
           description: Annuncio rimosso
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/coupon:
+    get:
+      tags: [Admin]
+      summary: Lista coupon per dashboard admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: attivo
+          in: query
+          schema: { type: boolean }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista coupon paginata
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin]
+      summary: Crea coupon premio
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponInput'
+      responses:
+        '201':
+          description: Coupon creato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  coupon:
+                    $ref: '#/components/schemas/Coupon'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/coupon/{id}:
+    patch:
+      tags: [Admin]
+      summary: Aggiorna coupon premio
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponInput'
+      responses:
+        '200':
+          description: Coupon aggiornato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  coupon:
+                    $ref: '#/components/schemas/Coupon'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/coupon/{id}/disattiva:
+    patch:
+      tags: [Admin]
+      summary: Disattiva coupon premio
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Coupon disattivato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  coupon:
+                    $ref: '#/components/schemas/Coupon'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1863,8 +1971,19 @@ components:
         descrizione: { type: string }
         partner: { type: string }
         costoCrediti: { type: integer }
-        stock: { type: integer, description: 'Stock disponibili; 0 = esaurito' }
+        stock: { type: integer, description: 'Stock disponibili; 0 = illimitato' }
         attivo: { type: boolean }
+        immagine: { type: string, nullable: true }
+    CouponInput:
+      type: object
+      required: [titolo, descrizione, partner, costoCrediti, stock]
+      properties:
+        titolo: { type: string }
+        descrizione: { type: string }
+        partner: { type: string }
+        costoCrediti: { type: integer, minimum: 1 }
+        stock: { type: integer, minimum: 0, description: '0 = illimitato' }
+        attivo: { type: boolean, default: true }
         immagine: { type: string, nullable: true }
     Riscatto:
       type: object

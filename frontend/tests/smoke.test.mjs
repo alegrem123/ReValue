@@ -40,6 +40,7 @@ describe('frontend smoke', () => {
       'js/admin/users.js',
       'js/admin/annunci.js',
       'js/admin/segnalazioni.js',
+      'js/admin/coupon.js',
     ].forEach((file) => {
       assert.equal(existsSync(join(root, file)), true, file);
     });
@@ -87,6 +88,7 @@ describe('frontend smoke', () => {
     const users = readFileSync(join(root, 'js/admin/users.js'), 'utf8');
     const annunci = readFileSync(join(root, 'js/admin/annunci.js'), 'utf8');
     const segnalazioni = readFileSync(join(root, 'js/admin/segnalazioni.js'), 'utf8');
+    const coupon = readFileSync(join(root, 'js/admin/coupon.js'), 'utf8');
     const dashboard = readFileSync(join(root, 'views/admin/dashboard.html'), 'utf8');
 
     assert.match(shared, /adminToken/);
@@ -95,7 +97,10 @@ describe('frontend smoke', () => {
     assert.match(users, /\/admin\/users/);
     assert.match(annunci, /\/admin\/annunci/);
     assert.match(segnalazioni, /\/admin\/segnalazioni/);
+    assert.match(coupon, /\/admin\/coupon/);
     assert.match(dashboard, /js\/admin\/annunci\.js/);
     assert.match(dashboard, /js\/admin\/segnalazioni\.js/);
+    assert.match(dashboard, /js\/admin\/coupon\.js/);
+    assert.match(dashboard, /coupon-panel/);
   });
 });

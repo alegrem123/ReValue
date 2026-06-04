@@ -68,7 +68,7 @@ function skeletonGrid() {
 function couponCard(c) {
   const stockBadge = c.stock > 0
     ? `<span class="badge bg-success-subtle text-success-emphasis ms-1">${c.stock} rimasti</span>`
-    : `<span class="badge bg-danger-subtle text-danger-emphasis ms-1">Esauriti</span>`;
+    : `<span class="badge bg-info-subtle text-info-emphasis ms-1">Illimitato</span>`;
 
   return `
     <div class="col-sm-6 col-lg-4">
@@ -92,7 +92,6 @@ function couponCard(c) {
             data-id="${c._id}"
             data-nome="${escAttr(c.titolo)}"
             data-costo="${c.costoCrediti}"
-            ${c.stock === 0 ? 'disabled' : ''}
           >
             <i class="bi bi-ticket-perforated me-1"></i>Riscatta
           </button>

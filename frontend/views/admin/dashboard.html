@@ -62,6 +62,11 @@
             <i class="bi bi-flag me-1"></i>Segnalazioni
           </button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="coupon-tab" data-bs-toggle="tab" data-bs-target="#coupon-panel" type="button" role="tab">
+            <i class="bi bi-ticket-perforated me-1"></i>Coupon
+          </button>
+        </li>
       </ul>
 
       <div class="tab-content">
@@ -158,6 +163,51 @@
             </table>
           </div>
         </section>
+
+        <section class="tab-pane fade" id="coupon-panel" role="tabpanel" aria-labelledby="coupon-tab">
+          <div class="bg-white border rounded p-3 mb-3">
+            <form id="coupon-filter-form" class="row g-2 align-items-end">
+              <div class="col-md-5">
+                <label for="coupon-search" class="form-label">Cerca</label>
+                <input id="coupon-search" class="form-control" type="search" placeholder="Titolo, partner o descrizione" />
+              </div>
+              <div class="col-md-3">
+                <label for="coupon-attivo-filter" class="form-label">Stato</label>
+                <select id="coupon-attivo-filter" class="form-select">
+                  <option value="">Tutti</option>
+                  <option value="true">Attivi</option>
+                  <option value="false">Disattivati</option>
+                </select>
+              </div>
+              <div class="col-md-2 d-grid">
+                <button class="btn btn-success" type="submit">
+                  <i class="bi bi-search me-1"></i>Cerca
+                </button>
+              </div>
+              <div class="col-md-2 d-grid">
+                <button class="btn btn-outline-success" type="button" id="coupon-new">
+                  <i class="bi bi-plus-lg me-1"></i>Nuovo
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="table-responsive bg-white border rounded">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Coupon</th>
+                  <th>Partner</th>
+                  <th>Costo</th>
+                  <th>Stock</th>
+                  <th>Stato</th>
+                  <th class="text-end">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="coupon-table-body"></tbody>
+            </table>
+          </div>
+          <div id="coupon-pagination" class="d-flex justify-content-between align-items-center mt-3"></div>
+        </section>
       </div>
     </main>
 
@@ -209,6 +259,62 @@
       </div>
     </div>
 
+    <div class="modal fade" id="coupon-modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <form id="coupon-form">
+            <div class="modal-header">
+              <h2 class="modal-title h5" id="coupon-modal-title">Coupon</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="coupon-id" />
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="coupon-titolo" class="form-label">Titolo</label>
+                  <input id="coupon-titolo" class="form-control" type="text" required maxlength="120" />
+                </div>
+                <div class="col-md-6">
+                  <label for="coupon-partner" class="form-label">Partner</label>
+                  <input id="coupon-partner" class="form-control" type="text" required maxlength="120" />
+                </div>
+                <div class="col-md-4">
+                  <label for="coupon-costo" class="form-label">Costo crediti</label>
+                  <input id="coupon-costo" class="form-control" type="number" min="1" step="1" required />
+                </div>
+                <div class="col-md-4">
+                  <label for="coupon-stock" class="form-label">Stock</label>
+                  <input id="coupon-stock" class="form-control" type="number" min="0" step="1" required />
+                  <div class="form-text">0 = illimitato</div>
+                </div>
+                <div class="col-md-4">
+                  <label for="coupon-attivo" class="form-label">Disponibilita</label>
+                  <select id="coupon-attivo" class="form-select">
+                    <option value="true">Attivo</option>
+                    <option value="false">Disattivato</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label for="coupon-immagine" class="form-label">Immagine</label>
+                  <input id="coupon-immagine" class="form-control" type="url" placeholder="https://..." />
+                </div>
+                <div class="col-12">
+                  <label for="coupon-descrizione" class="form-label">Descrizione</label>
+                  <textarea id="coupon-descrizione" class="form-control" rows="3" required maxlength="500"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+              <button type="submit" class="btn btn-success" id="coupon-save">
+                <i class="bi bi-check-lg me-1"></i>Salva
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
     integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
@@ -218,5 +324,6 @@
     <script src="../../js/admin/users.js"></script>
     <script src="../../js/admin/annunci.js"></script>
     <script src="../../js/admin/segnalazioni.js"></script>
+    <script src="../../js/admin/coupon.js"></script>
   </body>
 </html>
