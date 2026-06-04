@@ -112,4 +112,16 @@ describe('frontend smoke', () => {
     assert.match(mybookings, /bi-qr-code/);
     assert.match(mybookings, /bi-qr-code-scan/);
   });
+
+  it('la mappa catalogo usa pin custom e popup dettagliati', () => {
+    const map = readFileSync(join(root, 'js/map.js'), 'utf8');
+    const css = readFileSync(join(root, 'css/style.css'), 'utf8');
+
+    assert.match(map, /createMarkerIcon/);
+    assert.match(map, /catalog-pin-active/);
+    assert.match(map, /map-popup-card/);
+    assert.match(map, /invalidateSize/);
+    assert.match(css, /\.catalog-pin/);
+    assert.match(css, /\.catalog-map-popup/);
+  });
 });
