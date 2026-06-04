@@ -12,6 +12,10 @@ const {
   riabilitaUtente,
   forzaStatoAnnuncio,
   rimuoviAnnuncio,
+  listCoupon,
+  creaCoupon,
+  aggiornaCoupon,
+  disattivaCoupon,
 } = require('../controllers/adminController');
 
 const router = Router();
@@ -40,5 +44,11 @@ router.post('/utenti/:id/riabilita', validateObjectIdParam('id'), riabilitaUtent
 // RF31/D2 §2.2.2: gestione annunci
 router.patch('/annunci/:id/forza', validateObjectIdParam('id'), forzaStatoAnnuncio);
 router.delete('/annunci/:id', validateObjectIdParam('id'), rimuoviAnnuncio);
+
+// PB-15 estesa: gestione coupon dal pannello admin
+router.get('/coupon', listCoupon);
+router.post('/coupon', creaCoupon);
+router.patch('/coupon/:id', validateObjectIdParam('id'), aggiornaCoupon);
+router.patch('/coupon/:id/disattiva', validateObjectIdParam('id'), disattivaCoupon);
 
 module.exports = router;

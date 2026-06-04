@@ -92,6 +92,38 @@ async function rimuoviAnnuncio(req, res) {
   }
 }
 
+async function listCoupon(req, res) {
+  try {
+    return res.status(200).json(await adminService.listCoupon(req.query));
+  } catch (err) {
+    return sendControllerError(res, err);
+  }
+}
+
+async function creaCoupon(req, res) {
+  try {
+    return res.status(201).json(await adminService.creaCoupon(req.body));
+  } catch (err) {
+    return sendControllerError(res, err);
+  }
+}
+
+async function aggiornaCoupon(req, res) {
+  try {
+    return res.status(200).json(await adminService.aggiornaCoupon(req.params.id, req.body));
+  } catch (err) {
+    return sendControllerError(res, err);
+  }
+}
+
+async function disattivaCoupon(req, res) {
+  try {
+    return res.status(200).json(await adminService.disattivaCoupon(req.params.id));
+  } catch (err) {
+    return sendControllerError(res, err);
+  }
+}
+
 module.exports = {
   getStatistiche,
   listUsers,
@@ -103,4 +135,8 @@ module.exports = {
   riabilitaUtente,
   forzaStatoAnnuncio,
   rimuoviAnnuncio,
+  listCoupon,
+  creaCoupon,
+  aggiornaCoupon,
+  disattivaCoupon,
 };
