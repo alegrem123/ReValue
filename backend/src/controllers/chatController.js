@@ -28,7 +28,7 @@ async function getConversazioniMe(req, res, next) {
     const conversazioni = await Conversazione.find({
       partecipanti: req.user.id,
     })
-      .populate('partecipanti', 'nome cognome')
+      .populate('partecipanti', 'nome cognome fotoProfilo')
       .populate('prenotazione', 'stato dataPrenotazione')
       .lean();
 
