@@ -132,7 +132,11 @@
   function setAddressField(id, value) {
     const input = document.getElementById(id);
     if (!input || !value) return;
+    if (input.tagName === 'SELECT' && !Array.from(input.options).some((option) => option.value === value)) {
+      input.add(new Option(value, value));
+    }
     input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
   }
 

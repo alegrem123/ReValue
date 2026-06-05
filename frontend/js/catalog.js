@@ -9,11 +9,44 @@ const catalogAlert = document.getElementById('catalog-alert');
 const catalogGrid = document.getElementById('catalog-grid');
 const catalogFilters = document.getElementById('catalog-filters');
 const usePositionBtn = document.getElementById('use-position-btn');
+const filterDistance = document.getElementById('filter-distance');
+const distanceHelp = document.getElementById('filter-distance-help');
+const activeFilters = document.getElementById('catalog-active-filters');
+const resultsStatus = document.getElementById('catalog-results-status');
 
 const catalogState = {
   lat: null,
   lng: null,
 };
+
+const filterLabels = {
+  categoria: 'Categoria',
+  dimensione: 'Dimensione',
+  materiale: 'Materiale',
+  raggio: 'Distanza',
+  scadenzaPrima: 'Scadenza entro',
+  ordinamento: 'Ordina',
+};
+
+const sortLabels = {
+  dataScadenza_asc: 'Scadenza più vicina',
+  dataScadenza_desc: 'Scadenza più lontana',
+  valore_desc: 'Valore più alto',
+  valore_asc: 'Valore più basso',
+};
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function setResultsStatus(message) {
+  if (resultsStatus) resultsStatus.textContent = message;
+}
 
 function setAlert(message, type = 'danger') {
   if (!catalogAlert) return;
@@ -26,6 +59,48 @@ function clearAlert() {
   if (!catalogAlert) return;
   catalogAlert.classList.add('d-none');
   catalogAlert.textContent = '';
+}
+
+function updateDistanceControl() {
+  const hasPosition = catalogState.lat != null && catalogState.lng != null;
+  if (filterDistance) {
+    filterDistance.disabled = !hasPosition;
+    if (!hasPosition) filterDistance.value = '';
+  }
+  if (distanceHelp) {
+    distanceHelp.textContent = hasPosition
+      ? 'La distanza usa la tua posizione approssimata.'
+      : 'Attiva la posizione per usare questo filtro.';
+  }
+}
+
+function formatActiveFilterValue(key, value) {
+  if (key === 'ordinamento') return sortLabels[value] || value;
+  if (key === 'raggio') return `Entro ${value} km`;
+  if (key === 'scadenzaPrima') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return new Intl.DateTimeFormat('it-IT').format(date);
+    }
+  }
+  return value;
+}
+
+function updateActiveFilters() {
+  if (!catalogFilters || !activeFilters) return;
+  const chips = [];
+  const formData = new FormData(catalogFilters);
+  formData.forEach((value, key) => {
+    const normalized = String(value).trim();
+    if (!normalized) return;
+    if (key === 'ordinamento' && normalized === 'dataScadenza_asc') return;
+    chips.push(
+      `<span class="catalog-active-filter">${escapeHtml(filterLabels[key] || key)}: ${escapeHtml(formatActiveFilterValue(key, normalized))}</span>`
+    );
+  });
+
+  activeFilters.innerHTML = chips.join('');
+  activeFilters.classList.toggle('d-none', chips.length === 0);
 }
 
 function buildCatalogQuery() {
@@ -89,6 +164,9 @@ async function loadCatalogo() {
   if (!catalogContainer || !catalogGrid || !catalogSpinner || !catalogAlert)
     return;
 
+  updateDistanceControl();
+  updateActiveFilters();
+  setResultsStatus('Caricamento annunci...');
   catalogSpinner.classList.remove('d-none');
   clearAlert();
   catalogGrid.innerHTML = '';
@@ -100,18 +178,33 @@ async function loadCatalogo() {
 
   if (!response.ok) {
     setAlert(response.error || 'Errore nel caricamento del catalogo.');
+    setResultsStatus('Non è stato possibile caricare gli annunci.');
     return;
   }
 
   const annunci = enrichWithDistance(response.data?.data || []);
   window.updateCatalogMap?.(annunci);
+  setResultsStatus(
+    annunci.length === 1
+      ? '1 annuncio trovato.'
+      : `${annunci.length} annunci trovati.`
+  );
 
   if (annunci.length === 0) {
     catalogGrid.innerHTML = `
       <div class="col-12">
-        <div class="alert alert-info">Nessun annuncio disponibile al momento.</div>
+        <div class="catalog-empty-state">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <h3>Nessun annuncio trovato</h3>
+          <p>Prova a rimuovere qualche filtro o controlla gli annunci disponibili senza limitare la distanza.</p>
+          <button id="catalog-empty-reset" type="button" class="btn btn-outline-success">Pulisci filtri</button>
+        </div>
       </div>
     `;
+    document.getElementById('catalog-empty-reset')?.addEventListener('click', () => {
+      catalogFilters?.reset();
+      handleFilterReset();
+    });
     return;
   }
 
@@ -137,7 +230,11 @@ function handleFilterSubmit(event) {
 }
 
 function handleFilterReset() {
-  window.setTimeout(loadCatalogo, 0);
+  window.setTimeout(() => {
+    updateDistanceControl();
+    updateActiveFilters();
+    loadCatalogo();
+  }, 0);
 }
 
 function useCurrentPosition() {
@@ -159,6 +256,7 @@ function useCurrentPosition() {
         usePositionBtn.disabled = false;
         usePositionBtn.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Posizione attiva';
       }
+      updateDistanceControl();
       clearAlert();
       loadCatalogo();
     },
@@ -175,7 +273,11 @@ function useCurrentPosition() {
 
 window.addEventListener('DOMContentLoaded', () => {
   window.initCatalogMap?.();
+  updateDistanceControl();
+  updateActiveFilters();
   catalogFilters?.addEventListener('submit', handleFilterSubmit);
+  catalogFilters?.addEventListener('change', updateActiveFilters);
+  catalogFilters?.addEventListener('input', updateActiveFilters);
   catalogFilters?.addEventListener('reset', handleFilterReset);
   usePositionBtn?.addEventListener('click', useCurrentPosition);
   loadCatalogo();

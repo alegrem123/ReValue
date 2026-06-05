@@ -14,8 +14,13 @@ const lngInput = document.getElementById('annuncio-lng');
 const cityLatInput = document.getElementById('annuncio-city-lat');
 const cityLngInput = document.getElementById('annuncio-city-lng');
 const deadlineInput = document.getElementById('annuncio-deadline');
+const paeseInput = document.getElementById('annuncio-paese');
+const regioneInput = document.getElementById('annuncio-regione');
+const provinciaInput = document.getElementById('annuncio-provincia');
+const comuneInput = document.getElementById('annuncio-comune');
 
 let photoBase64 = [];
+let territoryOptions = null;
 
 function requireAuth() {
   if (!localStorage.getItem('jwt')) {
@@ -35,6 +40,118 @@ function showAlert(message, type = 'danger') {
 function clearAlert() {
   alertEl.classList.add('d-none');
   alertEl.textContent = '';
+}
+
+function normalizeOption(value) {
+  return String(value || '').trim().toLocaleLowerCase('it-IT');
+}
+
+function matchesTerritoryOption(optionValue, selectedValue) {
+  const option = normalizeOption(optionValue);
+  const selected = normalizeOption(selectedValue);
+  if (!selected) return true;
+  return option === selected || option.startsWith(`${selected}/`) || selected.startsWith(`${option}/`);
+}
+
+function clearLocationCoordinates() {
+  latInput.value = '';
+  lngInput.value = '';
+  cityLatInput.value = '';
+  cityLngInput.value = '';
+}
+
+function setSelectOptions(select, options, {
+  getValue = (item) => item,
+  getLabel = (item) => getValue(item),
+  placeholder = '',
+  keepValue = true,
+} = {}) {
+  if (!select || !Array.isArray(options)) return;
+
+  const previousValue = keepValue ? select.value : '';
+  const unique = new Map();
+  options.forEach((item) => {
+    const value = String(getValue(item) || '').trim();
+    const label = String(getLabel(item) || value).trim();
+    const key = `${value}::${label}`;
+    if (!value || unique.has(key)) return;
+    unique.set(key, { value, label });
+  });
+
+  const placeholderOption = placeholder
+    ? `<option value=""${previousValue ? '' : ' selected'} disabled>${escapeOption(placeholder)}</option>`
+    : '';
+
+  let selectedAssigned = false;
+  select.innerHTML = placeholderOption + Array.from(unique.values())
+    .map(({ value, label }) => {
+      const selected = value === previousValue && !selectedAssigned;
+      if (selected) selectedAssigned = true;
+      return `<option value="${escapeOption(value)}"${selected ? ' selected' : ''}>${escapeOption(label)}</option>`;
+    })
+    .join('');
+
+  if (previousValue && !Array.from(unique.values()).some((option) => option.value === previousValue)) {
+    select.value = '';
+  }
+}
+
+function escapeOption(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function updateProvinceOptions() {
+  if (!territoryOptions) return;
+  const selectedRegion = regioneInput.value;
+  const province = selectedRegion
+    ? territoryOptions.province.filter((provincia) => matchesTerritoryOption(provincia.regione, selectedRegion))
+    : territoryOptions.province;
+
+  setSelectOptions(provinciaInput, province, {
+    getValue: (provincia) => provincia.nome,
+    getLabel: (provincia) => [provincia.nome, provincia.sigla, provincia.regione].filter(Boolean).join(' · '),
+    placeholder: 'Seleziona provincia',
+  });
+}
+
+function updateComuneOptions() {
+  if (!territoryOptions) return;
+  const selectedRegion = regioneInput.value;
+  const selectedProvince = provinciaInput.value;
+  let comuni = territoryOptions.comuni;
+
+  if (selectedProvince) {
+    comuni = comuni.filter((comune) => matchesTerritoryOption(comune.provincia, selectedProvince));
+  } else if (selectedRegion) {
+    comuni = comuni.filter((comune) => matchesTerritoryOption(comune.regione, selectedRegion));
+  }
+
+  setSelectOptions(comuneInput, comuni, {
+    getValue: (comune) => comune.nome,
+    getLabel: (comune) => [comune.nome, comune.siglaProvincia || comune.provincia, comune.regione].filter(Boolean).join(' · '),
+    placeholder: 'Seleziona comune',
+  });
+}
+
+async function loadTerritoryOptions() {
+  try {
+    const response = await fetch('../data/italian-territories.json');
+    if (!response.ok) throw new Error('territory_options_unavailable');
+    territoryOptions = await response.json();
+
+    setSelectOptions(paeseInput, territoryOptions.stati || []);
+    setSelectOptions(regioneInput, territoryOptions.regioni || [], {
+      placeholder: 'Seleziona regione',
+    });
+    updateProvinceOptions();
+    updateComuneOptions();
+  } catch {
+    territoryOptions = null;
+  }
 }
 
 function setMinDeadline() {
@@ -232,7 +349,17 @@ async function handleSubmit(event) {
 window.addEventListener('DOMContentLoaded', () => {
   if (!requireAuth()) return;
   setMinDeadline();
+  loadTerritoryOptions();
   photosInput.addEventListener('change', handlePhotosChange);
   useLocationBtn.addEventListener('click', useCurrentLocation);
+  [paeseInput, regioneInput, provinciaInput, comuneInput].forEach((input) => {
+    input.addEventListener('input', clearLocationCoordinates);
+    input.addEventListener('change', clearLocationCoordinates);
+  });
+  regioneInput.addEventListener('change', () => {
+    updateProvinceOptions();
+    updateComuneOptions();
+  });
+  provinciaInput.addEventListener('change', updateComuneOptions);
   form.addEventListener('submit', handleSubmit);
 });

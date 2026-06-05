@@ -37,6 +37,8 @@
     }
 
     submit.disabled = true;
+    submit.setAttribute('aria-busy', 'true');
+    submit.classList.add('btn-loading');
     try {
       const { res, json, data } = await login(email, password);
       if (!res.ok || json?.ok === false) {
@@ -55,6 +57,8 @@
       showError('Backend non raggiungibile.');
     } finally {
       submit.disabled = false;
+      submit.removeAttribute('aria-busy');
+      submit.classList.remove('btn-loading');
     }
   });
 })();

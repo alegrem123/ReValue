@@ -24,7 +24,7 @@
   function showAdminAlert(message, variant = 'danger') {
     const alert = document.getElementById('admin-alert');
     if (!alert) return;
-    alert.className = `alert alert-${variant}`;
+    alert.className = `alert alert-${variant} rv-admin-alert`;
     alert.textContent = message;
   }
 
