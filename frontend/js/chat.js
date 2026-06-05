@@ -25,6 +25,7 @@ let searchIdx   = -1;   // indice risultato attivo
 let searchTotal = 0;    // totale risultati trovati
 let pendingImage = null; // { base64, name, size } immagine in attesa di invio
 let typingDebounce = null; // timer debounce per segnale "sta scrivendo"
+const participantsById = new Map();
 
 function getQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -80,9 +81,17 @@ function isMine(msg) {
   return mid?.toString() === myId;
 }
 
+function getSenderId(msg) {
+  return (msg.mittente?._id || msg.mittente)?.toString();
+}
+
 function buildBubble(msg, highlightQ = '') {
   const mine = isMine(msg);
   const time = formatTime(msg.timestamp);
+  const sender = participantsById.get(getSenderId(msg));
+  const avatarHtml = !mine && sender?.fotoProfilo
+    ? `<img class="message-avatar" src="${sender.fotoProfilo}" alt="">`
+    : '';
 
   let tick = '';
   if (mine) {
@@ -102,6 +111,7 @@ function buildBubble(msg, highlightQ = '') {
 
   return `
     <div class="bubble-row ${mine ? 'mine' : 'other'}" data-id="${msg._id}" data-letto="${msg.letto}">
+      ${avatarHtml}
       <div class="bubble ${mine ? 'mine' : 'other'}">
         ${imgHtml}
         <div>${testoHtml}</div>
@@ -260,9 +270,18 @@ async function loadConversazione() {
   const altro = altri[0];
 
   if (altro) {
+    (conv.partecipanti || []).forEach((p) => {
+      if (p?._id) participantsById.set(p._id.toString(), p);
+    });
+
     const nome = `${altro.nome} ${altro.cognome}`;
     headerName.textContent = nome;
-    headerAvatar.textContent = `${altro.nome.charAt(0)}${altro.cognome.charAt(0)}`.toUpperCase();
+    if (altro.fotoProfilo) {
+      headerAvatar.innerHTML = `<img src="${altro.fotoProfilo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="${nome}">`;
+      headerAvatar.style.background = 'none';
+    } else {
+      headerAvatar.textContent = `${altro.nome.charAt(0)}${altro.cognome.charAt(0)}`.toUpperCase();
+    }
     headerSub.textContent = conv.prenotazione?.stato
       ? `Prenotazione ${conv.prenotazione.stato.toLowerCase()}`
       : '';
@@ -649,7 +668,8 @@ async function init() {
   initAttachment();
   initLightbox();
   initInput();
-  await Promise.all([loadConversazione(), loadMessages(true)]);
+  await loadConversazione();
+  await loadMessages(true);
 
   // Polling ottimizzato ogni 5s — usa /recenti?since= per payload O(Δt) (RNF7)
   pollTimer = setInterval(() => loadMessages(false), POLL_INTERVAL);

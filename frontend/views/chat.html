@@ -61,10 +61,21 @@
     /* Bolle */
     .bubble-row {
       display: flex;
+      align-items: flex-end;
+      gap: 8px;
     }
 
     .bubble-row.mine  { justify-content: flex-end; }
     .bubble-row.other { justify-content: flex-start; }
+
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #e9ecef;
+    }
 
     .bubble {
       max-width: 72%;

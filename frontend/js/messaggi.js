@@ -47,7 +47,10 @@ function buildCard(conv, myId) {
     <a href="chat.html?id=${conv._id}"
        class="conv-card card border-0 shadow-sm mb-3 p-3 d-block ${hasUnread ? 'unread' : ''}">
       <div class="d-flex align-items-center gap-3">
-        <div class="avatar">${ini}</div>
+        ${altro?.fotoProfilo
+          ? `<img src="${altro.fotoProfilo}" class="avatar" style="object-fit:cover;" alt="${nomeAltro}">`
+          : `<div class="avatar">${ini}</div>`
+        }
         <div class="flex-grow-1 overflow-hidden">
           <div class="d-flex justify-content-between align-items-center gap-2">
             <span class="fw-bold ${hasUnread ? 'text-dark' : 'text-secondary'}">${nomeAltro}</span>
