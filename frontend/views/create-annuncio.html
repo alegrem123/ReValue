@@ -58,11 +58,60 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label for="annuncio-category" class="form-label">Categoria</label>
-              <input id="annuncio-category" name="categoria" type="text" class="form-control" list="categorie-list" placeholder="Es. Mobili" required />
+              <select id="annuncio-category" name="categoria" class="form-select" required>
+                <option value="" selected disabled>Seleziona categoria</option>
+                <option value="Arredo e mobili">Arredo e mobili</option>
+                <option value="Bagno e sanitari">Bagno e sanitari</option>
+                <option value="Biciclette e mobilita">Biciclette e mobilita</option>
+                <option value="Cancelleria">Cancelleria</option>
+                <option value="Cucina e casalinghi">Cucina e casalinghi</option>
+                <option value="Decorazioni">Decorazioni</option>
+                <option value="Edilizia leggera">Edilizia leggera</option>
+                <option value="Elettrodomestici">Elettrodomestici</option>
+                <option value="Elettronica">Elettronica</option>
+                <option value="Ferramenta">Ferramenta</option>
+                <option value="Giardino e outdoor">Giardino e outdoor</option>
+                <option value="Giocattoli">Giocattoli</option>
+                <option value="Illuminazione">Illuminazione</option>
+                <option value="Infanzia">Infanzia</option>
+                <option value="Libri e manuali">Libri e manuali</option>
+                <option value="Materiale scolastico">Materiale scolastico</option>
+                <option value="Musica e strumenti">Musica e strumenti</option>
+                <option value="Ricambi auto e moto">Ricambi auto e moto</option>
+                <option value="Sport e tempo libero">Sport e tempo libero</option>
+                <option value="Tessili e biancheria">Tessili e biancheria</option>
+                <option value="Utensili e attrezzi">Utensili e attrezzi</option>
+                <option value="Vasi e contenitori">Vasi e contenitori</option>
+                <option value="Altro">Altro</option>
+              </select>
             </div>
             <div class="col-md-6">
               <label for="annuncio-material" class="form-label">Materiale</label>
-              <input id="annuncio-material" name="materiale" type="text" class="form-control" list="materiali-list" placeholder="Es. Legno" />
+              <select id="annuncio-material" name="materiale" class="form-select">
+                <option value="" selected>Seleziona materiale</option>
+                <option value="Legno">Legno</option>
+                <option value="Legno massello">Legno massello</option>
+                <option value="Truciolare">Truciolare</option>
+                <option value="MDF">MDF</option>
+                <option value="Metallo">Metallo</option>
+                <option value="Acciaio">Acciaio</option>
+                <option value="Alluminio">Alluminio</option>
+                <option value="Ferro">Ferro</option>
+                <option value="Plastica">Plastica</option>
+                <option value="PVC">PVC</option>
+                <option value="Vetro">Vetro</option>
+                <option value="Ceramica">Ceramica</option>
+                <option value="Tessuto">Tessuto</option>
+                <option value="Cotone">Cotone</option>
+                <option value="Lana">Lana</option>
+                <option value="Pelle">Pelle</option>
+                <option value="Carta">Carta</option>
+                <option value="Cartone">Cartone</option>
+                <option value="Gomma">Gomma</option>
+                <option value="Rame">Rame</option>
+                <option value="Ottone">Ottone</option>
+                <option value="Misto">Misto</option>
+              </select>
             </div>
             <div class="col-md-6">
               <label for="annuncio-size" class="form-label">Dimensione</label>
@@ -84,20 +133,65 @@
           <h2 class="h5 fw-bold mb-3">Posizione e foto</h2>
           <div class="row g-3">
             <div class="col-md-6 col-lg-12">
-              <label for="annuncio-paese" class="form-label">Paese</label>
-              <input id="annuncio-paese" name="paese" type="text" class="form-control" list="paesi-list" value="Italia" required />
+              <label for="annuncio-paese" class="form-label">Stato / Paese</label>
+              <select id="annuncio-paese" name="paese" class="form-select" required>
+                <option value="Italia" selected>Italia</option>
+                <option value="San Marino">San Marino</option>
+                <option value="Citta del Vaticano">Citta del Vaticano</option>
+                <option value="Svizzera">Svizzera</option>
+                <option value="Austria">Austria</option>
+                <option value="Francia">Francia</option>
+                <option value="Slovenia">Slovenia</option>
+                <option value="Croazia">Croazia</option>
+                <option value="Germania">Germania</option>
+              </select>
             </div>
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-regione" class="form-label">Regione</label>
-              <input id="annuncio-regione" name="regione" type="text" class="form-control" list="regioni-list" placeholder="Es. Trentino-Alto Adige" required />
+              <select id="annuncio-regione" name="regione" class="form-select" required>
+                <option value="" selected disabled>Seleziona regione</option>
+                <option value="Abruzzo">Abruzzo</option>
+                <option value="Basilicata">Basilicata</option>
+                <option value="Calabria">Calabria</option>
+                <option value="Campania">Campania</option>
+                <option value="Emilia-Romagna">Emilia-Romagna</option>
+                <option value="Friuli-Venezia Giulia">Friuli-Venezia Giulia</option>
+                <option value="Lazio">Lazio</option>
+                <option value="Liguria">Liguria</option>
+                <option value="Lombardia">Lombardia</option>
+                <option value="Marche">Marche</option>
+                <option value="Molise">Molise</option>
+                <option value="Piemonte">Piemonte</option>
+                <option value="Puglia">Puglia</option>
+                <option value="Sardegna">Sardegna</option>
+                <option value="Sicilia">Sicilia</option>
+                <option value="Toscana">Toscana</option>
+                <option value="Trentino-Alto Adige/Südtirol">Trentino-Alto Adige/Südtirol</option>
+                <option value="Umbria">Umbria</option>
+                <option value="Valle d'Aosta/Vallée d'Aoste">Valle d'Aosta/Vallée d'Aoste</option>
+                <option value="Veneto">Veneto</option>
+              </select>
             </div>
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-provincia" class="form-label">Provincia</label>
-              <input id="annuncio-provincia" name="provincia" type="text" class="form-control" list="province-list" placeholder="Es. Trento" required />
+              <select id="annuncio-provincia" name="provincia" class="form-select" required>
+                <option value="" selected disabled>Seleziona provincia</option>
+                <option value="Trento">Trento</option>
+                <option value="Bolzano/Bozen">Bolzano/Bozen</option>
+                <option value="Verona">Verona</option>
+                <option value="Brescia">Brescia</option>
+              </select>
             </div>
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-comune" class="form-label">Comune</label>
-              <input id="annuncio-comune" name="comune" type="text" class="form-control" list="comuni-list" placeholder="Es. Trento" required />
+              <select id="annuncio-comune" name="comune" class="form-select" required>
+                <option value="" selected disabled>Seleziona comune</option>
+                <option value="Trento">Trento</option>
+                <option value="Rovereto">Rovereto</option>
+                <option value="Pergine Valsugana">Pergine Valsugana</option>
+                <option value="Riva del Garda">Riva del Garda</option>
+                <option value="Arco">Arco</option>
+              </select>
             </div>
             <div class="col-md-6 col-lg-12">
               <label for="annuncio-via" class="form-label">Via</label>
@@ -137,45 +231,6 @@
         </button>
       </div>
     </form>
-    <datalist id="categorie-list">
-      <option value="Mobili"></option>
-      <option value="Elettrodomestici"></option>
-      <option value="Elettronica"></option>
-      <option value="Abbigliamento"></option>
-      <option value="Libri"></option>
-      <option value="Giocattoli"></option>
-      <option value="Attrezzi"></option>
-      <option value="Altro"></option>
-    </datalist>
-    <datalist id="materiali-list">
-      <option value="Legno"></option>
-      <option value="Metallo"></option>
-      <option value="Plastica"></option>
-      <option value="Vetro"></option>
-      <option value="Tessuto"></option>
-      <option value="Carta"></option>
-      <option value="Misto"></option>
-    </datalist>
-    <datalist id="paesi-list"><option value="Italia"></option></datalist>
-    <datalist id="regioni-list">
-      <option value="Trentino-Alto Adige"></option>
-      <option value="Veneto"></option>
-      <option value="Lombardia"></option>
-      <option value="Emilia-Romagna"></option>
-    </datalist>
-    <datalist id="province-list">
-      <option value="Trento"></option>
-      <option value="Bolzano"></option>
-      <option value="Verona"></option>
-      <option value="Brescia"></option>
-    </datalist>
-    <datalist id="comuni-list">
-      <option value="Trento"></option>
-      <option value="Rovereto"></option>
-      <option value="Pergine Valsugana"></option>
-      <option value="Riva del Garda"></option>
-      <option value="Arco"></option>
-    </datalist>
   </main>
 
   <div id="footer-container"></div>
@@ -194,5 +249,8 @@
   <script src="../js/apiClient.js" defer></script>
   <script src="../js/locationPicker.js" defer></script>
   <script src="../js/createAnnuncio.js" defer></script>
+<!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js"></script>
+<!-- impeccable-live-end -->
 </body>
 </html>

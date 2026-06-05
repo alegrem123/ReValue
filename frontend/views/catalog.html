@@ -28,8 +28,8 @@
 <body>
   <div id="navbar-container"></div>
 
-  <main class="container py-5" id="catalog-container">
-    <section class="page-hero">
+  <main class="container rv-catalog-shell py-4 py-lg-5" id="catalog-container">
+    <section class="page-hero rv-catalog-hero">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
         <div>
           <p class="page-hero-eyebrow">Catalogo pubblico</p>
@@ -46,13 +46,24 @@
 
     <div id="catalog-alert" class="alert d-none" role="alert"></div>
 
-    <section class="filter-panel p-4 shadow-sm mb-4">
-      <form id="catalog-filters" class="row g-3 align-items-end">
-        <div class="col-md-6 col-lg-3">
+    <section class="filter-panel catalog-filter-panel mb-4" aria-labelledby="catalog-filter-title">
+      <div class="catalog-filter-header">
+        <div>
+          <h2 id="catalog-filter-title" class="catalog-section-title mb-1">Filtra gli annunci</h2>
+          <p class="catalog-section-copy mb-0">Restringi la ricerca per categoria, dimensione, materiale e scadenza.</p>
+        </div>
+        <button id="use-position-btn" type="button" class="btn btn-outline-success">
+          <i class="bi bi-geo-alt"></i>
+          Usa posizione
+        </button>
+      </div>
+
+      <form id="catalog-filters" class="catalog-filter-grid">
+        <div class="catalog-filter-field catalog-filter-field-wide">
           <label for="filter-category" class="form-label">Categoria</label>
           <input id="filter-category" name="categoria" type="text" class="form-control" placeholder="Es. Mobili" />
         </div>
-        <div class="col-md-6 col-lg-2">
+        <div class="catalog-filter-field catalog-filter-field-compact">
           <label for="filter-size" class="form-label">Dimensione</label>
           <select id="filter-size" name="dimensione" class="form-select">
             <option value="">Tutte</option>
@@ -62,25 +73,26 @@
             <option value="molto grande">Molto grande</option>
           </select>
         </div>
-        <div class="col-md-6 col-lg-2">
+        <div class="catalog-filter-field">
           <label for="filter-material" class="form-label">Materiale</label>
           <input id="filter-material" name="materiale" type="text" class="form-control" placeholder="Es. Legno" />
         </div>
-        <div class="col-md-6 col-lg-2">
+        <div class="catalog-filter-field">
           <label for="filter-distance" class="form-label">Distanza</label>
-          <select id="filter-distance" name="raggio" class="form-select">
+          <select id="filter-distance" name="raggio" class="form-select" aria-describedby="filter-distance-help" disabled>
             <option value="">Qualsiasi</option>
             <option value="2">Entro 2 km</option>
             <option value="5">Entro 5 km</option>
             <option value="10">Entro 10 km</option>
             <option value="25">Entro 25 km</option>
           </select>
+          <p id="filter-distance-help" class="catalog-field-help mb-0">Attiva la posizione per usare questo filtro.</p>
         </div>
-        <div class="col-md-6 col-lg-2">
+        <div class="catalog-filter-field catalog-filter-field-compact">
           <label for="filter-deadline" class="form-label">Scadenza entro</label>
           <input id="filter-deadline" name="scadenzaPrima" type="date" class="form-control" />
         </div>
-        <div class="col-md-6 col-lg-3">
+        <div class="catalog-filter-field catalog-filter-field-wide">
           <label for="filter-sort" class="form-label">Ordina</label>
           <select id="filter-sort" name="ordinamento" class="form-select">
             <option value="dataScadenza_asc">Scadenza più vicina</option>
@@ -89,35 +101,39 @@
             <option value="valore_asc">Valore più basso</option>
           </select>
         </div>
-        <div class="col-12 d-flex flex-column flex-md-row gap-2 justify-content-between">
-          <button id="use-position-btn" type="button" class="btn btn-outline-success">
-            <i class="bi bi-geo-alt"></i>
-            Usa posizione
-          </button>
-          <div class="d-flex gap-2">
-            <button type="reset" class="btn btn-outline-secondary">Pulisci</button>
-            <button type="submit" class="btn btn-success">Applica filtri</button>
-          </div>
+        <div class="catalog-filter-actions">
+          <button type="reset" class="btn btn-outline-secondary">Pulisci</button>
+          <button type="submit" class="btn btn-success">Applica filtri</button>
         </div>
       </form>
+      <div id="catalog-active-filters" class="catalog-active-filters d-none" aria-live="polite"></div>
     </section>
 
-    <section class="card p-4 mb-4">
-      <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
+    <section class="catalog-section catalog-map-section mb-4" aria-labelledby="catalog-map-title">
+      <div class="catalog-section-header">
         <div>
-          <h2 class="h5 fw-bold mb-1">Mappa annunci</h2>
+          <h2 id="catalog-map-title" class="catalog-section-title mb-1">Mappa annunci</h2>
           <p id="catalog-map-status" class="text-muted mb-0">Caricamento mappa...</p>
         </div>
       </div>
-      <div id="catalog-map" class="catalog-map rounded-3 overflow-hidden"></div>
+      <div id="catalog-map" class="catalog-map"></div>
     </section>
 
-    <div id="catalog-spinner" class="text-center py-5 d-none">
-      <div class="spinner-border text-success" role="status"></div>
-      <p class="mt-3 mb-0">Caricamento annunci...</p>
-    </div>
+    <section class="catalog-results" aria-labelledby="catalog-results-title">
+      <div class="catalog-results-header">
+        <div>
+          <h2 id="catalog-results-title" class="catalog-section-title mb-1">Annunci disponibili</h2>
+          <p id="catalog-results-status" class="catalog-section-copy mb-0">Caricamento annunci...</p>
+        </div>
+      </div>
 
-    <div id="catalog-grid" class="row g-4"></div>
+      <div id="catalog-spinner" class="catalog-loading d-none">
+        <div class="spinner-border text-success" role="status"></div>
+        <p class="mt-3 mb-0">Caricamento annunci...</p>
+      </div>
+
+      <div id="catalog-grid" class="row g-4"></div>
+    </section>
   </main>
 
   <div id="footer-container"></div>
@@ -138,5 +154,8 @@
   <script src="../js/components/annuncioCard.js" defer></script>
   <script src="../js/map.js" defer></script>
   <script src="../js/catalog.js" defer></script>
+<!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js"></script>
+<!-- impeccable-live-end -->
 </body>
 </html>
