@@ -9,11 +9,23 @@ const Conversazione = require('../models/conversazioneModel');
  * @returns {Promise<Conversazione>}
  */
 async function creaConversazione(idPrenotazione, partecipanti) {
-  const conversazione = await Conversazione.create({
-    prenotazione: idPrenotazione,
-    partecipanti,
-  });
-  return conversazione;
+  const pairKey = [...partecipanti].map(String).sort().join('_');
+  return Conversazione.findOneAndUpdate(
+    { pairKey },
+    {
+      $setOnInsert: {
+        prenotazione: idPrenotazione,
+        partecipanti,
+        pairKey,
+      },
+    },
+    {
+      new: true,
+      upsert: true,
+      runValidators: true,
+      setDefaultsOnInsert: true,
+    }
+  );
 }
 
 /**
