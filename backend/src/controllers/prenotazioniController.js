@@ -46,9 +46,23 @@ async function creaPrenotazione(req, res) {
           [{ annuncio: annuncio._id, acquirente: req.user.id, donatore: annuncio.donatore }],
           { session }
         );
-        await Conversazione.create(
-          [{ prenotazione: prenotazione._id, partecipanti: [annuncio.donatore, req.user.id] }],
-          { session }
+        const pairKey = [annuncio.donatore, req.user.id].map(String).sort().join('_');
+        await Conversazione.findOneAndUpdate(
+          { pairKey },
+          {
+            $setOnInsert: {
+              prenotazione: prenotazione._id,
+              partecipanti: [annuncio.donatore, req.user.id],
+              pairKey,
+            },
+          },
+          {
+            new: true,
+            upsert: true,
+            runValidators: true,
+            setDefaultsOnInsert: true,
+            session,
+          }
         );
       });
     } finally {

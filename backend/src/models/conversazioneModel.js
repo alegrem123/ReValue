@@ -42,8 +42,11 @@ const conversazioneSchema = new Schema(
     prenotazione: {
       type: Schema.Types.ObjectId,
       ref: 'Prenotazione',
-      required: [true, 'prenotazione is required'],
-      unique: true, // composizione 1→0..1: una chat per prenotazione
+      default: null,
+    },
+    pairKey: {
+      type: String,
+      default: null,
     },
     partecipanti: {
       type: [{ type: Schema.Types.ObjectId, ref: 'User' }],
@@ -86,7 +89,15 @@ const conversazioneSchema = new Schema(
 // RNF9: messaggi persistiti e recuperabili — garantito da embedding
 // RF13: solo partecipanti possono inviare — enforced nel service
 
+conversazioneSchema.pre('validate', function buildPairKey(next) {
+  if (!this.pairKey && Array.isArray(this.partecipanti) && this.partecipanti.length === 2) {
+    this.pairKey = this.partecipanti.map(String).sort().join('_');
+  }
+  next();
+});
+
 conversazioneSchema.index({ partecipanti: 1 });
+conversazioneSchema.index({ pairKey: 1 }, { unique: true, sparse: true });
 
 const Conversazione =
   mongoose.models.Conversazione || mongoose.model('Conversazione', conversazioneSchema);
