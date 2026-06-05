@@ -159,6 +159,10 @@ function useCurrentPosition() {
         usePositionBtn.disabled = false;
         usePositionBtn.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Posizione attiva';
       }
+      const distanceSelect = catalogFilters?.elements?.raggio;
+      const distanceHelp = document.getElementById('filter-distance-help');
+      if (distanceSelect) distanceSelect.disabled = false;
+      if (distanceHelp) distanceHelp.textContent = 'Seleziona un raggio per filtrare gli annunci vicini.';
       clearAlert();
       loadCatalogo();
     },

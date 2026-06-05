@@ -46,67 +46,95 @@
 
     <div id="catalog-alert" class="alert d-none" role="alert"></div>
 
-    <section class="filter-panel catalog-filter-panel mb-4" aria-labelledby="catalog-filter-title">
-      <div class="catalog-filter-header">
-        <div>
-          <h2 id="catalog-filter-title" class="catalog-section-title mb-1">Filtra gli annunci</h2>
-          <p class="catalog-section-copy mb-0">Restringi la ricerca per categoria, dimensione, materiale e scadenza.</p>
+    <section class="mb-4" aria-labelledby="catalog-filter-title">
+      <div class="card p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+          <div>
+            <h2 id="catalog-filter-title" class="h5 fw-bold mb-1">Filtra gli annunci</h2>
+            <p class="text-muted small mb-0">Restringi la ricerca per categoria, dimensione, materiale e scadenza.</p>
+          </div>
+          <button id="use-position-btn" type="button" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-geo-alt me-1"></i>Usa posizione
+          </button>
         </div>
-        <button id="use-position-btn" type="button" class="btn btn-outline-success">
-          <i class="bi bi-geo-alt"></i>
-          Usa posizione
-        </button>
-      </div>
 
-      <form id="catalog-filters" class="catalog-filter-grid">
-        <div class="catalog-filter-field catalog-filter-field-wide">
-          <label for="filter-category" class="form-label">Categoria</label>
-          <input id="filter-category" name="categoria" type="text" class="form-control" placeholder="Es. Mobili" />
-        </div>
-        <div class="catalog-filter-field catalog-filter-field-compact">
-          <label for="filter-size" class="form-label">Dimensione</label>
-          <select id="filter-size" name="dimensione" class="form-select">
-            <option value="">Tutte</option>
-            <option value="piccolo">Piccolo</option>
-            <option value="medio">Medio</option>
-            <option value="grande">Grande</option>
-            <option value="molto grande">Molto grande</option>
-          </select>
-        </div>
-        <div class="catalog-filter-field">
-          <label for="filter-material" class="form-label">Materiale</label>
-          <input id="filter-material" name="materiale" type="text" class="form-control" placeholder="Es. Legno" />
-        </div>
-        <div class="catalog-filter-field">
-          <label for="filter-distance" class="form-label">Distanza</label>
-          <select id="filter-distance" name="raggio" class="form-select" aria-describedby="filter-distance-help" disabled>
-            <option value="">Qualsiasi</option>
-            <option value="2">Entro 2 km</option>
-            <option value="5">Entro 5 km</option>
-            <option value="10">Entro 10 km</option>
-            <option value="25">Entro 25 km</option>
-          </select>
-          <p id="filter-distance-help" class="catalog-field-help mb-0">Attiva la posizione per usare questo filtro.</p>
-        </div>
-        <div class="catalog-filter-field catalog-filter-field-compact">
-          <label for="filter-deadline" class="form-label">Scadenza entro</label>
-          <input id="filter-deadline" name="scadenzaPrima" type="date" class="form-control" />
-        </div>
-        <div class="catalog-filter-field catalog-filter-field-wide">
-          <label for="filter-sort" class="form-label">Ordina</label>
-          <select id="filter-sort" name="ordinamento" class="form-select">
-            <option value="dataScadenza_asc">Scadenza più vicina</option>
-            <option value="dataScadenza_desc">Scadenza più lontana</option>
-            <option value="valore_desc">Valore più alto</option>
-            <option value="valore_asc">Valore più basso</option>
-          </select>
-        </div>
-        <div class="catalog-filter-actions">
-          <button type="reset" class="btn btn-outline-secondary">Pulisci</button>
-          <button type="submit" class="btn btn-success">Applica filtri</button>
-        </div>
-      </form>
-      <div id="catalog-active-filters" class="catalog-active-filters d-none" aria-live="polite"></div>
+        <form id="catalog-filters">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="filter-category" class="form-label">Categoria</label>
+              <select id="filter-category" name="categoria" class="form-select">
+                <option value="">Tutte le categorie</option>
+                <option value="Arredo e mobili">Arredo e mobili</option>
+                <option value="Bagno e sanitari">Bagno e sanitari</option>
+                <option value="Biciclette e mobilita">Biciclette e mobilita</option>
+                <option value="Cancelleria">Cancelleria</option>
+                <option value="Cucina e casalinghi">Cucina e casalinghi</option>
+                <option value="Decorazioni">Decorazioni</option>
+                <option value="Edilizia leggera">Edilizia leggera</option>
+                <option value="Elettrodomestici">Elettrodomestici</option>
+                <option value="Elettronica">Elettronica</option>
+                <option value="Ferramenta">Ferramenta</option>
+                <option value="Giardino e outdoor">Giardino e outdoor</option>
+                <option value="Giocattoli">Giocattoli</option>
+                <option value="Illuminazione">Illuminazione</option>
+                <option value="Infanzia">Infanzia</option>
+                <option value="Libri e manuali">Libri e manuali</option>
+                <option value="Materiale scolastico">Materiale scolastico</option>
+                <option value="Musica e strumenti">Musica e strumenti</option>
+                <option value="Ricambi auto e moto">Ricambi auto e moto</option>
+                <option value="Sport e tempo libero">Sport e tempo libero</option>
+                <option value="Tessili e biancheria">Tessili e biancheria</option>
+                <option value="Utensili e attrezzi">Utensili e attrezzi</option>
+                <option value="Vasi e contenitori">Vasi e contenitori</option>
+                <option value="Altro">Altro</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="filter-size" class="form-label">Dimensione</label>
+              <select id="filter-size" name="dimensione" class="form-select">
+                <option value="">Tutte</option>
+                <option value="piccolo">Piccolo</option>
+                <option value="medio">Medio</option>
+                <option value="grande">Grande</option>
+                <option value="molto grande">Molto grande</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="filter-material" class="form-label">Materiale</label>
+              <input id="filter-material" name="materiale" type="text" class="form-control" placeholder="Es. Legno" />
+            </div>
+            <div class="col-md-4">
+              <label for="filter-distance" class="form-label">Distanza</label>
+              <select id="filter-distance" name="raggio" class="form-select" disabled>
+                <option value="">Qualsiasi</option>
+                <option value="2">Entro 2 km</option>
+                <option value="5">Entro 5 km</option>
+                <option value="10">Entro 10 km</option>
+                <option value="25">Entro 25 km</option>
+              </select>
+              <div id="filter-distance-help" class="form-text">Attiva la posizione per usare questo filtro.</div>
+            </div>
+            <div class="col-md-4">
+              <label for="filter-deadline" class="form-label">Scadenza entro</label>
+              <input id="filter-deadline" name="scadenzaPrima" type="date" class="form-control" />
+            </div>
+            <div class="col-md-4">
+              <label for="filter-sort" class="form-label">Ordina per</label>
+              <select id="filter-sort" name="ordinamento" class="form-select">
+                <option value="dataScadenza_asc">Scadenza più vicina</option>
+                <option value="dataScadenza_desc">Scadenza più lontana</option>
+                <option value="valore_desc">Valore più alto</option>
+                <option value="valore_asc">Valore più basso</option>
+              </select>
+            </div>
+            <div class="col-12 d-flex gap-2 justify-content-end">
+              <button type="reset" class="btn btn-outline-secondary">Pulisci</button>
+              <button type="submit" class="btn btn-success">Applica filtri</button>
+            </div>
+          </div>
+        </form>
+        <div id="catalog-active-filters" class="d-none mt-3" aria-live="polite"></div>
+      </div>
     </section>
 
     <section class="catalog-section catalog-map-section mb-4" aria-labelledby="catalog-map-title">
