@@ -6,6 +6,7 @@
   <title>Catalogo — RE-VALUE</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
     rel="stylesheet"
 
     crossorigin="anonymous"
@@ -13,6 +14,7 @@
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+"
 
     crossorigin="anonymous"
   />
@@ -22,51 +24,16 @@
     integrity="sha256-p4NxAoJBhIINfQvO1Qbzt1z3VgOcYFhH4p+R1M1pR1Y="
     crossorigin=""
   />
-  <style>
-    :root {
-      --rv-green:       #2E7D32;
-      --rv-green-light: #43A047;
-      --rv-green-dark:  #1B5E20;
-      --rv-accent:      #FFC107;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .catalog-hero {
-      background-color: #2E7D32;
-      color: #fff;
-    }
-
-    .catalog-hero h1 {
-      letter-spacing: -0.03em;
-    }
-
-    .card-img-top {
-      object-fit: cover;
-    }
-
-    .catalog-map {
-      min-height: 360px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-    }
-
-    .filter-panel {
-      border-left: 4px solid var(--rv-green);
-    }
-  </style>
 </head>
 <body>
   <div id="navbar-container"></div>
 
-  <main class="container py-5" id="catalog-container">
-    <section class="catalog-hero rounded-4 p-4 mb-4 shadow-sm">
+  <main class="container rv-catalog-shell py-4 py-lg-5" id="catalog-container">
+    <section class="page-hero rv-catalog-hero">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
         <div>
-          <p class="text-uppercase small text-warning mb-2">Catalogo pubblico</p>
-          <h1 class="display-6 fw-bold mb-2">Trova l'oggetto che fa per te</h1>
+          <p class="page-hero-eyebrow">Catalogo pubblico</p>
+          <h1 class="fw-bold mb-2">Trova l'oggetto che fa per te</h1>
           <p class="mb-0 opacity-85">
             Sfoglia gli annunci disponibili e scopri subito nuovi oggetti da scambiare nella tua città.
           </p>
@@ -79,13 +46,24 @@
 
     <div id="catalog-alert" class="alert d-none" role="alert"></div>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 filter-panel">
-      <form id="catalog-filters" class="row g-3 align-items-end">
-        <div class="col-md-6 col-lg-3">
+    <section class="filter-panel catalog-filter-panel mb-4" aria-labelledby="catalog-filter-title">
+      <div class="catalog-filter-header">
+        <div>
+          <h2 id="catalog-filter-title" class="catalog-section-title mb-1">Filtra gli annunci</h2>
+          <p class="catalog-section-copy mb-0">Restringi la ricerca per categoria, dimensione, materiale e scadenza.</p>
+        </div>
+        <button id="use-position-btn" type="button" class="btn btn-outline-success">
+          <i class="bi bi-geo-alt"></i>
+          Usa posizione
+        </button>
+      </div>
+
+      <form id="catalog-filters" class="catalog-filter-grid">
+        <div class="catalog-filter-field catalog-filter-field-wide">
           <label for="filter-category" class="form-label">Categoria</label>
           <input id="filter-category" name="categoria" type="text" class="form-control" placeholder="Es. Mobili" />
         </div>
-        <div class="col-md-6 col-lg-2">
+        <div class="catalog-filter-field catalog-filter-field-compact">
           <label for="filter-size" class="form-label">Dimensione</label>
           <select id="filter-size" name="dimensione" class="form-select">
             <option value="">Tutte</option>
@@ -95,25 +73,26 @@
             <option value="molto grande">Molto grande</option>
           </select>
         </div>
-        <div class="col-md-6 col-lg-2">
+        <div class="catalog-filter-field">
           <label for="filter-material" class="form-label">Materiale</label>
           <input id="filter-material" name="materiale" type="text" class="form-control" placeholder="Es. Legno" />
         </div>
-        <div class="col-md-6 col-lg-2">
+        <div class="catalog-filter-field">
           <label for="filter-distance" class="form-label">Distanza</label>
-          <select id="filter-distance" name="raggio" class="form-select">
+          <select id="filter-distance" name="raggio" class="form-select" aria-describedby="filter-distance-help" disabled>
             <option value="">Qualsiasi</option>
             <option value="2">Entro 2 km</option>
             <option value="5">Entro 5 km</option>
             <option value="10">Entro 10 km</option>
             <option value="25">Entro 25 km</option>
           </select>
+          <p id="filter-distance-help" class="catalog-field-help mb-0">Attiva la posizione per usare questo filtro.</p>
         </div>
-        <div class="col-md-6 col-lg-2">
+        <div class="catalog-filter-field catalog-filter-field-compact">
           <label for="filter-deadline" class="form-label">Scadenza entro</label>
           <input id="filter-deadline" name="scadenzaPrima" type="date" class="form-control" />
         </div>
-        <div class="col-md-6 col-lg-3">
+        <div class="catalog-filter-field catalog-filter-field-wide">
           <label for="filter-sort" class="form-label">Ordina</label>
           <select id="filter-sort" name="ordinamento" class="form-select">
             <option value="dataScadenza_asc">Scadenza più vicina</option>
@@ -122,41 +101,46 @@
             <option value="valore_asc">Valore più basso</option>
           </select>
         </div>
-        <div class="col-12 d-flex flex-column flex-md-row gap-2 justify-content-between">
-          <button id="use-position-btn" type="button" class="btn btn-outline-success">
-            <i class="bi bi-geo-alt"></i>
-            Usa posizione
-          </button>
-          <div class="d-flex gap-2">
-            <button type="reset" class="btn btn-outline-secondary">Pulisci</button>
-            <button type="submit" class="btn btn-success">Applica filtri</button>
-          </div>
+        <div class="catalog-filter-actions">
+          <button type="reset" class="btn btn-outline-secondary">Pulisci</button>
+          <button type="submit" class="btn btn-success">Applica filtri</button>
         </div>
       </form>
+      <div id="catalog-active-filters" class="catalog-active-filters d-none" aria-live="polite"></div>
     </section>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4">
-      <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
+    <section class="catalog-section catalog-map-section mb-4" aria-labelledby="catalog-map-title">
+      <div class="catalog-section-header">
         <div>
-          <h2 class="h5 fw-bold mb-1">Mappa annunci</h2>
+          <h2 id="catalog-map-title" class="catalog-section-title mb-1">Mappa annunci</h2>
           <p id="catalog-map-status" class="text-muted mb-0">Caricamento mappa...</p>
         </div>
       </div>
-      <div id="catalog-map" class="catalog-map rounded-3 overflow-hidden"></div>
+      <div id="catalog-map" class="catalog-map"></div>
     </section>
 
-    <div id="catalog-spinner" class="text-center py-5 d-none">
-      <div class="spinner-border text-success" role="status"></div>
-      <p class="mt-3 mb-0">Caricamento annunci...</p>
-    </div>
+    <section class="catalog-results" aria-labelledby="catalog-results-title">
+      <div class="catalog-results-header">
+        <div>
+          <h2 id="catalog-results-title" class="catalog-section-title mb-1">Annunci disponibili</h2>
+          <p id="catalog-results-status" class="catalog-section-copy mb-0">Caricamento annunci...</p>
+        </div>
+      </div>
 
-    <div id="catalog-grid" class="row g-4"></div>
+      <div id="catalog-spinner" class="catalog-loading d-none">
+        <div class="spinner-border text-success" role="status"></div>
+        <p class="mt-3 mb-0">Caricamento annunci...</p>
+      </div>
+
+      <div id="catalog-grid" class="row g-4"></div>
+    </section>
   </main>
 
   <div id="footer-container"></div>
 
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
 
     crossorigin="anonymous"
   ></script>
@@ -170,5 +154,8 @@
   <script src="../js/components/annuncioCard.js" defer></script>
   <script src="../js/map.js" defer></script>
   <script src="../js/catalog.js" defer></script>
+<!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js"></script>
+<!-- impeccable-live-end -->
 </body>
 </html>

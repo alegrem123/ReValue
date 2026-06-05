@@ -8,6 +8,8 @@ const qrLoading       = document.getElementById('qr-loading');
 const qrContent       = document.getElementById('qr-content');
 const qrAlert         = document.getElementById('qr-alert');
 const qrCanvas        = document.getElementById('qr-canvas');
+const qrFallbackImg   = document.getElementById('qr-fallback-img');
+const qrCodeText      = document.getElementById('qr-code-text');
 const qrAnnuncioTitle = document.getElementById('qr-annuncio-title');
 const qrCountdown     = document.getElementById('qr-countdown');
 const btnRigenera     = document.getElementById('btn-rigenera');
@@ -49,10 +51,42 @@ function startCountdown() {
   countdownTimer = setInterval(tick, 1000);
 }
 
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureQrLibrary() {
+  if (window.QRCode?.toCanvas) return true;
+
+  const fallbacks = [
+    'https://unpkg.com/qrcode@1.5.4/build/qrcode.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.4/qrcode.min.js',
+  ];
+
+  for (const src of fallbacks) {
+    try {
+      await loadScript(src);
+      if (window.QRCode?.toCanvas) return true;
+    } catch {
+      // Prova il CDN successivo.
+    }
+  }
+
+  return false;
+}
+
 async function generaQR(prenotazioneId) {
   qrLoading.classList.remove('d-none');
   qrContent.classList.add('d-none');
   qrAlert.classList.add('d-none');
+  qrCanvas.classList.remove('d-none');
+  qrFallbackImg.classList.add('d-none');
 
   const res = await api.post('/api/v1/qr/genera', { prenotazioneId });
 
@@ -63,18 +97,36 @@ async function generaQR(prenotazioneId) {
     return;
   }
 
-  const { codice, scadenza, annuncio } = res.data ?? res;
+  const payload = res.data ?? res;
+  const { codice, scadenza, annuncio } = payload;
+  if (!codice) {
+    showAlert('QR generato ma codice non ricevuto dal server.');
+    return;
+  }
 
-  // Render QR su canvas
-  await QRCode.toCanvas(qrCanvas, codice, {
-    width: 280,
-    color: { dark: '#1B5E20', light: '#ffffff' },
-  });
+  qrCodeText.textContent = codice;
+  qrFallbackImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(codice)}`;
+  qrFallbackImg.classList.remove('d-none');
 
-  scadenzaDate = new Date(scadenza);
+  try {
+    const hasLibrary = await ensureQrLibrary();
+    if (!hasLibrary) throw new Error('Libreria QR non caricata');
+    await QRCode.toCanvas(qrCanvas, codice, {
+      width: 280,
+      color: { dark: '#1B5E20', light: '#ffffff' },
+    });
+    qrFallbackImg.classList.add('d-none');
+    qrCanvas.classList.remove('d-none');
+  } catch {
+    qrCanvas.classList.add('d-none');
+    qrFallbackImg.classList.remove('d-none');
+    showAlert('QR generato tramite immagine di fallback.', 'warning');
+  }
+
+  scadenzaDate = scadenza ? new Date(scadenza) : null;
   if (annuncio?.titolo) qrAnnuncioTitle.textContent = annuncio.titolo;
 
-  startCountdown();
+  if (scadenzaDate) startCountdown();
   qrContent.classList.remove('d-none');
 }
 

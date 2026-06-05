@@ -16,6 +16,7 @@ const annuncioLocation = document.getElementById('annuncio-location');
 const annuncioAlert = document.getElementById('annuncio-alert');
 const annuncioAction = document.getElementById('annuncio-action');
 const annuncioDonorProfile = document.getElementById('annuncio-donor-profile');
+const btnSegnalaAnnuncio = document.getElementById('btn-segnala-annuncio');
 
 let currentAnnuncio = null;
 
@@ -61,16 +62,10 @@ function normalizeDimensione(value) {
   }
 }
 
-function calculateEstimatedCredits(annuncio) {
-  const dimensione = normalizeDimensione(annuncio.oggetto?.dimensioni);
-  const giorni = annuncio.dataScadenza
-    ? Math.max(
-        0,
-        (new Date(annuncio.dataScadenza) - new Date()) / (1000 * 60 * 60 * 24)
-      )
-    : 0;
-  if (!annuncio.dataScadenza || giorni <= 0) return 'N/A';
-  return Math.max(1, Math.round(dimensione * giorni)).toString();
+const CREDITI_SCAMBIO = 50;
+
+function calculateEstimatedCredits() {
+  return CREDITI_SCAMBIO.toString();
 }
 
 function showAlert(message, type = 'danger') {
@@ -188,6 +183,11 @@ async function loadAnnuncio() {
     annuncioDonorProfile.href = `public-profile.html?id=${annuncio.donatore._id}`;
   } else if (annuncioDonorProfile) {
     annuncioDonorProfile.classList.add('d-none');
+  }
+  if (btnSegnalaAnnuncio && annuncio.donatore?._id) {
+    btnSegnalaAnnuncio.href = `segnala.html?userId=${encodeURIComponent(annuncio.donatore._id)}&annuncioId=${encodeURIComponent(annuncio._id)}`;
+  } else if (btnSegnalaAnnuncio && !annuncio.donatore?._id) {
+    btnSegnalaAnnuncio.classList.add('d-none');
   }
 
   setActionState(annuncio);

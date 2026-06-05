@@ -23,84 +23,6 @@
     crossorigin="anonymous"
   />
 
-  <style>
-    :root {
-      --rv-green:       #2E7D32;
-      --rv-green-light: #43A047;
-      --rv-green-dark:  #1B5E20;
-      --rv-accent:      #FFC107;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-    }
-
-    /* ── Hero ── */
-    .hero-section {
-      background: linear-gradient(135deg, var(--rv-green-dark) 0%, var(--rv-green-light) 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      color: #fff;
-    }
-
-    .hero-section .btn-primary-rv {
-      background-color: var(--rv-accent);
-      border-color: var(--rv-accent);
-      color: #212529;
-      font-weight: 600;
-    }
-
-    .hero-section .btn-outline-rv {
-      border-color: #fff;
-      color: #fff;
-    }
-
-    .hero-section .btn-outline-rv:hover {
-      background-color: rgba(255,255,255,0.15);
-    }
-
-    /* ── Step cards ── */
-    .step-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background-color: var(--rv-green);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.75rem;
-      margin: 0 auto 1rem;
-    }
-
-    /* ── Stats ── */
-    .stats-section {
-      background-color: var(--rv-green);
-      color: #fff;
-    }
-
-    .stat-number {
-      font-size: 2.5rem;
-      font-weight: 700;
-    }
-
-    /* ── CTA finale ── */
-    .cta-section {
-      background: linear-gradient(135deg, var(--rv-green-light) 0%, var(--rv-green-dark) 100%);
-      color: #fff;
-    }
-
-    .cta-section .btn-cta {
-      background-color: var(--rv-accent);
-      border: none;
-      color: #212529;
-      font-weight: 700;
-      font-size: 1.1rem;
-      padding: 0.75rem 2.5rem;
-      border-radius: 50px;
-    }
-  </style>
 </head>
 <body>
 
@@ -119,32 +41,32 @@
         <div class="row align-items-center g-5">
 
           <!-- Testo -->
-          <div class="col-lg-6">
-            <span class="badge bg-warning text-dark mb-3 fs-6 px-3 py-2">
-              <i class="bi bi-recycle me-1"></i> Economia circolare locale
-            </span>
-            <h1 class="display-4 fw-bold mb-4">
+          <div class="col-lg-6 rv-reveal">
+            <div class="hero-badge">
+              <i class="bi bi-recycle"></i> Economia circolare locale
+            </div>
+            <h1>
               RE-VALUE<br/>
-              <span style="color: var(--rv-accent);">Dai nuova vita</span><br/>
+              <span class="hero-accent">Dai nuova vita</span><br/>
               ai tuoi oggetti
             </h1>
-            <p class="lead mb-4" style="opacity:0.9">
+            <p class="lead mb-4" style="opacity:0.88">
               Pubblica oggetti che non usi più, ricevi crediti e riscattali
               in sconti presso le attività locali della tua città.
               <br/><strong>Il tutto validato da QR Code.</strong>
             </p>
             <div class="d-flex flex-wrap gap-3">
-              <a href="views/register.html" class="btn btn-primary-rv btn-lg px-4">
+              <a href="views/register.html" class="btn btn-warning btn-lg px-4">
                 <i class="bi bi-person-plus me-2"></i>Inizia ora
               </a>
-              <a href="views/catalog.html" class="btn btn-outline-rv btn-lg px-4">
+              <a href="views/catalog.html" class="btn btn-outline-light btn-lg px-4">
                 <i class="bi bi-grid me-2"></i>Esplora il catalogo
               </a>
             </div>
           </div>
 
           <!-- Illustrazione SVG inline -->
-          <div class="col-lg-6 text-center" aria-hidden="true">
+          <div class="col-lg-6 text-center rv-reveal rv-reveal-d2" aria-hidden="true">
             <svg viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg"
                  style="max-width:420px;width:100%;" role="img"
                  aria-label="Illustrazione scambio oggetti RE-VALUE">
@@ -204,8 +126,8 @@
         <div class="row g-4">
 
           <!-- Step 1 -->
-          <div class="col-sm-6 col-lg-3">
-            <div class="card h-100 border-0 shadow-sm text-center p-4">
+          <div class="col-sm-6 col-lg-3 rv-reveal rv-reveal-d1">
+            <div class="step-card">
               <div class="step-icon">
                 <i class="bi bi-pencil-square"></i>
               </div>
@@ -218,8 +140,8 @@
           </div>
 
           <!-- Step 2 -->
-          <div class="col-sm-6 col-lg-3">
-            <div class="card h-100 border-0 shadow-sm text-center p-4">
+          <div class="col-sm-6 col-lg-3 rv-reveal rv-reveal-d2">
+            <div class="step-card">
               <div class="step-icon">
                 <i class="bi bi-people"></i>
               </div>
@@ -232,8 +154,8 @@
           </div>
 
           <!-- Step 3 -->
-          <div class="col-sm-6 col-lg-3">
-            <div class="card h-100 border-0 shadow-sm text-center p-4">
+          <div class="col-sm-6 col-lg-3 rv-reveal rv-reveal-d3">
+            <div class="step-card">
               <div class="step-icon">
                 <i class="bi bi-qr-code-scan"></i>
               </div>
@@ -246,8 +168,8 @@
           </div>
 
           <!-- Step 4 -->
-          <div class="col-sm-6 col-lg-3">
-            <div class="card h-100 border-0 shadow-sm text-center p-4">
+          <div class="col-sm-6 col-lg-3 rv-reveal rv-reveal-d4">
+            <div class="step-card">
               <div class="step-icon">
                 <i class="bi bi-gem"></i>
               </div>
@@ -393,8 +315,27 @@
     crossorigin="anonymous">
   </script>
 
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) {
+            e.target.classList.add('rv-visible');
+            observer.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      document.querySelectorAll('.rv-reveal').forEach(function(el) {
+        observer.observe(el);
+      });
+    });
+  </script>
+
   <!-- Layout partials (navbar + footer) -->
   <script src="js/layout.js" defer></script>
 
+<!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js"></script>
+<!-- impeccable-live-end -->
 </body>
 </html>

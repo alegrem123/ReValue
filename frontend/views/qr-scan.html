@@ -6,29 +6,18 @@
   <title>Scansione QR — RE-VALUE</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
     rel="stylesheet"
     crossorigin="anonymous"
   />
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+"
     crossorigin="anonymous"
   />
   <style>
-    :root {
-      --rv-green:       #2E7D32;
-      --rv-green-light: #43A047;
-      --rv-green-dark:  #1B5E20;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .page-header { border-left: 4px solid var(--rv-green); }
-
-    #qr-reader {
+#qr-reader {
       width: 100%;
       border-radius: 12px;
       overflow: hidden;
@@ -52,8 +41,8 @@
   <main class="container py-5">
     <div id="scan-alert" class="alert d-none" role="alert"></div>
 
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 page-header">
-      <p class="text-uppercase small text-success mb-2">Conferma scambio</p>
+    <section class="page-hero">
+      <p class="page-hero-eyebrow">Conferma scambio</p>
       <h1 class="h3 fw-bold mb-1">Scansiona il QR del donatore</h1>
       <p class="text-muted mb-0">Inquadra il codice mostrato dal donatore per certificare il ritiro.</p>
     </section>
@@ -106,10 +95,14 @@
 
   <div id="footer-container"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="../js/layout.js" defer></script>
   <script src="../js/apiClient.js" defer></script>
   <script src="../js/qr-scan.js" defer></script>
+<!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js"></script>
+<!-- impeccable-live-end -->
 </body>
 </html>

@@ -1,0 +1,75 @@
+(function () {
+  const ADMIN_API_BASE = (() => {
+    const explicit = window.REVALUE_API_BASE || (window.REVALUE_CONFIG && window.REVALUE_CONFIG.API_BASE);
+    if (explicit) return String(explicit).replace(/\/+$/, '');
+    if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://127.0.0.1:3000';
+    return 'https://revalue-backend-84jb.onrender.com';
+  })();
+  const API_PREFIX = `${ADMIN_API_BASE}/api/v1`;
+  const LOGIN_URL = 'login.html';
+  const DASHBOARD_URL = 'dashboard.html';
+
+  function getAdminToken() {
+    return localStorage.getItem('adminToken');
+  }
+
+  function setAdminToken(token) {
+    localStorage.setItem('adminToken', token);
+  }
+
+  function clearAdminToken() {
+    localStorage.removeItem('adminToken');
+  }
+
+  function showAdminAlert(message, variant = 'danger') {
+    const alert = document.getElementById('admin-alert');
+    if (!alert) return;
+    alert.className = `alert alert-${variant} rv-admin-alert`;
+    alert.textContent = message;
+  }
+
+  function guardAdminPage() {
+    if (!getAdminToken()) {
+      window.location.href = LOGIN_URL;
+    }
+  }
+
+  async function adminRequest(endpoint, { method = 'GET', body = null } = {}) {
+    const token = getAdminToken();
+    const headers = new Headers();
+    if (body !== null) headers.set('Content-Type', 'application/json');
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+
+    const res = await fetch(`${API_PREFIX}${endpoint}`, {
+      method,
+      headers,
+      body: body !== null ? JSON.stringify(body) : undefined,
+    });
+
+    const json = await res.json().catch(() => null);
+    const payload = json?.ok ? json.data : json;
+    const message = json?.message || json?.error || `Errore ${res.status}`;
+
+    if (res.status === 401 || res.status === 403) {
+      clearAdminToken();
+      window.location.href = LOGIN_URL;
+    }
+
+    return {
+      ok: res.ok && json?.ok !== false,
+      status: res.status,
+      data: payload,
+      error: res.ok ? null : message,
+    };
+  }
+
+  window.revalueAdmin = {
+    DASHBOARD_URL,
+    getAdminToken,
+    setAdminToken,
+    clearAdminToken,
+    showAdminAlert,
+    guardAdminPage,
+    adminRequest,
+  };
+})();

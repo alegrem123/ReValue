@@ -7,17 +7,42 @@
  *  - restituisce sempre { ok, data, error } — convenzione API del progetto
  */
 
+const DEFAULT_API_BASE = 'https://revalue-backend-84jb.onrender.com';
+
+function cleanApiBase(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
+
 const API_BASE = (function () {
-  // Se stai servendo il frontend da Live Server su 127.0.0.1:55xx,
-  // punta le richieste verso il backend in esecuzione su 127.0.0.1:3000.
+  // Override esplicito (es. injettato da Render env via config)
+  const configuredBase = window.REVALUE_API_BASE || window.REVALUE_CONFIG?.API_BASE;
+  if (configuredBase) return cleanApiBase(configuredBase);
+
+  // Dev: Live Server su 127.0.0.1:55xx
   if (
     ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
     window.location.port.startsWith('55')
   ) {
-    return 'http://127.0.0.1:3000';
+    return cleanApiBase('http://127.0.0.1:3000');
   }
-  return '';
+
+  // Dev: backend locale su porta 3000 senza Live Server
+  if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) {
+    return cleanApiBase('http://127.0.0.1:3000');
+  }
+
+  // Produzione: Render Static Site → backend su servizio separato
+  return DEFAULT_API_BASE;
 })();
+
+const API_PREFIX = '/api/v1';
+
+function normalizeEndpoint(endpoint) {
+  if (endpoint.startsWith(`${API_PREFIX}/`)) return endpoint;
+  if (endpoint === '/api') return API_PREFIX;
+  if (endpoint.startsWith('/api/')) return `${API_PREFIX}${endpoint.slice(4)}`;
+  return endpoint;
+}
 
 function frontendViewUrl(fileName) {
   return window.location.pathname.includes('/views/')
@@ -89,7 +114,7 @@ async function request(
 
   let res;
   try {
-    res = await fetch(API_BASE + endpoint, init);
+    res = await fetch(API_BASE + normalizeEndpoint(endpoint), init);
   } catch (networkErr) {
     return {
       ok: false,
@@ -114,11 +139,16 @@ async function request(
     }
   }
 
-  const error = !res.ok
-    ? data?.error || data?.message || `Errore ${res.status}`
+  const normalized = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'ok')
+    ? data
+    : null;
+  const ok = normalized ? normalized.ok && res.ok : res.ok;
+  const payload = normalized && normalized.ok ? normalized.data : data;
+  const error = !ok
+    ? normalized?.message || data?.message || data?.error || `Errore ${res.status}`
     : null;
 
-  return { ok: res.ok, data, status: res.status, error };
+  return { ok, data: payload, status: res.status, error };
 }
 
 /* ── Shorthand per ogni metodo HTTP ─────────────────────────────────── */

@@ -13,10 +13,19 @@ const isViewsPage = window.location.pathname.includes('/views/');
 const homeUrl = isViewsPage ? '../index.html' : 'index.html';
 const viewUrl = (fileName) => (isViewsPage ? fileName : `views/${fileName}`);
 
+// API base URL: usa apiClient se disponibile, altrimenti rileva ambiente
+const _layoutApiBase = (function () {
+  if (typeof API_BASE !== 'undefined') return API_BASE;
+  if (window.REVALUE_API_BASE) return window.REVALUE_API_BASE;
+  if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://127.0.0.1:3000';
+  return 'https://revalue-backend-84jb.onrender.com';
+})();
+
 const NAVBAR_HTML = `
-<nav class="navbar navbar-expand-lg sticky-top" style="background-color: #2E7D32;">
+<nav class="navbar navbar-expand-lg sticky-top rv-navbar">
   <div class="container">
-    <a class="navbar-brand fw-bold text-white" href="${homeUrl}">
+    <a class="navbar-brand" href="${homeUrl}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFD54F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
       RE-VALUE
     </a>
     <button class="navbar-toggler border-white" type="button"
@@ -40,6 +49,15 @@ const NAVBAR_HTML = `
         </li>
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('mybookings.html')}">Mie prenotazioni</a>
+        </li>
+        <li class="nav-item nav-auth d-none">
+          <a class="nav-link text-white" href="${viewUrl('my-premi.html')}">I miei premi</a>
+        </li>
+        <li class="nav-item nav-auth d-none">
+          <a class="nav-link text-white" href="${viewUrl('my-reports.html')}">Le mie segnalazioni</a>
+        </li>
+        <li class="nav-item nav-auth d-none">
+          <a class="nav-link text-white" href="${viewUrl('notifiche.html')}">Notifiche</a>
         </li>
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('messaggi.html')}">
@@ -78,7 +96,7 @@ const NAVBAR_HTML = `
 </nav>`;
 
 const FOOTER_HTML = `
-<footer style="background-color: #1B5E20;" class="text-white py-4 mt-5">
+<footer class="rv-footer text-white py-5 mt-5">
   <div class="container">
     <div class="row g-3 align-items-center">
       <div class="col-md-4">
@@ -153,13 +171,10 @@ function updateAuthUI(user) {
     const nameEl = document.getElementById('navbar-username');
     if (nameEl) nameEl.textContent = user.nome || 'Profilo';
 
-    fetch('/api/v1/wallet/saldo', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` },
-    })
-      .then((r) => r.json())
-      .then((data) => {
+    api.get('/api/v1/wallet/saldo')
+      .then((res) => {
         const el = document.getElementById('navbar-balance');
-        if (el) el.textContent = data.bilancio ?? 0;
+        if (el) el.textContent = res.data?.bilancio ?? 0;
       })
       .catch(() => {});
   } else {
@@ -173,17 +188,13 @@ function updateAuthUI(user) {
  * Chiama GET /api/v1/conversazioni/me/non-letti e mostra count nel badge navbar.
  */
 function updateUnreadBadge() {
-  const token = localStorage.getItem('jwt');
-  if (!token) return;
+  if (!localStorage.getItem('jwt')) return;
 
-  fetch('/api/v1/conversazioni/me/non-letti', {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then((r) => r.json())
-    .then((data) => {
+  api.get('/api/v1/conversazioni/me/non-letti')
+    .then((res) => {
       const badge = document.getElementById('unread-badge');
       if (!badge) return;
-      const count = data?.data?.nonLetti ?? data?.nonLetti ?? 0;
+      const count = res.data?.data?.nonLetti ?? res.data?.nonLetti ?? 0;
       if (count > 0) {
         badge.textContent = count > 99 ? '99+' : count;
         badge.classList.remove('d-none');
@@ -229,6 +240,16 @@ function initLayout() {
  * Chiamato una volta sola da initLayout.
  */
 function injectGlobalStyles() {
+  // Inject global design system CSS
+  if (!document.getElementById('rv-design-system')) {
+    const link = document.createElement('link');
+    link.id = 'rv-design-system';
+    link.rel = 'stylesheet';
+    const depth = window.location.pathname.includes('/views/') ? '../' : '';
+    link.href = `${depth}css/style.css`;
+    document.head.insertBefore(link, document.head.firstChild);
+  }
+
   // Toast container (Bootstrap positioning)
   if (!document.getElementById('rv-toast-container')) {
     const tc = document.createElement('div');
@@ -243,33 +264,6 @@ function injectGlobalStyles() {
     const style = document.createElement('style');
     style.id = 'rv-global-style';
     style.textContent = `
-      /* ── Mobile responsive globals ── */
-
-      /* Touch targets minimi 44px (Apple HIG / WCAG 2.5.5) */
-      .btn, button, [role="button"], a.nav-link {
-        min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .btn-sm { min-height: 36px; }
-
-      /* Card action buttons: stack su xs */
-      @media (max-width: 575.98px) {
-        .card .d-flex.gap-2:not(.flex-nowrap) { flex-direction: column; }
-        .filter-btn { flex: 1 1 40%; }
-        .container { padding-left: 12px; padding-right: 12px; }
-        .modal-footer { flex-direction: column; gap: 8px; }
-        .modal-footer .btn { width: 100%; }
-        h1.h3, h1.display-6 { font-size: 1.4rem; }
-      }
-
-      /* QR image non overflow su schermi piccoli */
-      #qr-canvas, img[style*="260px"] { max-width: 100%; height: auto; }
-
-      /* Chat: fix altezza su browser mobile con barre UI */
-      .chat-wrapper { height: 100svh; height: 100dvh; }
-
       /* Skeleton loader */
       .skeleton {
         background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
@@ -300,6 +294,56 @@ function injectGlobalStyles() {
         transform: translate(-50%, -50%);
       }
       @keyframes btn-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+      /* Leaflet repair: evita che Bootstrap o CSS CDN mancanti rompano le tile. */
+      .leaflet-container {
+        position: relative !important;
+        overflow: hidden !important;
+        background: #dfe9e2 !important;
+        outline-offset: 1px;
+      }
+      .leaflet-pane,
+      .leaflet-tile,
+      .leaflet-marker-icon,
+      .leaflet-marker-shadow,
+      .leaflet-tile-container,
+      .leaflet-pane > svg,
+      .leaflet-pane > canvas,
+      .leaflet-zoom-box,
+      .leaflet-image-layer,
+      .leaflet-layer {
+        position: absolute !important;
+        left: 0;
+        top: 0;
+      }
+      .leaflet-tile {
+        width: 256px !important;
+        height: 256px !important;
+        max-width: none !important;
+        max-height: none !important;
+        border: 0 !important;
+        padding: 0 !important;
+      }
+      .leaflet-container img.leaflet-tile {
+        display: block !important;
+      }
+      .leaflet-control {
+        position: relative !important;
+        z-index: 800 !important;
+        pointer-events: auto;
+      }
+      .leaflet-top,
+      .leaflet-bottom {
+        position: absolute !important;
+        z-index: 1000 !important;
+        pointer-events: none;
+      }
+      .leaflet-top { top: 0; }
+      .leaflet-right { right: 0; }
+      .leaflet-bottom { bottom: 0; }
+      .leaflet-left { left: 0; }
+      .leaflet-top .leaflet-control { margin-top: 10px; }
+      .leaflet-left .leaflet-control { margin-left: 10px; }
     `;
     document.head.appendChild(style);
   }

@@ -6,12 +6,14 @@
   <title>Crea annuncio — RE-VALUE</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
     rel="stylesheet"
     crossorigin="anonymous"
   />
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+"
     crossorigin="anonymous"
   />
   <link
@@ -21,50 +23,27 @@
     crossorigin=""
   />
   <style>
-    :root {
-      --rv-green: #2E7D32;
-      --rv-green-dark: #1B5E20;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: #f8f9fa;
-    }
-
-    .form-header {
-      border-left: 4px solid var(--rv-green);
-    }
-
-    .photo-preview {
-      aspect-ratio: 1;
-      object-fit: cover;
-      width: 100%;
-    }
-
-    .location-map {
-      min-height: 260px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-    }
+    .photo-preview { aspect-ratio: 1; object-fit: cover; width: 100%; }
   </style>
 </head>
 <body>
   <div id="navbar-container"></div>
 
   <main class="container py-5" style="max-width: 980px;">
-    <section class="bg-white rounded-4 p-4 shadow-sm mb-4 form-header">
+    <section class="page-hero">
       <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-start">
         <div>
-          <p class="text-uppercase small text-success mb-2">Nuovo annuncio</p>
+          <p class="page-hero-eyebrow">Nuovo annuncio</p>
           <h1 class="h3 fw-bold mb-2">Pubblica un oggetto da recuperare</h1>
-          <p class="text-muted mb-0">Inserisci le informazioni principali e la scadenza del conferimento.</p>
+          <p class="mb-0" style="opacity:0.8">Inserisci le informazioni principali e la scadenza del conferimento.</p>
         </div>
-        <a href="catalog.html" class="btn btn-outline-success">Catalogo</a>
+        <a href="catalog.html" class="btn btn-outline-light">Catalogo</a>
       </div>
     </section>
 
     <div id="create-annuncio-alert" class="alert d-none" role="alert"></div>
 
-    <form id="create-annuncio-form" class="bg-white rounded-4 p-4 shadow-sm">
+    <form id="create-annuncio-form" class="card p-4">
       <div class="row g-4">
         <div class="col-lg-7">
           <h2 class="h5 fw-bold mb-3">Dettagli oggetto</h2>
@@ -79,11 +58,60 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label for="annuncio-category" class="form-label">Categoria</label>
-              <input id="annuncio-category" name="categoria" type="text" class="form-control" placeholder="Es. Mobili" required />
+              <select id="annuncio-category" name="categoria" class="form-select" required>
+                <option value="" selected disabled>Seleziona categoria</option>
+                <option value="Arredo e mobili">Arredo e mobili</option>
+                <option value="Bagno e sanitari">Bagno e sanitari</option>
+                <option value="Biciclette e mobilita">Biciclette e mobilita</option>
+                <option value="Cancelleria">Cancelleria</option>
+                <option value="Cucina e casalinghi">Cucina e casalinghi</option>
+                <option value="Decorazioni">Decorazioni</option>
+                <option value="Edilizia leggera">Edilizia leggera</option>
+                <option value="Elettrodomestici">Elettrodomestici</option>
+                <option value="Elettronica">Elettronica</option>
+                <option value="Ferramenta">Ferramenta</option>
+                <option value="Giardino e outdoor">Giardino e outdoor</option>
+                <option value="Giocattoli">Giocattoli</option>
+                <option value="Illuminazione">Illuminazione</option>
+                <option value="Infanzia">Infanzia</option>
+                <option value="Libri e manuali">Libri e manuali</option>
+                <option value="Materiale scolastico">Materiale scolastico</option>
+                <option value="Musica e strumenti">Musica e strumenti</option>
+                <option value="Ricambi auto e moto">Ricambi auto e moto</option>
+                <option value="Sport e tempo libero">Sport e tempo libero</option>
+                <option value="Tessili e biancheria">Tessili e biancheria</option>
+                <option value="Utensili e attrezzi">Utensili e attrezzi</option>
+                <option value="Vasi e contenitori">Vasi e contenitori</option>
+                <option value="Altro">Altro</option>
+              </select>
             </div>
             <div class="col-md-6">
               <label for="annuncio-material" class="form-label">Materiale</label>
-              <input id="annuncio-material" name="materiale" type="text" class="form-control" placeholder="Es. Legno" />
+              <select id="annuncio-material" name="materiale" class="form-select">
+                <option value="" selected>Seleziona materiale</option>
+                <option value="Legno">Legno</option>
+                <option value="Legno massello">Legno massello</option>
+                <option value="Truciolare">Truciolare</option>
+                <option value="MDF">MDF</option>
+                <option value="Metallo">Metallo</option>
+                <option value="Acciaio">Acciaio</option>
+                <option value="Alluminio">Alluminio</option>
+                <option value="Ferro">Ferro</option>
+                <option value="Plastica">Plastica</option>
+                <option value="PVC">PVC</option>
+                <option value="Vetro">Vetro</option>
+                <option value="Ceramica">Ceramica</option>
+                <option value="Tessuto">Tessuto</option>
+                <option value="Cotone">Cotone</option>
+                <option value="Lana">Lana</option>
+                <option value="Pelle">Pelle</option>
+                <option value="Carta">Carta</option>
+                <option value="Cartone">Cartone</option>
+                <option value="Gomma">Gomma</option>
+                <option value="Rame">Rame</option>
+                <option value="Ottone">Ottone</option>
+                <option value="Misto">Misto</option>
+              </select>
             </div>
             <div class="col-md-6">
               <label for="annuncio-size" class="form-label">Dimensione</label>
@@ -105,12 +133,69 @@
           <h2 class="h5 fw-bold mb-3">Posizione e foto</h2>
           <div class="row g-3">
             <div class="col-md-6 col-lg-12">
-              <label for="annuncio-lat" class="form-label">Latitudine</label>
-              <input id="annuncio-lat" name="latitudine" type="number" step="any" class="form-control" placeholder="46.0667" />
+              <label for="annuncio-paese" class="form-label">Stato / Paese</label>
+              <select id="annuncio-paese" name="paese" class="form-select" required>
+                <option value="Italia" selected>Italia</option>
+                <option value="San Marino">San Marino</option>
+                <option value="Citta del Vaticano">Citta del Vaticano</option>
+                <option value="Svizzera">Svizzera</option>
+                <option value="Austria">Austria</option>
+                <option value="Francia">Francia</option>
+                <option value="Slovenia">Slovenia</option>
+                <option value="Croazia">Croazia</option>
+                <option value="Germania">Germania</option>
+              </select>
             </div>
             <div class="col-md-6 col-lg-12">
-              <label for="annuncio-lng" class="form-label">Longitudine</label>
-              <input id="annuncio-lng" name="longitudine" type="number" step="any" class="form-control" placeholder="11.1211" />
+              <label for="annuncio-regione" class="form-label">Regione</label>
+              <select id="annuncio-regione" name="regione" class="form-select" required>
+                <option value="" selected disabled>Seleziona regione</option>
+                <option value="Abruzzo">Abruzzo</option>
+                <option value="Basilicata">Basilicata</option>
+                <option value="Calabria">Calabria</option>
+                <option value="Campania">Campania</option>
+                <option value="Emilia-Romagna">Emilia-Romagna</option>
+                <option value="Friuli-Venezia Giulia">Friuli-Venezia Giulia</option>
+                <option value="Lazio">Lazio</option>
+                <option value="Liguria">Liguria</option>
+                <option value="Lombardia">Lombardia</option>
+                <option value="Marche">Marche</option>
+                <option value="Molise">Molise</option>
+                <option value="Piemonte">Piemonte</option>
+                <option value="Puglia">Puglia</option>
+                <option value="Sardegna">Sardegna</option>
+                <option value="Sicilia">Sicilia</option>
+                <option value="Toscana">Toscana</option>
+                <option value="Trentino-Alto Adige/Südtirol">Trentino-Alto Adige/Südtirol</option>
+                <option value="Umbria">Umbria</option>
+                <option value="Valle d'Aosta/Vallée d'Aoste">Valle d'Aosta/Vallée d'Aoste</option>
+                <option value="Veneto">Veneto</option>
+              </select>
+            </div>
+            <div class="col-md-6 col-lg-12">
+              <label for="annuncio-provincia" class="form-label">Provincia</label>
+              <select id="annuncio-provincia" name="provincia" class="form-select" required>
+                <option value="" selected disabled>Seleziona provincia</option>
+                <option value="Trento">Trento</option>
+                <option value="Bolzano/Bozen">Bolzano/Bozen</option>
+                <option value="Verona">Verona</option>
+                <option value="Brescia">Brescia</option>
+              </select>
+            </div>
+            <div class="col-md-6 col-lg-12">
+              <label for="annuncio-comune" class="form-label">Comune</label>
+              <select id="annuncio-comune" name="comune" class="form-select" required>
+                <option value="" selected disabled>Seleziona comune</option>
+                <option value="Trento">Trento</option>
+                <option value="Rovereto">Rovereto</option>
+                <option value="Pergine Valsugana">Pergine Valsugana</option>
+                <option value="Riva del Garda">Riva del Garda</option>
+                <option value="Arco">Arco</option>
+              </select>
+            </div>
+            <div class="col-md-6 col-lg-12">
+              <label for="annuncio-via" class="form-label">Via</label>
+              <input id="annuncio-via" name="via" type="text" class="form-control" placeholder="Es. Via Verdi 10" required />
             </div>
             <div class="col-12">
               <button id="use-location-btn" type="button" class="btn btn-outline-success w-100">
@@ -121,7 +206,11 @@
             <div class="col-12">
               <label for="annuncio-location-map" class="form-label">Seleziona sulla mappa</label>
               <div id="annuncio-location-map" class="location-map rounded-3 overflow-hidden"></div>
-              <div class="form-text">Clicca sulla mappa per compilare latitudine e longitudine.</div>
+              <div class="form-text">La preview usa l'indirizzo. Puoi cliccare sulla mappa per correggere il pin.</div>
+              <input id="annuncio-lat" name="latitudine" type="hidden" />
+              <input id="annuncio-lng" name="longitudine" type="hidden" />
+              <input id="annuncio-city-lat" name="latitudineComune" type="hidden" />
+              <input id="annuncio-city-lng" name="longitudineComune" type="hidden" />
             </div>
             <div class="col-12">
               <label for="annuncio-photos" class="form-label">Foto</label>
@@ -148,6 +237,7 @@
 
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"
   ></script>
   <script
@@ -159,5 +249,8 @@
   <script src="../js/apiClient.js" defer></script>
   <script src="../js/locationPicker.js" defer></script>
   <script src="../js/createAnnuncio.js" defer></script>
+<!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js"></script>
+<!-- impeccable-live-end -->
 </body>
 </html>
