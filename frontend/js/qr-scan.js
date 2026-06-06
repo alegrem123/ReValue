@@ -56,6 +56,11 @@ function stopScanner() {
 
 function startScanner() {
   if (scanning) return;
+  if (typeof Html5Qrcode === 'undefined') {
+    showAlert("Scanner webcam non disponibile. Usa l'inserimento manuale.", 'warning');
+    switchMode('manual');
+    return;
+  }
 
   html5QrCode = new Html5Qrcode('qr-reader');
 
