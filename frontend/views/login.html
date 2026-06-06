@@ -153,7 +153,8 @@
           if (!token) return;
           const payload = JSON.parse(atob(token.split('.')[1]));
           if (!payload.exp || Date.now() / 1000 < payload.exp) {
-            window.location.href = '../index.html';
+            window.location.href =
+              payload.ruolo === 'admin' ? 'admin/dashboard.html' : '../index.html';
           }
         } catch {
           /* token malformato, ignora */
@@ -251,12 +252,23 @@
               '<i class="bi bi-check-circle me-2"></i>Accesso effettuato! Reindirizzamento…';
             alertEl.classList.remove('d-none');
 
-            /* Redirect a pagina di origine se passata in query string, altrimenti home */
-            const params = new URLSearchParams(window.location.search);
-            const rawRedirect = params.get('redirect');
-            const redirect = rawRedirect
-              ? rawRedirect.replace(/^\/(?:frontend\/)?views\//, '')
-              : '../index.html';
+            /* Decode ruolo dal JWT per redirect differenziato */
+            let ruolo = 'user';
+            try {
+              const payload = JSON.parse(atob(response.data.token.split('.')[1]));
+              ruolo = payload.ruolo || 'user';
+            } catch { /* token malformato, fallback a user */ }
+
+            let redirect;
+            if (ruolo === 'admin') {
+              redirect = 'admin/dashboard.html';
+            } else {
+              const params = new URLSearchParams(window.location.search);
+              const rawRedirect = params.get('redirect');
+              redirect = rawRedirect
+                ? rawRedirect.replace(/^\/(?:frontend\/)?views\//, '')
+                : '../index.html';
+            }
             setTimeout(() => {
               window.location.href = redirect;
             }, 1000);
