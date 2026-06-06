@@ -97,7 +97,7 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
   const visible = filter ? bookings.filter((b) => b.stato === filter) : bookings;
 
   return (
-    <Screen title="Prenotazioni" subtitle="Le tue prenotazioni (come acquirente o donatore)." scroll={false}>
+    <Screen title="Prenotazioni" subtitle="Gestisci ritiri, QR e scambi completati." scroll={false}>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <View style={styles.filters}>
@@ -106,6 +106,7 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
             key={s || 'all'}
             title={STATO_LABEL[s] || 'Tutte'}
             variant={filter === s ? 'primary' : 'secondary'}
+            size="small"
             onPress={() => setFilter(s)}
           />
         ))}
@@ -131,6 +132,9 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
             <Text style={styles.meta}>
               Donatore: {b.donatore ? `${b.donatore.nome} ${b.donatore.cognome}` : '—'}
             </Text>
+            <Text style={styles.meta}>
+              Ruolo: {b.donatore?._id === currentUserId ? 'Donatore' : 'Acquirente'}
+            </Text>
             <Text style={styles.meta}>{formatDate(b.dataPrenotazione)}</Text>
 
             {b.stato === 'ATTIVA' && currentUserId ? (
@@ -140,16 +144,19 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
                     <Button
                       title="Mostra QR"
                       variant="primary"
+                      size="compact"
                       onPress={() => onOpenQRDisplay(b._id)}
                     />
                     <Button
                       title="Mancato ritiro"
                       variant="danger"
+                      size="compact"
                       onPress={() => noShow(b._id)}
                     />
                     <Button
                       title="Disdici ritiro"
                       variant="secondary"
+                      size="compact"
                       onPress={() => disdici(b._id)}
                     />
                   </>
@@ -158,12 +165,14 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
                     <Button
                       title="Scansiona QR"
                       variant="secondary"
+                      size="compact"
                       onPress={() => onOpenQRScan()}
                     />
                     {entroQuindiciMinuti(b.dataPrenotazione) ? (
                       <Button
                         title="Annulla"
                         variant="danger"
+                        size="compact"
                         onPress={() => annulla(b._id)}
                       />
                     ) : null}
@@ -190,7 +199,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 14,
@@ -209,7 +218,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   badge: {
-    borderRadius: 4,
+    borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },

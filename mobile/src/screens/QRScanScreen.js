@@ -6,6 +6,13 @@ import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
+function normalizeCreditiAccreditati(value) {
+  if (value && typeof value === 'object') {
+    return value.acquirente ?? value.donatore ?? 50;
+  }
+  return value ?? 50;
+}
+
 export function QRScanScreen({ onSuccess, onBack }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [loading, setLoading] = useState(false);
@@ -24,14 +31,14 @@ export function QRScanScreen({ onSuccess, onBack }) {
       setError(res.error || 'Codice non valido o scaduto.');
       return;
     }
-    const crediti = res.data?.creditiAssegnati ?? 50;
+    const crediti = normalizeCreditiAccreditati(res.data?.creditiAssegnati);
     const prenotazioneId = res.data?.prenotazione ?? null;
     onSuccess(crediti, prenotazioneId);
   }
 
   if (!permission) {
     return (
-      <Screen title="Scansiona QR" right={<Button title="Indietro" variant="secondary" onPress={onBack} />}>
+      <Screen title="Scansiona QR" right={<Button title="Indietro" variant="secondary" size="compact" onPress={onBack} />}>
         <Text style={styles.hintText}>Caricamento permessi fotocamera...</Text>
       </Screen>
     );
@@ -39,15 +46,15 @@ export function QRScanScreen({ onSuccess, onBack }) {
 
   if (!permission.granted) {
     return (
-      <Screen title="Scansiona QR" right={<Button title="Indietro" variant="secondary" onPress={onBack} />}>
+      <Screen title="Scansiona QR" right={<Button title="Indietro" variant="secondary" size="compact" onPress={onBack} />}>
         <Text style={styles.hintText}>Serve il permesso fotocamera per scansionare il QR.</Text>
-        <Button title="Abilita fotocamera" onPress={requestPermission} />
+        <Button title="Abilita fotocamera" onPress={requestPermission} fullWidth />
       </Screen>
     );
   }
 
   return (
-    <Screen title="Scansiona QR" right={<Button title="Indietro" variant="secondary" onPress={onBack} />}>
+    <Screen title="Scansiona QR" right={<Button title="Indietro" variant="secondary" size="compact" onPress={onBack} />}>
       <View style={styles.scanner}>
         <CameraView
           style={StyleSheet.absoluteFill}
@@ -58,7 +65,7 @@ export function QRScanScreen({ onSuccess, onBack }) {
       {error ? (
         <View style={styles.errorBox}>
           <Text style={styles.error}>{error}</Text>
-          <Button title="Scansiona di nuovo" onPress={() => setScanned(false)} />
+          <Button title="Scansiona di nuovo" size="compact" onPress={() => setScanned(false)} />
         </View>
       ) : null}
       {loading ? <Text style={styles.hintText}>Validazione in corso...</Text> : null}
@@ -75,7 +82,7 @@ const styles = StyleSheet.create({
   scanner: {
     height: 320,
     overflow: 'hidden',
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: colors.green,
   },
@@ -90,7 +97,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     backgroundColor: '#E8F5E9',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 14,
   },
   hintText: {

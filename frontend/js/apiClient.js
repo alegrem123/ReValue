@@ -23,12 +23,12 @@ const API_BASE = (function () {
     ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
     window.location.port.startsWith('55')
   ) {
-    return cleanApiBase('http://127.0.0.1:3000');
+    return cleanApiBase('http://localhost:3000');
   }
 
   // Dev: backend locale su porta 3000 senza Live Server
   if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) {
-    return cleanApiBase('http://127.0.0.1:3000');
+    return cleanApiBase('http://localhost:3000');
   }
 
   // Produzione: Render Static Site → backend su servizio separato

@@ -21,7 +21,7 @@
   />
 
   <style>
-.avatar-circle {
+    .avatar-circle {
       width: 88px;
       height: 88px;
       border-radius: 50%;
@@ -100,9 +100,10 @@
             <span id="profile-admin-badge" class="badge bg-danger d-none">Admin</span>
           </div>
 
-          <a href="#" id="btn-edit-profile" class="btn btn-outline-secondary btn-sm d-none">
+          <button type="button" id="btn-edit-profile" class="btn btn-outline-secondary btn-sm d-none"
+                  data-bs-toggle="modal" data-bs-target="#edit-profile-modal">
             <i class="bi bi-pencil me-1"></i>Modifica profilo
-          </a>
+          </button>
         </div>
       </div>
     </div>
@@ -188,6 +189,70 @@
 
   </main>
 
+  <!-- ── Edit Profile Modal ─────────────────────────── -->
+  <div class="modal fade" id="edit-profile-modal" tabindex="-1" aria-labelledby="edit-profile-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="edit-profile-modal-label">Modifica profilo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <div id="edit-profile-alert" class="alert d-none mb-3" role="alert"></div>
+
+          <!-- Photo upload -->
+          <div class="text-center mb-4">
+            <div class="position-relative d-inline-block">
+              <div id="edit-avatar-preview" class="avatar-circle mx-auto mb-2"
+                   style="cursor:pointer;" title="Clicca per cambiare foto">
+                <i class="bi bi-person-fill" id="edit-avatar-icon"></i>
+              </div>
+              <button type="button" id="edit-avatar-button" class="btn btn-sm btn-success position-absolute bottom-0 end-0 rounded-circle p-1"
+                      aria-label="Cambia foto profilo" title="Cambia foto profilo"
+                      style="width:28px;height:28px;line-height:1;">
+                <i class="bi bi-camera-fill" style="font-size:.7rem;"></i>
+              </button>
+            </div>
+            <input type="file" id="foto-input" accept="image/*" class="d-none">
+            <p class="text-muted small mb-0">Max 1 MB</p>
+          </div>
+
+          <form id="edit-profile-form">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label for="edit-nome" class="form-label">Nome</label>
+                <input type="text" class="form-control" id="edit-nome" name="nome">
+              </div>
+              <div class="col-sm-6">
+                <label for="edit-cognome" class="form-label">Cognome</label>
+                <input type="text" class="form-control" id="edit-cognome" name="cognome">
+              </div>
+              <div class="col-12">
+                <label for="edit-telefono" class="form-label">Telefono</label>
+                <input type="tel" class="form-control" id="edit-telefono" name="telefono">
+              </div>
+              <div class="col-12">
+                <label for="edit-citta" class="form-label">Città</label>
+                <input type="text" class="form-control" id="edit-citta" name="citta">
+              </div>
+              <div class="col-12">
+                <label for="edit-descrizione" class="form-label">Descrizione</label>
+                <textarea class="form-control" id="edit-descrizione" name="descrizione" rows="3"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="button" class="btn btn-success" id="btn-save-profile">
+            <span id="btn-save-profile-text">Salva</span>
+            <span id="btn-save-profile-spinner" class="spinner-border spinner-border-sm ms-1 d-none" role="status"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="footer-container"></div>
 
   <script
@@ -225,6 +290,19 @@
       return new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
+    function escHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escAttr(value) {
+      return escHtml(value).replace(/`/g, '&#96;');
+    }
+
     /* ── Renderizza info utente ── */
     function renderUser(user) {
       const nome    = user.nome    || '—';
@@ -236,9 +314,11 @@
       fill('profile-nome', `${nome} ${cognome}`);
       fill('profile-email', email);
 
-      // Avatar iniziali
+      // Avatar: foto profilo o iniziali
       const av = document.getElementById('avatar-initials');
-      if (nome !== '—') {
+      if (user.fotoProfilo) {
+        av.innerHTML = `<img src="${escAttr(user.fotoProfilo)}" style="width:88px;height:88px;border-radius:50%;object-fit:cover;" alt="Foto profilo">`;
+      } else if (nome !== '—') {
         av.innerHTML = '';
         av.textContent = (nome[0] + (cognome[0] || '')).toUpperCase();
       }
@@ -254,20 +334,20 @@
       document.getElementById('btn-edit-profile').classList.remove('d-none');
 
       // Info fields
-      document.getElementById('info-fields').innerHTML = `
-        <div class="col-sm-6">
-          <label class="form-label text-muted small">Nome</label>
-          <div class="form-control-plaintext fw-semibold border rounded px-3 py-2 bg-white">${nome}</div>
-        </div>
-        <div class="col-sm-6">
-          <label class="form-label text-muted small">Cognome</label>
-          <div class="form-control-plaintext fw-semibold border rounded px-3 py-2 bg-white">${cognome}</div>
-        </div>
-        <div class="col-12">
-          <label class="form-label text-muted small">Email</label>
-          <div class="form-control-plaintext border rounded px-3 py-2 bg-white">${email}</div>
-        </div>
-      `;
+	      document.getElementById('info-fields').innerHTML = `
+	        <div class="col-sm-6">
+	          <label class="form-label text-muted small">Nome</label>
+	          <div class="form-control-plaintext fw-semibold border rounded px-3 py-2 bg-white">${escHtml(nome)}</div>
+	        </div>
+	        <div class="col-sm-6">
+	          <label class="form-label text-muted small">Cognome</label>
+	          <div class="form-control-plaintext fw-semibold border rounded px-3 py-2 bg-white">${escHtml(cognome)}</div>
+	        </div>
+	        <div class="col-12">
+	          <label class="form-label text-muted small">Email</label>
+	          <div class="form-control-plaintext border rounded px-3 py-2 bg-white">${escHtml(email)}</div>
+	        </div>
+	      `;
     }
 
     /* ── Renderizza wallet ── */
@@ -291,8 +371,8 @@
         const color = accredito ? 'rgba(255,255,255,1)' : 'rgba(255,193,7,1)';
         return `
           <div class="d-flex justify-content-between align-items-center py-1" style="font-size:.85rem;">
-            <span style="opacity:.85;">${icon} ${t.motivo || t.tipo}</span>
-            <span style="color:${color};font-weight:600;">${accredito ? '+' : '-'}${t.ammontare} cr.</span>
+	            <span style="opacity:.85;">${icon} ${escHtml(t.motivo || t.tipo)}</span>
+	            <span style="color:${color};font-weight:600;">${accredito ? '+' : '-'}${Number(t.ammontare) || 0} cr.</span>
             <span style="opacity:.6;">${fmtDate(t.data)}</span>
           </div>
         `;
@@ -325,7 +405,9 @@
       // Profilo utente — endpoint AG (GET /api/v1/users/me)
       const userRes = await api.get('/api/v1/users/me');
       if (userRes.ok && userRes.data) {
-        renderUser(userRes.data?.user || userRes.data);
+        const userData = userRes.data?.user || userRes.data;
+        window._cachedUser = userData;
+        renderUser(userData);
       } else {
         // Fallback: mostra solo ciò che c'è nel JWT
         renderUser({ ruolo: payload?.ruolo || 'user' });
@@ -336,11 +418,118 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadProfile);
-  </script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProfile();
+      initEditModal();
+    });
 
-<!-- impeccable-live-start -->
-<script src="http://localhost:8400/live.js"></script>
-<!-- impeccable-live-end -->
+    /* ── Edit Profile Modal ── */
+    let pendingFotoBase64 = null;
+
+    function initEditModal() {
+      const editModal = document.getElementById('edit-profile-modal');
+      if (editModal) {
+        editModal.addEventListener('show.bs.modal', () => {
+          const u = window._cachedUser;
+          if (!u) return;
+          document.getElementById('edit-nome').value        = u.nome        || '';
+          document.getElementById('edit-cognome').value     = u.cognome     || '';
+          document.getElementById('edit-telefono').value    = u.telefono    || '';
+          document.getElementById('edit-citta').value       = u.citta       || '';
+          document.getElementById('edit-descrizione').value = u.descrizione || '';
+          pendingFotoBase64 = null;
+          renderEditAvatar(u.fotoProfilo || null);
+          const alertEl = document.getElementById('edit-profile-alert');
+          if (alertEl) alertEl.classList.add('d-none');
+        });
+      }
+
+      const fotoInput = document.getElementById('foto-input');
+      const avatarPreview = document.getElementById('edit-avatar-preview');
+      const avatarButton = document.getElementById('edit-avatar-button');
+      if (avatarPreview) {
+        avatarPreview.addEventListener('click', () => fotoInput?.click());
+      }
+      if (avatarButton) {
+        avatarButton.addEventListener('click', () => fotoInput?.click());
+      }
+      if (fotoInput) {
+        fotoInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          if (file.size > 1_048_576) {
+            showEditAlert('Immagine troppo grande. Max 1 MB.', 'warning');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            pendingFotoBase64 = ev.target.result;
+            renderEditAvatar(pendingFotoBase64);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const btnSave = document.getElementById('btn-save-profile');
+      if (btnSave) btnSave.addEventListener('click', saveProfile);
+    }
+
+    function renderEditAvatar(src) {
+      const preview = document.getElementById('edit-avatar-preview');
+      if (!preview) return;
+      if (src) {
+        preview.innerHTML = `<img src="${escAttr(src)}" style="width:88px;height:88px;border-radius:50%;object-fit:cover;" alt="Foto profilo">`;
+      } else {
+        preview.innerHTML = '<i class="bi bi-person-fill"></i>';
+      }
+    }
+
+    function showEditAlert(msg, type = 'danger') {
+      const el = document.getElementById('edit-profile-alert');
+      if (!el) return;
+      el.textContent = msg;
+      el.className = `alert alert-${type}`;
+      el.classList.remove('d-none');
+    }
+
+    async function saveProfile() {
+      const btnText    = document.getElementById('btn-save-profile-text');
+      const btnSpinner = document.getElementById('btn-save-profile-spinner');
+      const btnSave    = document.getElementById('btn-save-profile');
+      btnText.textContent = 'Salvataggio...';
+      btnSpinner.classList.remove('d-none');
+      btnSave.disabled = true;
+
+      const payload = {
+        nome:        document.getElementById('edit-nome').value.trim(),
+        cognome:     document.getElementById('edit-cognome').value.trim(),
+        telefono:    document.getElementById('edit-telefono').value.trim(),
+        citta:       document.getElementById('edit-citta').value.trim(),
+        descrizione: document.getElementById('edit-descrizione').value.trim(),
+      };
+      if (pendingFotoBase64 !== null) payload.fotoProfilo = pendingFotoBase64;
+
+      const res = await api.put('/api/v1/users/me', payload);
+
+      btnText.textContent = 'Salva';
+      btnSpinner.classList.add('d-none');
+      btnSave.disabled = false;
+
+      if (!res.ok) {
+        showEditAlert(res.error || 'Errore durante il salvataggio.', 'danger');
+        return;
+      }
+
+      const updated = res.data?.user || res.data;
+      window._cachedUser = { ...window._cachedUser, ...updated };
+      renderUser(window._cachedUser);
+
+      const modalEl = document.getElementById('edit-profile-modal');
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+
+      showToast('Profilo aggiornato', 'success');
+    }
+  </script>
 </body>
 </html>

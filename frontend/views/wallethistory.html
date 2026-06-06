@@ -210,6 +210,15 @@
       });
     }
 
+    function escHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     /* ── Renderizza riga transazione ── */
     function txRow(t) {
       const accredito = t.tipo === 'accredito';
@@ -224,12 +233,12 @@
             <div class="d-flex align-items-center gap-3">
               <i class="bi ${icon} fs-5 ${amtCls}"></i>
               <div>
-                <div class="fw-semibold">${t.motivo || (accredito ? 'Accredito' : 'Utilizzo crediti')}</div>
+                <div class="fw-semibold">${escHtml(t.motivo || (accredito ? 'Accredito' : 'Utilizzo crediti'))}</div>
                 <div class="text-muted small">${fmtDate(t.data)}</div>
               </div>
             </div>
             <div class="text-end">
-              <div class="${amtCls} fs-6">${prefix}${t.ammontare} cr.</div>
+              <div class="${amtCls} fs-6">${prefix}${Number(t.ammontare) || 0} cr.</div>
               <span class="badge ${badgeCls} small">${accredito ? 'Accredito' : 'Utilizzo'}</span>
             </div>
           </div>
@@ -370,9 +379,5 @@
 
     document.addEventListener('DOMContentLoaded', loadTransazioni);
   </script>
-
-<!-- impeccable-live-start -->
-<script src="http://localhost:8400/live.js"></script>
-<!-- impeccable-live-end -->
 </body>
 </html>

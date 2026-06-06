@@ -37,11 +37,14 @@
          HERO
     ════════════════════════════════════════════ -->
     <section class="hero-section py-5" aria-label="Hero RE-VALUE">
+      <video class="hero-video-bg" autoplay loop muted playsinline aria-hidden="true">
+        <source src="assets/video/hero-loop.mp4" type="video/mp4">
+      </video>
       <div class="container">
         <div class="row align-items-center g-5">
 
           <!-- Testo -->
-          <div class="col-lg-6 rv-reveal">
+          <div class="col-lg-6 rv-reveal rv-visible">
             <div class="hero-badge">
               <i class="bi bi-recycle"></i> Economia circolare locale
             </div>
@@ -65,46 +68,35 @@
             </div>
           </div>
 
-          <!-- Illustrazione SVG inline -->
-          <div class="col-lg-6 text-center rv-reveal rv-reveal-d2" aria-hidden="true">
-            <svg viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg"
-                 style="max-width:420px;width:100%;" role="img"
-                 aria-label="Illustrazione scambio oggetti RE-VALUE">
-              <!-- Sfondo circolare -->
-              <circle cx="210" cy="160" r="145" fill="rgba(255,255,255,0.10)"/>
-              <!-- Scatola sinistra -->
-              <rect x="55" y="130" width="90" height="80" rx="8"
-                    fill="rgba(255,255,255,0.25)" stroke="#fff" stroke-width="2"/>
-              <text x="100" y="178" text-anchor="middle" font-size="28">📦</text>
-              <!-- Frecce circolari -->
-              <path d="M160 170 Q210 110 260 170" stroke="#FFC107" stroke-width="3"
-                    fill="none" stroke-dasharray="6,4"
-                    marker-end="url(#arr)"/>
-              <path d="M260 190 Q210 250 160 190" stroke="#FFC107" stroke-width="3"
-                    fill="none" stroke-dasharray="6,4"
-                    marker-end="url(#arr)"/>
-              <defs>
-                <marker id="arr" markerWidth="8" markerHeight="8"
-                        refX="6" refY="3" orient="auto">
-                  <path d="M0,0 L0,6 L6,3 z" fill="#FFC107"/>
-                </marker>
-              </defs>
-              <!-- Crediti al centro -->
-              <circle cx="210" cy="180" r="28" fill="#FFC107"/>
-              <text x="210" y="188" text-anchor="middle"
-                    font-size="20" fill="#212529">💎</text>
-              <!-- Scatola destra -->
-              <rect x="275" y="130" width="90" height="80" rx="8"
-                    fill="rgba(255,255,255,0.25)" stroke="#fff" stroke-width="2"/>
-              <text x="320" y="178" text-anchor="middle" font-size="28">🏪</text>
-              <!-- Label -->
-              <text x="100" y="225" text-anchor="middle"
-                    font-size="12" fill="rgba(255,255,255,0.8)">Oggetto</text>
-              <text x="210" y="225" text-anchor="middle"
-                    font-size="12" fill="rgba(255,255,255,0.8)">Crediti</text>
-              <text x="320" y="225" text-anchor="middle"
-                    font-size="12" fill="rgba(255,255,255,0.8)">Partner</text>
-            </svg>
+          <!-- Visuale scambio -->
+          <div class="col-lg-6 text-center rv-reveal rv-reveal-d2 rv-visible" aria-hidden="true">
+            <div class="exchange-visual">
+              <div class="exchange-visual__halo"></div>
+              <div class="exchange-visual__track"></div>
+
+              <div class="exchange-node exchange-node--object">
+                <span class="exchange-node__step">1</span>
+                <span class="exchange-node__icon"><i class="bi bi-box-seam"></i></span>
+                <span class="exchange-node__label">Pubblica</span>
+                <span class="exchange-node__meta">oggetto utile</span>
+              </div>
+
+              <div class="exchange-core">
+                <span class="exchange-node__step exchange-node__step--core">2</span>
+                <span class="exchange-core__badge">QR</span>
+                <span class="exchange-core__coin">
+                  <i class="bi bi-qr-code-scan"></i>
+                </span>
+                <span class="exchange-core__label">Scambio validato</span>
+              </div>
+
+              <div class="exchange-node exchange-node--partner">
+                <span class="exchange-node__step">3</span>
+                <span class="exchange-node__icon"><i class="bi bi-wallet2"></i></span>
+                <span class="exchange-node__label">Wallet</span>
+                <span class="exchange-node__meta">crediti e coupon</span>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -194,67 +186,69 @@
 
           <div class="col-lg-6">
             <h2 id="asta-heading" class="fw-bold mb-4">
-              <i class="bi bi-graph-down-arrow text-success me-2"></i>
-              Asta inversa — perché?
+              <i class="bi bi-graph-up-arrow text-success me-2"></i>
+              Asta inversa contestuale
             </h2>
             <p class="text-muted mb-4">
-              RE-VALUE usa un meccanismo di <strong>asta inversa</strong>: più
-              l'oggetto è grande o utile, più vale. Ma c'è di più.
+              In RE-VALUE non si compra l'oggetto: si viene incentivati a
+              <strong>ritirarlo prima che scada</strong>. La priorità è inversa:
+              più si avvicina la data di conferimento, più crescono i crediti
+              stimati per chi lo recupera.
             </p>
             <ul class="list-unstyled">
               <li class="d-flex align-items-start mb-3">
                 <i class="bi bi-check-circle-fill text-success me-3 mt-1 flex-shrink-0"></i>
                 <span>
-                  <strong>Dimensione e utilità</strong> determinano il valore
-                  base in crediti dell'annuncio.
+                  <strong>La categoria definisce la fascia</strong>: mobili,
+                  elettrodomestici e attrezzi pesano più di oggetti piccoli.
                 </span>
               </li>
               <li class="d-flex align-items-start mb-3">
                 <i class="bi bi-check-circle-fill text-success me-3 mt-1 flex-shrink-0"></i>
                 <span>
-                  <strong>Più un annuncio si avvicina alla scadenza</strong>,
-                  più diventa "appetibile" per chi cerca.
+                  <strong>La scadenza alza l'urgenza</strong>: negli ultimi giorni
+                  il recupero vale di più, perché evita lo smaltimento.
                 </span>
               </li>
               <li class="d-flex align-items-start">
                 <i class="bi bi-check-circle-fill text-success me-3 mt-1 flex-shrink-0"></i>
                 <span>
-                  <strong>Il sistema premia chi pubblica con anticipo</strong>
-                  — più tempo sul catalogo, più visibilità.
+                  <strong>I crediti arrivano solo dopo il QR</strong>: lo scambio
+                  fisico viene validato e il wallet si aggiorna per entrambi.
                 </span>
               </li>
             </ul>
           </div>
 
           <div class="col-lg-6" aria-hidden="true">
-            <!-- Grafico a barre illustrativo -->
-            <svg viewBox="0 0 380 220" xmlns="http://www.w3.org/2000/svg"
-                 style="max-width:380px;width:100%;" role="img"
-                 aria-label="Grafico valore nel tempo">
-              <!-- Assi -->
-              <line x1="50" y1="180" x2="340" y2="180"
-                    stroke="#ccc" stroke-width="2"/>
-              <line x1="50" y1="20"  x2="50"  y2="180"
-                    stroke="#ccc" stroke-width="2"/>
-              <!-- Barre -->
-              <rect x="70"  y="60"  width="40" height="120" rx="4" fill="#2E7D32" opacity="0.9"/>
-              <rect x="130" y="90"  width="40" height="90"  rx="4" fill="#43A047" opacity="0.9"/>
-              <rect x="190" y="120" width="40" height="60"  rx="4" fill="#66BB6A" opacity="0.9"/>
-              <rect x="250" y="145" width="40" height="35"  rx="4" fill="#A5D6A7" opacity="0.9"/>
-              <rect x="310" y="165" width="40" height="15"  rx="4" fill="#C8E6C9" opacity="0.9"/>
-              <!-- Label asse x -->
-              <text x="90"  y="198" text-anchor="middle" font-size="11" fill="#666">Pubblica</text>
-              <text x="210" y="198" text-anchor="middle" font-size="11" fill="#666">Metà vita</text>
-              <text x="330" y="198" text-anchor="middle" font-size="11" fill="#666">Scadenza</text>
-              <!-- Label asse y -->
-              <text x="40" y="65"  text-anchor="end" font-size="11" fill="#666">Alto</text>
-              <text x="40" y="175" text-anchor="end" font-size="11" fill="#666">Basso</text>
-              <!-- Titolo -->
-              <text x="195" y="15" text-anchor="middle"
-                    font-size="13" fill="#333" font-weight="bold">
-                Valore crediti nel tempo
-              </text>
-            </svg>
+            <div class="credit-decay">
+              <div class="credit-decay__header">
+                <span class="credit-decay__kicker">Incentivo al ritiro</span>
+                <strong>Crediti stimati verso la scadenza</strong>
+              </div>
+              <div class="credit-decay__plot">
+                <span class="credit-decay__axis credit-decay__axis--y"></span>
+                <span class="credit-decay__axis credit-decay__axis--x"></span>
+                <span class="credit-decay__note credit-decay__note--high"></span>
+                <span class="credit-decay__note credit-decay__note--low"></span>
+                <div class="credit-decay__bars">
+                  <span style="--h: 18%; --tone: #d3ead4;"></span>
+                  <span style="--h: 35%; --tone: #a7d7a9;"></span>
+                  <span style="--h: 55%; --tone: #6dbb72;"></span>
+                  <span style="--h: 74%; --tone: #44934a;"></span>
+                  <span style="--h: 92%; --tone: #2e7d32;"></span>
+                </div>
+                <div class="credit-decay__labels">
+                  <span>14 giorni</span>
+                  <span>7 giorni</span>
+                  <span>Scadenza</span>
+                </div>
+              </div>
+              <div class="credit-decay__footer">
+                <span><i class="bi bi-box-seam"></i> fascia categoria</span>
+                <span><i class="bi bi-qr-code-scan"></i> accredito dopo QR</span>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -264,8 +258,11 @@
     <!-- ═══════════════════════════════════════════
          STATISTICHE
     ════════════════════════════════════════════ -->
-    <section class="stats-section py-5" aria-label="Statistiche piattaforma">
-      <div class="container">
+    <section class="stats-section py-5" aria-label="Statistiche piattaforma" style="position:relative;overflow:hidden;">
+      <video class="stats-video-bg" autoplay loop muted playsinline aria-hidden="true">
+        <source src="assets/video/stats-ambient.mp4" type="video/mp4">
+      </video>
+      <div class="container" style="position:relative;z-index:1;">
         <div class="row text-center g-4">
           <div class="col-md-4">
             <div class="stat-number">1.200+</div>

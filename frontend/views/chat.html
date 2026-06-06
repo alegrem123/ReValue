@@ -61,10 +61,21 @@
     /* Bolle */
     .bubble-row {
       display: flex;
+      align-items: flex-end;
+      gap: 8px;
     }
 
     .bubble-row.mine  { justify-content: flex-end; }
     .bubble-row.other { justify-content: flex-start; }
+
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #e9ecef;
+    }
 
     .bubble {
       max-width: 72%;
@@ -486,8 +497,5 @@
   ></script>
   <script src="../js/apiClient.js" defer></script>
   <script src="../js/chat.js" defer></script>
-<!-- impeccable-live-start -->
-<script src="http://localhost:8400/live.js"></script>
-<!-- impeccable-live-end -->
 </body>
 </html>

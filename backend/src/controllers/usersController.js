@@ -10,6 +10,7 @@ function sanitizePublicProfile(user) {
     cognome,
     citta,
     descrizione,
+    fotoProfilo,
     createdAt,
   } = user;
 
@@ -19,6 +20,7 @@ function sanitizePublicProfile(user) {
     cognome,
     citta,
     descrizione,
+    fotoProfilo,
     createdAt,
   };
 }
@@ -36,13 +38,14 @@ function sanitizePrivateProfile(user) {
     telefono: user.telefono,
     citta: user.citta,
     descrizione: user.descrizione,
+    fotoProfilo: user.fotoProfilo,
     saldo: user.saldo,
     createdAt: user.createdAt,
   };
 }
 
 function buildUpdatePayload(body) {
-  const allowedFields = ['nome', 'cognome', 'telefono', 'citta', 'descrizione'];
+  const allowedFields = ['nome', 'cognome', 'telefono', 'citta', 'descrizione', 'fotoProfilo'];
   return allowedFields.reduce((acc, field) => {
     if (Object.prototype.hasOwnProperty.call(body, field)) {
       acc[field] =

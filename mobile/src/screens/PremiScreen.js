@@ -14,7 +14,7 @@ import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
-export function PremiScreen() {
+export function PremiScreen({ onBack }) {
   const [premi, setPremi]       = useState([]);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
@@ -75,11 +75,12 @@ export function PremiScreen() {
       title="Premi"
       subtitle="Usa i tuoi crediti per riscattare coupon dai partner."
       variant="gradient"
+      right={onBack ? <Button title="Chiudi" variant="secondary" size="compact" onPress={onBack} /> : null}
     >
       {error ? (
         <View style={styles.notice}>
           <Text style={styles.errorText}>{error}</Text>
-          <Button title="Riprova" variant="secondary" onPress={loadPremi} />
+          <Button title="Riprova" variant="secondary" size="compact" onPress={loadPremi} />
         </View>
       ) : null}
 
@@ -105,13 +106,13 @@ export function PremiScreen() {
           {codice ? (
             /* Stato successo */
             <>
-              <Text style={styles.sheetTitle}>✓ Coupon riscattato!</Text>
+              <Text style={styles.sheetTitle}>Coupon riscattato</Text>
               <Text style={styles.sheetSub}>Mostra questo codice al partner.</Text>
               <View style={styles.codeBox}>
                 <Text style={styles.codeText}>{codice}</Text>
               </View>
               <Text style={styles.hint}>Copialo e conservalo!</Text>
-              <Button title="Chiudi" onPress={chiudiModal} />
+              <Button title="Chiudi" onPress={chiudiModal} fullWidth />
             </>
           ) : (
             /* Stato conferma */
@@ -132,12 +133,13 @@ export function PremiScreen() {
               ) : null}
 
               <View style={styles.actions}>
-                <Button title="Annulla" variant="secondary" onPress={chiudiModal} />
+                <Button title="Annulla" variant="secondary" size="compact" onPress={chiudiModal} />
                 <Button
                   title="Conferma"
                   onPress={confermaRiscatto}
                   loading={riscattoLoading}
                   disabled={riscattoLoading}
+                  size="compact"
                 />
               </View>
             </>
@@ -170,6 +172,7 @@ function CouponCard({ coupon, onRiscatta }) {
         onPress={onRiscatta}
         disabled={esaurito}
         variant={esaurito ? 'secondary' : 'primary'}
+        size="compact"
       />
     </View>
   );
@@ -211,7 +214,7 @@ const styles = StyleSheet.create({
   },
   costoBadge: {
     backgroundColor: colors.amber,
-    borderRadius: 8,
+    borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

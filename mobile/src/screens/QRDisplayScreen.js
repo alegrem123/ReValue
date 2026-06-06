@@ -61,7 +61,7 @@ export function QRDisplayScreen({ prenotazioneId, onBack }) {
     <Screen
       title="QR Code scambio"
       subtitle="Mostra questo codice all'acquirente per certificare il ritiro."
-      right={<Button title="Indietro" variant="secondary" onPress={onBack} />}
+      right={<Button title="Indietro" variant="secondary" size="compact" onPress={onBack} />}
     >
       {loading ? <ActivityIndicator color={colors.green} /> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -86,7 +86,7 @@ export function QRDisplayScreen({ prenotazioneId, onBack }) {
           </View>
           ) : null}
 
-          <Button title="Rigenera QR" variant="secondary" onPress={genera} loading={loading} />
+          <Button title="Rigenera QR" variant="secondary" size="compact" onPress={genera} loading={loading} />
         </View>
       ) : null}
     </Screen>
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   infoCard: {
     width: '100%',
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 14,
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   codeCard: {
     width: '100%',
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 14,

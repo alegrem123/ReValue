@@ -427,21 +427,20 @@ describe('QR Edge Cases – copertura OCL #13, #14, #15', () => {
         .set('Authorization', `Bearer ${tokenA}`)
         .send({ codice: qrCode });
       expect(res.statusCode).toBe(200);
-      expect(res.body.creditiAssegnati).toBeGreaterThan(0);
+      expect(res.body.creditiAssegnati.donatore).toBeGreaterThan(0);
+      expect(res.body.creditiAssegnati.acquirente).toBeGreaterThan(0);
 
       // Verifica Wallet Donatore (OCL #17: bilancio ≥ 0)
       const donatoreId = getUserIdFromToken(tokenD);
       const walletDonatore = await Wallet.findOne({ idUtente: donatoreId });
       expect(walletDonatore).not.toBeNull();
-      expect(walletDonatore.bilancio).toBeGreaterThanOrEqual(0);
-      expect(walletDonatore.bilancio).toBe(res.body.creditiAssegnati);
+      expect(walletDonatore.bilancio).toBeGreaterThanOrEqual(res.body.creditiAssegnati.donatore);
 
       // Verifica Wallet Acquirente (OCL #17: bilancio ≥ 0)
       const acquirenteId = getUserIdFromToken(tokenA);
       const walletAcquirente = await Wallet.findOne({ idUtente: acquirenteId });
       expect(walletAcquirente).not.toBeNull();
-      expect(walletAcquirente.bilancio).toBeGreaterThanOrEqual(0);
-      expect(walletAcquirente.bilancio).toBe(res.body.creditiAssegnati);
+      expect(walletAcquirente.bilancio).toBeGreaterThanOrEqual(res.body.creditiAssegnati.acquirente);
     });
 
     test('il saldo non può diventare negativo (invariante OCL #17)', async () => {

@@ -47,11 +47,14 @@ describe('mobile smoke', () => {
       'ProfileScreen',
     ].forEach((screen) => assert.match(source, new RegExp(screen), screen));
 
-    ['catalog', 'create', 'mine', 'bookings', 'premi', 'chat', 'profile'].forEach((tab) => {
+    ['catalog', 'create', 'bookings', 'chat', 'profile'].forEach((tab) => {
       assert.match(source, new RegExp(`key: '${tab}'`), tab);
     });
+    ['mine', 'premi'].forEach((removedTab) => {
+      assert.doesNotMatch(source, new RegExp(`key: '${removedTab}'`), removedTab);
+    });
 
-    ['annuncioDetail', 'qrDisplay', 'qrScan', 'swapSuccess', 'notifiche', 'chat'].forEach((modal) => {
+    ['annuncioDetail', 'qrDisplay', 'qrScan', 'swapSuccess', 'notifiche', 'myAnnunci', 'premi', 'chat'].forEach((modal) => {
       assert.match(source, new RegExp(`modal\\?\\.name === '${modal}'`), modal);
     });
   });
@@ -91,7 +94,17 @@ describe('mobile smoke', () => {
     assert.match(qrDisplay, /selectable/);
   });
 
-  it('la creazione annuncio mobile usa preset e indirizzo geocodificato', () => {
+  it('il QR mobile mostra i crediti acquirente quando il backend restituisce donatore e acquirente', () => {
+    const qrScan = readFileSync(join(root, 'src/screens/QRScanScreen.js'), 'utf8');
+    const success = readFileSync(join(root, 'src/screens/SwapSuccessScreen.js'), 'utf8');
+
+    assert.match(qrScan, /function normalizeCreditiAccreditati\(value\)/);
+    assert.match(qrScan, /value\.acquirente/);
+    assert.match(success, /function formatCreditiAccreditati\(value\)/);
+    assert.match(success, /value\.acquirente/);
+  });
+
+  it('la creazione annuncio mobile usa menu a tendina e indirizzo geocodificato', () => {
     const create = readFileSync(join(root, 'src/screens/CreateAnnuncioScreen.js'), 'utf8');
 
     assert.match(create, /CATEGORIE/);
@@ -101,7 +114,12 @@ describe('mobile smoke', () => {
     assert.match(create, /REGIONI/);
     assert.match(create, /PROVINCE/);
     assert.match(create, /COMUNI/);
-    assert.match(create, /PresetChips/);
+    assert.match(create, /DropdownField/);
+    assert.match(create, /DateTimePicker/);
+    assert.match(create, /DateField/);
+    assert.match(create, /Seleziona categoria/);
+    assert.match(create, /Seleziona materiale/);
+    assert.match(create, /Seleziona scadenza/);
     assert.match(create, /reverseGeocodeAsync/);
     assert.match(create, /geocodeAsync/);
     assert.match(create, /indirizzo:/);
@@ -112,5 +130,39 @@ describe('mobile smoke', () => {
     assert.match(create, /via/);
     assert.doesNotMatch(create, /label="Latitudine"/);
     assert.doesNotMatch(create, /label="Longitudine"/);
+  });
+
+  it('il catalogo mobile espone filtri rapidi coerenti con il web', () => {
+    const catalog = readFileSync(join(root, 'src/screens/CatalogScreen.js'), 'utf8');
+
+    assert.match(catalog, /CATEGORIE/);
+    assert.match(catalog, /Cerca categoria/);
+    assert.match(catalog, /Pulisci/);
+    assert.match(catalog, /loadAnnunci\(item\)/);
+  });
+
+  it('il catalogo mobile include la vista mappa annunci', () => {
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    const catalog = readFileSync(join(root, 'src/screens/CatalogScreen.js'), 'utf8');
+    const card = readFileSync(join(root, 'src/components/AnnuncioCard.js'), 'utf8');
+
+    assert.match(pkg.dependencies['react-native-maps'], /\d/);
+    assert.match(catalog, /MapView/);
+    assert.match(catalog, /Marker/);
+    assert.match(catalog, /Callout/);
+    assert.match(catalog, /viewMode/);
+    assert.match(catalog, /Le posizioni sono approssimate/);
+    assert.match(catalog, /calculateEstimatedCredits/);
+    assert.match(card, /export function calculateEstimatedCredits/);
+    assert.match(card, /MAX_CREDIT_WINDOW_MS/);
+    assert.match(card, /creditsPill/);
+  });
+
+  it('il dettaglio annuncio mobile non mostra coordinate pubbliche esatte', () => {
+    const detail = readFileSync(join(root, 'src/screens/AnnuncioDetailScreen.js'), 'utf8');
+
+    assert.match(detail, /formatPublicLocation/);
+    assert.match(detail, /Indirizzo esatto visibile dopo la prenotazione/);
+    assert.doesNotMatch(detail, /toFixed\(4\)/);
   });
 });

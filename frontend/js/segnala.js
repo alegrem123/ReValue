@@ -24,11 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const tipoSel        = document.getElementById('segnala-tipo');
   const motivoTa       = document.getElementById('segnala-motivo');
 
-  // populate utente segnalato from query param
-  if (userId) {
-    segnDisplay.classList.remove('d-none');
-    segnNomeInput.value = userId;
-    segnIdInput.value   = userId;
+	  // populate utente segnalato from query param
+	  if (userId) {
+	    segnDisplay.classList.remove('d-none');
+	    segnNomeInput.value = annuncioId ? `Annuncio ${annuncioId} / utente ${userId}` : `Utente ${userId}`;
+	    segnIdInput.value   = userId;
   } else {
     segnManualWrap.classList.remove('d-none');
   }

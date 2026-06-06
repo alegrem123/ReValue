@@ -7,6 +7,10 @@ const Conversazione = require('../models/conversazioneModel');
 const User = require('../models/userModel');
 const Segnalazione = require('../models/segnalazioneModel');
 const { applicaMalus } = require('../services/userService');
+const { calcolaCrediti } = require('../services/scambioQrService');
+const { sottraiPunti } = require('../services/walletService');
+
+const MALUS_CREDITI_NOSHOW = 25;
 
 const DISDETTA_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
@@ -42,13 +46,28 @@ async function creaPrenotazione(req, res) {
           err.statusCode = 409;
           throw err;
         }
+        const crediti = calcolaCrediti(annuncio.oggetto?.categoria, annuncio.dataScadenza);
         [prenotazione] = await Prenotazione.create(
-          [{ annuncio: annuncio._id, acquirente: req.user.id, donatore: annuncio.donatore }],
+          [{ annuncio: annuncio._id, acquirente: req.user.id, donatore: annuncio.donatore, creditiDonatore: crediti.donatore, creditiAcquirente: crediti.acquirente }],
           { session }
         );
-        await Conversazione.create(
-          [{ prenotazione: prenotazione._id, partecipanti: [annuncio.donatore, req.user.id] }],
-          { session }
+        const pairKey = [annuncio.donatore, req.user.id].map(String).sort().join('_');
+        await Conversazione.findOneAndUpdate(
+          { pairKey },
+          {
+            $setOnInsert: {
+              prenotazione: prenotazione._id,
+              partecipanti: [annuncio.donatore, req.user.id],
+              pairKey,
+            },
+          },
+          {
+            new: true,
+            upsert: true,
+            runValidators: true,
+            setDefaultsOnInsert: true,
+            session,
+          }
         );
       });
     } finally {
@@ -65,6 +84,10 @@ async function creaPrenotazione(req, res) {
 
     return res.status(201).json({
       prenotazione,
+      creditiAssegnati: {
+        donatore: prenotazione.creditiDonatore,
+        acquirente: prenotazione.creditiAcquirente,
+      },
       indirizzo: { latitudine: lockedAnnuncio.latitudine, longitudine: lockedAnnuncio.longitudine },
     });
   } catch (err) {
@@ -184,6 +207,13 @@ async function segnalaMancatoRitiro(req, res) {
           motivo: 'No-show: acquirente non si è presentato al ritiro',
         }], { session });
         await applicaMalus(prenotazione.acquirente, { session });
+        await sottraiPunti(
+          prenotazione.acquirente.toString(),
+          MALUS_CREDITI_NOSHOW,
+          'Malus no-show: mancato ritiro',
+          prenotazione._id,
+          { session }
+        ).catch(() => { /* ignora se saldo insufficiente — malus reputazionale già applicato */ });
       });
     } finally {
       await session.endSession();

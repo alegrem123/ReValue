@@ -93,6 +93,11 @@ const userSchema = new Schema(
       trim: true,
       default: '',
     },
+    fotoProfilo: {
+      type: String,
+      default: null,
+      maxlength: [1_400_000, 'foto profilo supera il limite di 1 MB'],
+    },
     createdAt: {
       type: Date,
       default: Date.now,

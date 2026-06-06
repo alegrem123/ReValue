@@ -6,7 +6,7 @@ import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
-export function MyAnnunciScreen({ onOpenAnnuncio, refreshKey }) {
+export function MyAnnunciScreen({ onOpenAnnuncio, refreshKey, onBack }) {
   const [annunci, setAnnunci] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +45,12 @@ export function MyAnnunciScreen({ onOpenAnnuncio, refreshKey }) {
   }
 
   return (
-    <Screen title="I miei annunci" subtitle="Controlla gli annunci pubblicati e rimuovi quelli non piu disponibili." scroll={false}>
+    <Screen
+      title="I miei annunci"
+      subtitle="Controlla gli annunci pubblicati e rimuovi quelli non più disponibili."
+      scroll={false}
+      right={onBack ? <Button title="Chiudi" variant="secondary" size="compact" onPress={onBack} /> : null}
+    >
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ScrollView
         contentContainerStyle={styles.list}
@@ -62,8 +67,8 @@ export function MyAnnunciScreen({ onOpenAnnuncio, refreshKey }) {
             onPress={() => onOpenAnnuncio(annuncio._id)}
             actions={
               <View style={styles.actions}>
-                <Button title="Apri" variant="secondary" onPress={() => onOpenAnnuncio(annuncio._id)} />
-                <Button title="Elimina" variant="danger" onPress={() => confirmDelete(annuncio)} />
+                <Button title="Apri" variant="secondary" size="small" onPress={() => onOpenAnnuncio(annuncio._id)} />
+                <Button title="Elimina" variant="danger" size="small" onPress={() => confirmDelete(annuncio)} />
               </View>
             }
           />

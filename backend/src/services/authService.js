@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../models/userModel');
 const { hashPassword, comparePassword, isLegacySha256Hash } = require('../utils/password');
 const { signToken } = require('../utils/jwt');
-const { creaWallet } = require('./walletService');
+const { creaWallet, addPunti } = require('./walletService');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -93,6 +93,7 @@ async function registerUser({ nome, cognome, email, password }) {
   });
 
   await creaWallet(user._id);
+  await addPunti(user._id.toString(), 10, 'Bonus benvenuto');
 
   return buildAuthResponse(user);
 }

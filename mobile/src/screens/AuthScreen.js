@@ -49,11 +49,14 @@ export function AuthScreen({ onAuthenticated }) {
   return (
     <Screen
       title="RE-VALUE"
-      subtitle="Dai nuova vita ai tuoi oggetti. Accedi per pubblicare e prenotare."
+      subtitle="Dai nuova vita ai tuoi oggetti. Accedi per pubblicare, prenotare e usare i crediti."
       variant="gradient"
     >
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{isRegister ? 'Crea account' : 'Accedi'}</Text>
+        <Text style={styles.cardTitle}>{isRegister ? 'Crea il tuo account' : 'Accedi'}</Text>
+        <Text style={styles.cardSubtitle}>
+          {isRegister ? 'Unisciti alla community locale' : 'Bentornato nella community'}
+        </Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {isRegister ? (
           <View style={styles.row}>
@@ -84,10 +87,11 @@ export function AuthScreen({ onAuthenticated }) {
           secureTextEntry
           onChangeText={(value) => setField('password', value)}
         />
-        <Button title={isRegister ? 'Registrati' : 'Accedi'} onPress={submit} loading={loading} />
+        <Button title={isRegister ? 'Registrati' : 'Accedi'} onPress={submit} loading={loading} fullWidth />
         <Button
           title={isRegister ? 'Ho già un account' : 'Crea un account'}
           variant="secondary"
+          fullWidth
           onPress={() => {
             setError('');
             setMode(isRegister ? 'login' : 'register');
@@ -117,7 +121,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: colors.text,
-    letterSpacing: -0.3,
+    letterSpacing: 0,
+  },
+  cardSubtitle: {
+    marginTop: -8,
+    color: colors.muted,
+    fontSize: 14,
   },
   row: {
     flexDirection: 'row',
