@@ -5,7 +5,7 @@ import { colors } from '../theme/colors';
  * variant="plain"    — header bianco, sfondo cream (default)
  * variant="gradient" — header gradiente verde (come page-hero web)
  */
-export function Screen({ title, subtitle, children, scroll = true, right, variant = 'plain' }) {
+export function Screen({ title, subtitle, children, scroll = true, right, variant = 'plain', contentStyle }) {
   const isGradient = variant === 'gradient';
 
   const header = (
@@ -26,9 +26,9 @@ export function Screen({ title, subtitle, children, scroll = true, right, varian
     <SafeAreaView style={styles.safe}>
       {header}
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+        <ScrollView contentContainerStyle={[styles.content, contentStyle]}>{children}</ScrollView>
       ) : (
-        <View style={[styles.content, styles.fill]}>{children}</View>
+        <View style={[styles.content, styles.fill, contentStyle]}>{children}</View>
       )}
     </SafeAreaView>
   );
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: colors.text,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
   },
   subtitle: {
     marginTop: 4,
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -0.5,
+    letterSpacing: 0,
   },
   gradientSubtitle: {
     marginTop: 4,

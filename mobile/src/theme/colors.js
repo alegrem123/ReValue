@@ -18,6 +18,7 @@ export const colors = {
   // Testo
   text:         '#1A1A1A',
   muted:        '#6B7280',
+  textLight:    '#9CA3AF',
 
   // Stato annuncio
   statoDisponibile:   '#E8F5E9',
@@ -34,6 +35,10 @@ export const colors = {
   // Feedback
   danger:       '#C62828',
   dangerLight:  '#FFEBEE',
+  warning:      '#F57C00',
+  warningLight: '#FFF3E0',
+  info:         '#0277BD',
+  infoLight:    '#E1F5FE',
 
   // Legacy aliases (usati da codice esistente)
   background:   '#FAF8F4',

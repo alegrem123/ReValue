@@ -2,7 +2,15 @@ import { useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text } from 'react-native';
 import { colors } from '../theme/colors';
 
-export function Button({ title, onPress, variant = 'primary', disabled = false, loading = false }) {
+export function Button({
+  title,
+  onPress,
+  variant = 'primary',
+  disabled = false,
+  loading = false,
+  size = 'default',
+  fullWidth = false,
+}) {
   const scale = useRef(new Animated.Value(1)).current;
 
   function handlePressIn() {
@@ -17,7 +25,10 @@ export function Button({ title, onPress, variant = 'primary', disabled = false, 
   const isAccent    = variant === 'accent';
 
   return (
-    <Animated.View style={{ transform: [{ scale }], opacity: disabled ? 0.6 : 1 }}>
+    <Animated.View style={[
+      { transform: [{ scale }], opacity: disabled ? 0.6 : 1 },
+      fullWidth && styles.wrapperFullWidth,
+    ]}>
       <Pressable
         accessibilityRole="button"
         disabled={disabled || loading}
@@ -26,6 +37,9 @@ export function Button({ title, onPress, variant = 'primary', disabled = false, 
         onPressOut={handlePressOut}
         style={[
           styles.button,
+          size === 'compact' && styles.compact,
+          size === 'small' && styles.small,
+          fullWidth && styles.fullWidth,
           isSecondary && styles.secondary,
           isDanger    && styles.danger,
           isAccent    && styles.accent,
@@ -36,6 +50,8 @@ export function Button({ title, onPress, variant = 'primary', disabled = false, 
         ) : (
           <Text style={[
             styles.text,
+            size === 'compact' && styles.compactText,
+            size === 'small' && styles.smallText,
             isSecondary && styles.secondaryText,
             isDanger    && styles.text,
             isAccent    && styles.accentText,
@@ -50,12 +66,28 @@ export function Button({ title, onPress, variant = 'primary', disabled = false, 
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 48,
+    minHeight: 46,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
     backgroundColor: colors.green,
+  },
+  wrapperFullWidth: {
+    alignSelf: 'stretch',
+  },
+  compact: {
+    minHeight: 40,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  small: {
+    minHeight: 36,
+    borderRadius: 9,
+    paddingHorizontal: 12,
+  },
+  fullWidth: {
+    alignSelf: 'stretch',
   },
   secondary: {
     backgroundColor: colors.surface,
@@ -72,7 +104,13 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontWeight: '700',
     fontSize: 15,
-    letterSpacing: 0.2,
+    letterSpacing: 0,
+  },
+  compactText: {
+    fontSize: 14,
+  },
+  smallText: {
+    fontSize: 13,
   },
   secondaryText: {
     color: colors.green,

@@ -53,12 +53,12 @@ export function NotificheScreen({ onBack }) {
     <Screen
       title="Notifiche"
       subtitle={nonLette > 0 ? `${nonLette} non lette` : 'Tutto aggiornato'}
-      right={onBack ? <Button title="Chiudi" variant="secondary" onPress={onBack} /> : null}
+      right={onBack ? <Button title="Chiudi" variant="secondary" size="compact" onPress={onBack} /> : null}
     >
       {error ? (
         <View style={styles.notice}>
           <Text style={styles.errorText}>{error}</Text>
-          <Button title="Riprova" variant="secondary" onPress={() => loadNotifiche()} />
+          <Button title="Riprova" variant="secondary" size="compact" onPress={() => loadNotifiche()} />
         </View>
       ) : null}
 
@@ -99,7 +99,7 @@ function NotificaRow({ notifica, onRead }) {
         <Text style={styles.data}>{fmtDate(notifica.data || notifica.createdAt)}</Text>
       </View>
       {unread ? (
-        <Button title="✓" variant="secondary" onPress={onRead} />
+        <Button title="Letta" variant="secondary" size="small" onPress={onRead} />
       ) : null}
     </Pressable>
   );
@@ -107,11 +107,11 @@ function NotificaRow({ notifica, onRead }) {
 
 function labelTipo(tipo) {
   const map = {
-    messaggio:    '💬 Messaggio',
-    prenotazione: '📅 Prenotazione',
-    scambio:      '🔄 Scambio',
-    segnalazione: '🚨 Segnalazione',
-    sistema:      'ℹ️ Sistema',
+    messaggio:    'Messaggio',
+    prenotazione: 'Prenotazione',
+    scambio:      'Scambio',
+    segnalazione: 'Segnalazione',
+    sistema:      'Sistema',
   };
   return map[tipo] || tipo || 'Notifica';
 }
