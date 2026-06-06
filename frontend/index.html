@@ -44,7 +44,7 @@
         <div class="row align-items-center g-5">
 
           <!-- Testo -->
-          <div class="col-lg-6 rv-reveal">
+          <div class="col-lg-6 rv-reveal rv-visible">
             <div class="hero-badge">
               <i class="bi bi-recycle"></i> Economia circolare locale
             </div>
@@ -69,26 +69,32 @@
           </div>
 
           <!-- Visuale scambio -->
-          <div class="col-lg-6 text-center rv-reveal rv-reveal-d2" aria-hidden="true">
+          <div class="col-lg-6 text-center rv-reveal rv-reveal-d2 rv-visible" aria-hidden="true">
             <div class="exchange-visual">
               <div class="exchange-visual__halo"></div>
+              <div class="exchange-visual__track"></div>
+
               <div class="exchange-node exchange-node--object">
+                <span class="exchange-node__step">1</span>
                 <span class="exchange-node__icon"><i class="bi bi-box-seam"></i></span>
-                <span class="exchange-node__label">Oggetto</span>
+                <span class="exchange-node__label">Pubblica</span>
+                <span class="exchange-node__meta">oggetto utile</span>
               </div>
 
               <div class="exchange-core">
-                <span class="exchange-core__ring exchange-core__ring--top"></span>
-                <span class="exchange-core__ring exchange-core__ring--bottom"></span>
+                <span class="exchange-node__step exchange-node__step--core">2</span>
+                <span class="exchange-core__badge">QR</span>
                 <span class="exchange-core__coin">
-                  <i class="bi bi-gem"></i>
+                  <i class="bi bi-qr-code-scan"></i>
                 </span>
-                <span class="exchange-core__label">Crediti</span>
+                <span class="exchange-core__label">Scambio validato</span>
               </div>
 
               <div class="exchange-node exchange-node--partner">
-                <span class="exchange-node__icon"><i class="bi bi-shop-window"></i></span>
-                <span class="exchange-node__label">Partner</span>
+                <span class="exchange-node__step">3</span>
+                <span class="exchange-node__icon"><i class="bi bi-wallet2"></i></span>
+                <span class="exchange-node__label">Wallet</span>
+                <span class="exchange-node__meta">crediti e coupon</span>
               </div>
             </div>
           </div>
@@ -180,33 +186,35 @@
 
           <div class="col-lg-6">
             <h2 id="asta-heading" class="fw-bold mb-4">
-              <i class="bi bi-graph-down-arrow text-success me-2"></i>
-              Asta inversa — perché?
+              <i class="bi bi-graph-up-arrow text-success me-2"></i>
+              Asta inversa contestuale
             </h2>
             <p class="text-muted mb-4">
-              RE-VALUE usa un meccanismo di <strong>asta inversa</strong>: più
-              l'oggetto è grande o utile, più vale. Ma c'è di più.
+              In RE-VALUE non si compra l'oggetto: si viene incentivati a
+              <strong>ritirarlo prima che scada</strong>. La priorità è inversa:
+              più si avvicina la data di conferimento, più crescono i crediti
+              stimati per chi lo recupera.
             </p>
             <ul class="list-unstyled">
               <li class="d-flex align-items-start mb-3">
                 <i class="bi bi-check-circle-fill text-success me-3 mt-1 flex-shrink-0"></i>
                 <span>
-                  <strong>Dimensione e utilità</strong> determinano il valore
-                  base in crediti dell'annuncio.
+                  <strong>La categoria definisce la fascia</strong>: mobili,
+                  elettrodomestici e attrezzi pesano più di oggetti piccoli.
                 </span>
               </li>
               <li class="d-flex align-items-start mb-3">
                 <i class="bi bi-check-circle-fill text-success me-3 mt-1 flex-shrink-0"></i>
                 <span>
-                  <strong>Più un annuncio si avvicina alla scadenza</strong>,
-                  più diventa "appetibile" per chi cerca.
+                  <strong>La scadenza alza l'urgenza</strong>: negli ultimi giorni
+                  il recupero vale di più, perché evita lo smaltimento.
                 </span>
               </li>
               <li class="d-flex align-items-start">
                 <i class="bi bi-check-circle-fill text-success me-3 mt-1 flex-shrink-0"></i>
                 <span>
-                  <strong>Il sistema premia chi pubblica con anticipo</strong>
-                  — più tempo sul catalogo, più visibilità.
+                  <strong>I crediti arrivano solo dopo il QR</strong>: lo scambio
+                  fisico viene validato e il wallet si aggiorna per entrambi.
                 </span>
               </li>
             </ul>
@@ -215,26 +223,30 @@
           <div class="col-lg-6" aria-hidden="true">
             <div class="credit-decay">
               <div class="credit-decay__header">
-                <span class="credit-decay__kicker">Asta inversa</span>
-                <strong>Valore crediti nel tempo</strong>
+                <span class="credit-decay__kicker">Incentivo al ritiro</span>
+                <strong>Crediti stimati verso la scadenza</strong>
               </div>
               <div class="credit-decay__plot">
                 <span class="credit-decay__axis credit-decay__axis--y"></span>
                 <span class="credit-decay__axis credit-decay__axis--x"></span>
-                <span class="credit-decay__note credit-decay__note--high">Alto</span>
-                <span class="credit-decay__note credit-decay__note--low">Basso</span>
+                <span class="credit-decay__note credit-decay__note--high"></span>
+                <span class="credit-decay__note credit-decay__note--low"></span>
                 <div class="credit-decay__bars">
-                  <span style="--h: 84%; --tone: #2e7d32;"></span>
-                  <span style="--h: 67%; --tone: #44934a;"></span>
-                  <span style="--h: 49%; --tone: #6dbb72;"></span>
-                  <span style="--h: 31%; --tone: #a7d7a9;"></span>
-                  <span style="--h: 15%; --tone: #d3ead4;"></span>
+                  <span style="--h: 18%; --tone: #d3ead4;"></span>
+                  <span style="--h: 35%; --tone: #a7d7a9;"></span>
+                  <span style="--h: 55%; --tone: #6dbb72;"></span>
+                  <span style="--h: 74%; --tone: #44934a;"></span>
+                  <span style="--h: 92%; --tone: #2e7d32;"></span>
                 </div>
                 <div class="credit-decay__labels">
-                  <span>Pubblica</span>
-                  <span>Metà vita</span>
+                  <span>14 giorni</span>
+                  <span>7 giorni</span>
                   <span>Scadenza</span>
                 </div>
+              </div>
+              <div class="credit-decay__footer">
+                <span><i class="bi bi-box-seam"></i> fascia categoria</span>
+                <span><i class="bi bi-qr-code-scan"></i> accredito dopo QR</span>
               </div>
             </div>
           </div>
