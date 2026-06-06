@@ -24,6 +24,13 @@ function showAlert(msg, type = 'danger') {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function normalizeCreditiAccreditati(value) {
+  if (value && typeof value === 'object') {
+    return value.acquirente ?? value.donatore ?? 50;
+  }
+  return value ?? 50;
+}
+
 async function validaCodice(codice) {
   if (validated) return;
   if (!codice || !codice.trim()) {
@@ -42,7 +49,7 @@ async function validaCodice(codice) {
     return;
   }
 
-  const crediti = res.data?.creditiAssegnati ?? res.creditiAssegnati ?? 50;
+  const crediti = normalizeCreditiAccreditati(res.data?.creditiAssegnati ?? res.creditiAssegnati);
   const prenotazioneId = res.data?.prenotazione ?? '';
   window.location.href = `swap-success.html?crediti=${encodeURIComponent(crediti)}&prenotazioneId=${encodeURIComponent(prenotazioneId)}`;
 }

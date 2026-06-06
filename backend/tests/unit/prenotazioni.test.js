@@ -132,4 +132,57 @@ describe('Prenotazioni - vincoli controller', () => {
       })
     );
   });
+
+  test('salva e restituisce i crediti calcolati al momento della prenotazione', async () => {
+    const donorRegister = await request(app)
+      .post('/api/v1/auth/register')
+      .send({
+        nome: 'Dina',
+        cognome: 'Donor',
+        email: 'crediti-donor@test.com',
+        password: 'password123',
+      });
+    const buyerRegister = await request(app)
+      .post('/api/v1/auth/register')
+      .send({
+        nome: 'Bruno',
+        cognome: 'Buyer',
+        email: 'crediti-buyer@test.com',
+        password: 'password123',
+      });
+
+    expect(donorRegister.statusCode).toBe(201);
+    expect(buyerRegister.statusCode).toBe(201);
+
+    const create = await request(app)
+      .post('/api/v1/annunci')
+      .set('Authorization', `Bearer ${donorRegister.body.token}`)
+      .send({
+        titolo: 'Monitor funzionante',
+        dataScadenza: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        oggetto: {
+          categoria: 'Elettronica',
+          descrizione: 'Monitor in buono stato',
+        },
+      });
+
+    expect(create.statusCode).toBe(201);
+
+    const booking = await request(app)
+      .post('/api/v1/prenotazioni')
+      .set('Authorization', `Bearer ${buyerRegister.body.token}`)
+      .send({ annuncioId: create.body._id });
+
+    expect(booking.statusCode).toBe(201);
+    expect(booking.body.creditiAssegnati).toEqual({
+      donatore: expect.any(Number),
+      acquirente: expect.any(Number),
+    });
+    expect(booking.body.creditiAssegnati.donatore).toBeGreaterThan(20);
+    expect(booking.body.creditiAssegnati.acquirente).toBeGreaterThan(10);
+
+    const saved = await Prenotazione.findById(booking.body.prenotazione._id);
+    expect(saved.creditiDonatore).toBe(booking.body.creditiAssegnati.donatore);
+    expect(saved.creditiAcquirente).toBe(booking.body.creditiAssegnati.acquirente);
+  });
 });

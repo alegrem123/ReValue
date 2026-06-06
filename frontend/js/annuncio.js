@@ -110,6 +110,16 @@ function calculateEstimatedCredits(annuncio) {
   return Math.round(tier.acqMin + (tier.acqMax - tier.acqMin) * ratio);
 }
 
+function updateDisplayedCredits() {
+  if (!currentAnnuncio) return;
+  const text = `${calculateEstimatedCredits(currentAnnuncio)} crediti`;
+  if (annuncioValue) annuncioValue.textContent = text;
+
+  const modalCrediti = document.getElementById('modal-crediti');
+  if (modalCrediti && !modalCrediti.closest('.modal')?.classList.contains('show')) return;
+  if (modalCrediti) modalCrediti.textContent = text;
+}
+
 function showAlert(message, type = 'danger') {
   annuncioAlert.textContent = message;
   annuncioAlert.className = `alert alert-${type}`;
@@ -209,7 +219,7 @@ async function loadAnnuncio() {
   annuncioMaterial.textContent =
     annuncio.oggetto?.materiale || 'Non specificato';
   annuncioSize.textContent = annuncio.oggetto?.dimensioni || 'Non specificato';
-  annuncioValue.textContent = `${calculateEstimatedCredits(annuncio)} crediti`;
+  updateDisplayedCredits();
   annuncioLocation.textContent = formatPublicLocation(annuncio);
 
   const foto = annuncio.oggetto?.foto?.[0];
@@ -232,4 +242,7 @@ async function loadAnnuncio() {
   setActionState(annuncio);
 }
 
-window.addEventListener('DOMContentLoaded', loadAnnuncio);
+window.addEventListener('DOMContentLoaded', () => {
+  loadAnnuncio();
+  setInterval(updateDisplayedCredits, 60_000);
+});

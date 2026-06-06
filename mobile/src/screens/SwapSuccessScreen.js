@@ -5,6 +5,13 @@ import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
+function formatCreditiAccreditati(value) {
+  if (value && typeof value === 'object') {
+    return value.acquirente ?? value.donatore ?? 0;
+  }
+  return value ?? 0;
+}
+
 export function SwapSuccessScreen({ crediti, prenotazioneId, onDone }) {
   const [reviewState, setReviewState] = useState('idle'); // idle | composing | sending | done
   const [positiva, setPositiva]       = useState(null);   // true | false
@@ -31,12 +38,12 @@ export function SwapSuccessScreen({ crediti, prenotazioneId, onDone }) {
   return (
     <Screen title="Scambio completato!">
       <View style={styles.hero}>
-        <Text style={styles.icon}>✓</Text>
+        <Text style={styles.icon}>OK</Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.label}>Crediti accreditati</Text>
-        <Text style={styles.credits}>+{crediti ?? 0}</Text>
+        <Text style={styles.credits}>+{formatCreditiAccreditati(crediti)}</Text>
         <Text style={styles.sublabel}>crediti RE-VALUE</Text>
       </View>
 
@@ -48,7 +55,7 @@ export function SwapSuccessScreen({ crediti, prenotazioneId, onDone }) {
       {prenotazioneId ? (
         reviewState === 'done' ? (
           <View style={styles.reviewDone}>
-            <Text style={styles.reviewDoneText}>✓ Recensione inviata!</Text>
+            <Text style={styles.reviewDoneText}>Recensione inviata</Text>
           </View>
         ) : (
           <View style={styles.reviewBox}>
@@ -57,14 +64,16 @@ export function SwapSuccessScreen({ crediti, prenotazioneId, onDone }) {
 
             <View style={styles.ratingRow}>
               <Button
-                title="👍 Positiva"
+                title="Positiva"
                 variant={positiva === true ? 'primary' : 'secondary'}
                 onPress={() => { setPositiva(true); setReviewState('composing'); }}
+                size="compact"
               />
               <Button
-                title="👎 Negativa"
+                title="Negativa"
                 variant={positiva === false ? 'danger' : 'secondary'}
                 onPress={() => { setPositiva(false); setReviewState('composing'); }}
+                size="compact"
               />
             </View>
 
@@ -85,6 +94,7 @@ export function SwapSuccessScreen({ crediti, prenotazioneId, onDone }) {
                   onPress={inviaRecensione}
                   loading={reviewState === 'sending'}
                   disabled={reviewState === 'sending'}
+                  fullWidth
                 />
               </>
             ) : null}
@@ -92,7 +102,7 @@ export function SwapSuccessScreen({ crediti, prenotazioneId, onDone }) {
         )
       ) : null}
 
-      <Button title="Torna alle prenotazioni" onPress={onDone} variant="secondary" />
+      <Button title="Torna alle prenotazioni" onPress={onDone} variant="secondary" fullWidth />
     </Screen>
   );
 }
@@ -109,7 +119,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     color: '#fff',
-    fontSize: 48,
+    fontSize: 28,
     fontWeight: '900',
     lineHeight: 56,
   },
@@ -164,7 +174,7 @@ const styles = StyleSheet.create({
   textarea: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     minHeight: 80,
     textAlignVertical: 'top',

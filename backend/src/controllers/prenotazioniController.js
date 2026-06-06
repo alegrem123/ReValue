@@ -84,6 +84,10 @@ async function creaPrenotazione(req, res) {
 
     return res.status(201).json({
       prenotazione,
+      creditiAssegnati: {
+        donatore: prenotazione.creditiDonatore,
+        acquirente: prenotazione.creditiAcquirente,
+      },
       indirizzo: { latitudine: lockedAnnuncio.latitudine, longitudine: lockedAnnuncio.longitudine },
     });
   } catch (err) {
