@@ -1,6 +1,7 @@
 (function () {
   let currentPage = 1;
   let currentSearch = '';
+  let currentStato = '';
   let pendingAction = null;
   let confirmModal = null;
 
@@ -26,6 +27,20 @@
   function actionButtons(user) {
     const id = escapeAttr(user._id);
     const email = escapeAttr(user.email || '');
+
+    if (user.bannato || user.isSospeso) {
+      return `
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-success" data-user-action="riabilita" data-user-id="${id}" data-user-email="${email}">
+            Riabilita
+          </button>
+          ${!user.bannato ? `
+          <button class="btn btn-outline-danger" data-user-action="ban" data-user-id="${id}" data-user-email="${email}">
+            Banna
+          </button>` : ''}
+        </div>`;
+    }
+
     return `
       <div class="btn-group btn-group-sm" role="group">
         <button class="btn btn-outline-warning" data-user-action="sospendi" data-user-id="${id}" data-user-email="${email}">
@@ -33,9 +48,6 @@
         </button>
         <button class="btn btn-outline-danger" data-user-action="ban" data-user-id="${id}" data-user-email="${email}">
           Banna
-        </button>
-        <button class="btn btn-outline-success" data-user-action="riabilita" data-user-id="${id}" data-user-email="${email}">
-          Riabilita
         </button>
       </div>`;
   }
@@ -77,6 +89,7 @@
       page: currentPage,
       limit: 20,
       ...(currentSearch ? { search: currentSearch } : {}),
+      ...(currentStato ? { stato: currentStato } : {}),
     });
 
     const res = await window.revalueAdmin.adminRequest(`/admin/users?${params.toString()}`);
@@ -125,6 +138,12 @@
     document.getElementById('users-search-form')?.addEventListener('submit', (event) => {
       event.preventDefault();
       currentSearch = document.getElementById('users-search').value.trim();
+      currentStato = document.getElementById('users-stato-filter').value;
+      loadUsers(1);
+    });
+    document.getElementById('users-stato-filter')?.addEventListener('change', (event) => {
+      currentSearch = document.getElementById('users-search').value.trim();
+      currentStato = event.target.value;
       loadUsers(1);
     });
     loadUsers();

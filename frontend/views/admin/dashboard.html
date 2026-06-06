@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous" />
     <link rel="stylesheet" href="../../css/style.css" />
+    <style>
+      .text-indigo { color: #6610f2 !important; }
+      .text-teal   { color: #0d9488 !important; }
+    </style>
   </head>
   <body class="rv-admin-body">
     <header class="rv-admin-header">
@@ -57,25 +61,49 @@
       <div class="tab-content">
         <section class="tab-pane fade show active" id="stats-panel" role="tabpanel" aria-labelledby="stats-tab">
           <div id="stats-cards" class="row g-3 mb-4"></div>
-          <div id="stats-chart-panel" class="rv-admin-panel">
-            <div class="rv-admin-panel-header">
-              <div>
-                <h2 class="rv-admin-panel-title mb-1">Scambi completati</h2>
-                <p class="rv-admin-muted mb-0">Andamento mensile delle validazioni QR.</p>
+          <div class="row g-3">
+            <div class="col-md-8">
+              <div class="rv-admin-panel h-100">
+                <div class="rv-admin-panel-header">
+                  <div>
+                    <h2 class="rv-admin-panel-title mb-1">Scambi completati</h2>
+                    <p class="rv-admin-muted mb-0">Andamento mensile delle validazioni QR.</p>
+                  </div>
+                </div>
+                <canvas id="stats-chart" height="140"></canvas>
               </div>
             </div>
-            <canvas id="stats-chart" height="120"></canvas>
+            <div class="col-md-4">
+              <div class="rv-admin-panel h-100">
+                <div class="rv-admin-panel-header">
+                  <div>
+                    <h2 class="rv-admin-panel-title mb-1">Utenti</h2>
+                    <p class="rv-admin-muted mb-0">Distribuzione per stato account.</p>
+                  </div>
+                </div>
+                <canvas id="stats-chart-donut"></canvas>
+              </div>
+            </div>
           </div>
         </section>
 
         <section class="tab-pane fade" id="users-panel" role="tabpanel" aria-labelledby="users-tab">
           <div class="rv-admin-panel mb-3">
             <form id="users-search-form" class="row g-2 align-items-end">
-              <div class="col-md-8">
+              <div class="col-md-6">
                 <label for="users-search" class="form-label">Cerca</label>
                 <input id="users-search" class="form-control" type="search" placeholder="Email, nome o cognome" />
               </div>
-              <div class="col-md-4 d-grid">
+              <div class="col-md-3">
+                <label for="users-stato-filter" class="form-label">Stato</label>
+                <select id="users-stato-filter" class="form-select">
+                  <option value="">Tutti</option>
+                  <option value="attivo">Attivi</option>
+                  <option value="sospeso">Sospesi</option>
+                  <option value="bannato">Bannati</option>
+                </select>
+              </div>
+              <div class="col-md-3 d-grid">
                 <button class="btn btn-success" type="submit">
                   <i class="bi bi-search me-1"></i>Cerca
                 </button>
