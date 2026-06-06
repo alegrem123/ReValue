@@ -63,7 +63,7 @@ function renderPreviews() {
   const photos = selectedPhotos.length > 0 ? selectedPhotos : currentAnnuncio?.oggetto?.foto || [];
   previewGrid.innerHTML = photos.map((src, index) => `
     <div class="col-4">
-      <img src="${src}" alt="Foto annuncio ${index + 1}" class="photo-preview rounded-3 border" />
+      <img src="${String(src).replace(/"/g, '&quot;')}" alt="Foto annuncio ${index + 1}" class="photo-preview rounded-3 border" />
     </div>
   `).join('');
 }
