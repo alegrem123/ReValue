@@ -17,6 +17,9 @@ function resolveApiBase() {
     const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
     if (hostUri) {
       const host = hostUri.split(':')[0];
+      if (host === '127.0.0.1' || host === 'localhost') {
+        return cleanApiBase('http://localhost:3000');
+      }
       return cleanApiBase(`http://${host}:3000`);
     }
   }

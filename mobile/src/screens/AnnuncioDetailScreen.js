@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { api, getUserId } from '../api/client';
-import { formatDate } from '../components/AnnuncioCard';
+import { calculateEstimatedCredits, formatDate } from '../components/AnnuncioCard';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
 const PLACEHOLDER = 'https://via.placeholder.com/720x420/ced4da/6c757d?text=RE-VALUE';
+
+function formatPublicLocation(annuncio) {
+  const parts = [
+    annuncio?.indirizzo?.comune,
+    annuncio?.indirizzo?.provincia,
+  ].filter(Boolean);
+  if (parts.length > 0) return parts.join(', ');
+  return 'Area approssimativa. Indirizzo esatto visibile dopo la prenotazione.';
+}
 
 export function AnnuncioDetailScreen({ id, onBack }) {
   const [annuncio, setAnnuncio] = useState(null);
@@ -74,7 +83,7 @@ export function AnnuncioDetailScreen({ id, onBack }) {
   }
 
   return (
-    <Screen title="Dettaglio annuncio" right={<Button title="Indietro" onPress={onBack} variant="secondary" />}>
+    <Screen title="Dettaglio annuncio" right={<Button title="Indietro" onPress={onBack} variant="secondary" size="compact" />}>
       {loading ? <ActivityIndicator color={colors.green} /> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {annuncio ? (
@@ -91,12 +100,9 @@ export function AnnuncioDetailScreen({ id, onBack }) {
               <Info label="Scadenza" value={formatDate(annuncio.dataScadenza)} />
               <Info
                 label="Posizione"
-                value={
-                  annuncio.latitudine != null && annuncio.longitudine != null
-                    ? `${Number(annuncio.latitudine).toFixed(4)}, ${Number(annuncio.longitudine).toFixed(4)}`
-                    : 'Non disponibile'
-                }
+                value={formatPublicLocation(annuncio)}
               />
+              <Info label="Crediti stimati" value={`${calculateEstimatedCredits(annuncio)} crediti`} />
             </View>
             <Button
               title={annuncio.stato === 'DISPONIBILE' ? 'Prenota annuncio' : `Stato: ${annuncio.stato}`}
@@ -119,12 +125,12 @@ export function AnnuncioDetailScreen({ id, onBack }) {
                     numberOfLines={3}
                   />
                   <View style={styles.reportActions}>
-                    <Button title="Invia" variant="danger" onPress={segnala} loading={reporting} />
-                    <Button title="Annulla" variant="secondary" onPress={() => { setShowReport(false); setMotivo(''); }} />
+                    <Button title="Invia" variant="danger" size="compact" onPress={segnala} loading={reporting} />
+                    <Button title="Annulla" variant="secondary" size="compact" onPress={() => { setShowReport(false); setMotivo(''); }} />
                   </View>
                 </View>
               ) : (
-                <Button title="Segnala donatore" variant="secondary" onPress={() => setShowReport(true)} />
+                <Button title="Segnala donatore" variant="secondary" size="compact" onPress={() => setShowReport(true)} />
               )
             ) : null}
           </View>
@@ -146,7 +152,7 @@ function Info({ label, value }) {
 const styles = StyleSheet.create({
   card: {
     overflow: 'hidden',
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -196,7 +202,7 @@ const styles = StyleSheet.create({
   reportBox: {
     borderWidth: 1,
     borderColor: colors.danger,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     gap: 10,
     backgroundColor: colors.dangerLight,
