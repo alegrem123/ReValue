@@ -34,6 +34,14 @@ function formatItalianDate(dateInput) {
   }).format(date);
 }
 
+function formatPublicLocation(annuncio) {
+  const comune = annuncio.indirizzo?.comune || annuncio.comune;
+  const provincia = annuncio.indirizzo?.provincia || annuncio.provincia;
+  if (comune && provincia) return `${comune}, ${provincia}`;
+  if (comune) return comune;
+  return 'Area approssimativa. Indirizzo esatto visibile dopo la prenotazione.';
+}
+
 function normalizeDimensione(value) {
   if (value == null) return 1;
   const parsed = parseFloat(value);
@@ -202,10 +210,7 @@ async function loadAnnuncio() {
     annuncio.oggetto?.materiale || 'Non specificato';
   annuncioSize.textContent = annuncio.oggetto?.dimensioni || 'Non specificato';
   annuncioValue.textContent = `${calculateEstimatedCredits(annuncio)} crediti`;
-  annuncioLocation.textContent =
-    annuncio.latitudine != null && annuncio.longitudine != null
-      ? `Lat: ${Number(annuncio.latitudine).toFixed(4)}, Lng: ${Number(annuncio.longitudine).toFixed(4)}`
-      : 'Visibile solo per utenti autenticati';
+  annuncioLocation.textContent = formatPublicLocation(annuncio);
 
   const foto = annuncio.oggetto?.foto?.[0];
   if (foto) {

@@ -11,27 +11,44 @@ let markerLayer = null;
 let activeMarker = null;
 const markerByAnnuncioId = new Map();
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getPublicCoordinates(annuncio) {
+  const lat = annuncio.indirizzo?.latitudineComune ?? annuncio.latitudineComune ?? annuncio.latitudine;
+  const lng = annuncio.indirizzo?.longitudineComune ?? annuncio.longitudineComune ?? annuncio.longitudine;
+  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  return {
+    lat: Number(lat),
+    lng: Number(lng),
+    approximate: lat !== annuncio.latitudine || lng !== annuncio.longitudine,
+  };
+}
+
 function hasCoordinates(annuncio) {
-  return (
-    Number.isFinite(Number(annuncio.latitudine)) &&
-    Number.isFinite(Number(annuncio.longitudine))
-  );
+  return Boolean(getPublicCoordinates(annuncio));
 }
 
 function buildPopupContent(annuncio) {
-  const titolo = annuncio.titolo || 'Annuncio senza titolo';
-  const categoria = annuncio.oggetto?.categoria || 'Categoria non indicata';
-  const descrizione = annuncio.oggetto?.descrizione || 'Descrizione non disponibile';
-  const materiale = annuncio.oggetto?.materiale || 'N/D';
-  const dimensioni = annuncio.oggetto?.dimensioni || 'N/D';
+  const titolo = escapeHtml(annuncio.titolo || 'Annuncio senza titolo');
+  const categoria = escapeHtml(annuncio.oggetto?.categoria || 'Categoria non indicata');
+  const descrizione = escapeHtml(annuncio.oggetto?.descrizione || 'Descrizione non disponibile');
+  const materiale = escapeHtml(annuncio.oggetto?.materiale || 'N/D');
+  const dimensioni = escapeHtml(annuncio.oggetto?.dimensioni || 'N/D');
   const posizione = [
     annuncio.indirizzo?.comune,
     annuncio.indirizzo?.provincia,
-  ].filter(Boolean).join(', ');
+  ].filter(Boolean).map(escapeHtml).join(', ');
   const distanza = Number.isFinite(Number(annuncio.distanza))
     ? `${Number(annuncio.distanza).toFixed(1)} km`
     : null;
-  const dettaglioUrl = `annuncio.html?id=${annuncio._id}`;
+  const dettaglioUrl = `annuncio.html?id=${encodeURIComponent(annuncio._id)}`;
 
   return `
     <article class="map-popup-card">
@@ -43,7 +60,7 @@ function buildPopupContent(annuncio) {
         ${distanza ? `<span class="map-popup-distance">${distanza}</span>` : ''}
       </div>
       <p class="map-popup-description">${descrizione}</p>
-      ${posizione ? `<p class="map-popup-location">${posizione}${annuncio.posizioneApprossimata ? ' · posizione approssimata' : ''}</p>` : ''}
+      ${posizione ? `<p class="map-popup-location">${posizione} · posizione approssimata</p>` : ''}
       <dl class="map-popup-meta">
         <div><dt>Materiale</dt><dd>${materiale}</dd></div>
         <div><dt>Dimensioni</dt><dd>${dimensioni}</dd></div>
@@ -125,8 +142,9 @@ function updateCatalogMap(annunci = []) {
 
   const bounds = [];
   annunciConCoordinate.forEach((annuncio) => {
-    const lat = Number(annuncio.latitudine);
-    const lng = Number(annuncio.longitudine);
+    const coords = getPublicCoordinates(annuncio);
+    if (!coords) return;
+    const { lat, lng } = coords;
     bounds.push([lat, lng]);
 
     const marker = L.marker([lat, lng], { icon: createMarkerIcon(false) })

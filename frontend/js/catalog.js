@@ -60,27 +60,32 @@ function getDistanceKm(lat1, lng1, lat2, lng2) {
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function getPublicCoordinates(annuncio) {
+  const lat = annuncio.indirizzo?.latitudineComune ?? annuncio.latitudineComune ?? annuncio.latitudine;
+  const lng = annuncio.indirizzo?.longitudineComune ?? annuncio.longitudineComune ?? annuncio.longitudine;
+  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  return { lat: Number(lat), lng: Number(lng) };
+}
+
 function enrichWithDistance(annunci) {
   if (catalogState.lat == null || catalogState.lng == null) return annunci;
 
-  const userLat = Number(catalogState.lat);
-  const userLng = Number(catalogState.lng);
-  return annunci.map((annuncio) => {
-    if (
-      !Number.isFinite(Number(annuncio.latitudine)) ||
-      !Number.isFinite(Number(annuncio.longitudine))
-    ) {
-      return annuncio;
-    }
+	  const userLat = Number(catalogState.lat);
+	  const userLng = Number(catalogState.lng);
+	  return annunci.map((annuncio) => {
+	    const coords = getPublicCoordinates(annuncio);
+	    if (!coords) {
+	      return annuncio;
+	    }
 
     return {
       ...annuncio,
-      distanza: getDistanceKm(
-        userLat,
-        userLng,
-        Number(annuncio.latitudine),
-        Number(annuncio.longitudine)
-      ),
+	      distanza: getDistanceKm(
+	        userLat,
+	        userLng,
+	        coords.lat,
+	        coords.lng
+	      ),
     };
   });
 }
