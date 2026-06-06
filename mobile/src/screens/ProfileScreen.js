@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { api, clearSession, getUserId } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
 
-export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
+export function ProfileScreen({ user, onLogout, onOpenNotifiche, onOpenMyAnnunci, onOpenPremi }) {
   const [balance, setBalance]           = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading]           = useState(false);
@@ -66,9 +68,9 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
       right={
         <View style={styles.headerActions}>
           {onOpenNotifiche ? (
-            <Button title="🔔" variant="secondary" onPress={onOpenNotifiche} />
+            <Button title="Notifiche" variant="secondary" size="compact" onPress={onOpenNotifiche} />
           ) : null}
-          <Button title="Esci" variant="secondary" onPress={logout} />
+          <Button title="Esci" variant="secondary" size="compact" onPress={logout} />
         </View>
       }
     >
@@ -84,6 +86,15 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
       </View>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Area personale</Text>
+        <View style={styles.quickGrid}>
+          <QuickAction title="I miei annunci" subtitle="Gestisci oggetti pubblicati" onPress={onOpenMyAnnunci} />
+          <QuickAction title="Premi" subtitle="Riscatta coupon con i crediti" onPress={onOpenPremi} />
+          <QuickAction title="Notifiche" subtitle="Aggiornamenti su scambi e messaggi" onPress={onOpenNotifiche} />
+        </View>
+      </View>
 
       {/* ── Account ── */}
       <View style={styles.card}>
@@ -103,11 +114,11 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
             <View style={styles.recCountRow}>
               <View style={[styles.recCount, { backgroundColor: colors.greenXLight }]}>
                 <Text style={[styles.recCountNum, { color: colors.green }]}>{totPos}</Text>
-                <Text style={styles.recCountLabel}>👍 Positive</Text>
+                <Text style={styles.recCountLabel}>Positive</Text>
               </View>
               <View style={[styles.recCount, { backgroundColor: colors.dangerLight }]}>
                 <Text style={[styles.recCountNum, { color: colors.danger }]}>{totNeg}</Text>
-                <Text style={styles.recCountLabel}>👎 Negative</Text>
+                <Text style={styles.recCountLabel}>Negative</Text>
               </View>
             </View>
             {recenti.length === 0 ? (
@@ -115,7 +126,9 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
             ) : (
               recenti.slice(0, 3).map((r, i) => (
                 <View key={r._id || i} style={styles.recRow}>
-                  <Text style={styles.recIcon}>{r.positiva ? '👍' : '👎'}</Text>
+                  <Text style={[styles.recIcon, { color: r.positiva ? colors.green : colors.danger }]}>
+                    {r.positiva ? '+' : '-'}
+                  </Text>
                   <View style={{ flex: 1 }}>
                     {r.testo ? <Text style={styles.recTesto}>{r.testo}</Text> : null}
                     <Text style={styles.recData}>{fmtDate(r.data || r.createdAt)}</Text>
@@ -135,8 +148,10 @@ export function ProfileScreen({ user, onLogout, onOpenNotifiche }) {
         ) : (
           transactions.map((item) => (
             <View key={item._id || `${item.tipo}-${item.createdAt}`} style={styles.transaction}>
-              <Text style={styles.transactionTitle}>{item.tipo || 'Movimento'}</Text>
-              <Text style={styles.muted}>{item.ammontare ?? 0} crediti</Text>
+              <Text style={styles.transactionTitle}>{item.motivo || item.tipo || 'Movimento wallet'}</Text>
+              <Text style={[styles.muted, (item.ammontare ?? 0) >= 0 ? styles.amountPositive : styles.amountNegative]}>
+                {(item.ammontare ?? 0) >= 0 ? '+' : ''}{item.ammontare ?? 0} crediti
+              </Text>
             </View>
           ))
         )}
@@ -155,6 +170,22 @@ function Info({ label, value }) {
   );
 }
 
+function QuickAction({ title, subtitle, onPress }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}
+    >
+      <View style={styles.quickActionText}>
+        <Text style={styles.quickActionTitle}>{title}</Text>
+        <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+    </Pressable>
+  );
+}
+
 function fmtDate(d) {
   if (!d) return '';
   return new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -163,7 +194,7 @@ function fmtDate(d) {
 const styles = StyleSheet.create({
   wallet: {
     gap: 8,
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: colors.green,
     padding: 18,
   },
@@ -178,7 +209,7 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: 12,
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -222,7 +253,7 @@ const styles = StyleSheet.create({
   },
   recCount: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     alignItems: 'center',
     gap: 4,
@@ -244,7 +275,12 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   recIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    textAlign: 'center',
     fontSize: 18,
+    fontWeight: '900',
   },
   recTesto: {
     color: colors.text,
@@ -309,7 +345,7 @@ const styles = StyleSheet.create({
   textarea: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     minHeight: 100,
     textAlignVertical: 'top',
@@ -323,6 +359,44 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: 8,
+  },
+  quickGrid: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  quickAction: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingVertical: 10,
+  },
+  quickActionPressed: {
+    opacity: 0.72,
+  },
+  quickActionText: {
+    flex: 1,
+    gap: 2,
+  },
+  quickActionTitle: {
+    color: colors.text,
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  quickActionSubtitle: {
+    color: colors.muted,
+    fontSize: 12,
+  },
+  amountPositive: {
+    color: colors.green,
+    fontWeight: '800',
+  },
+  amountNegative: {
+    color: colors.danger,
+    fontWeight: '800',
   },
   dangerLight: colors.dangerLight,
 });

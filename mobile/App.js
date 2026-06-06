@@ -20,13 +20,11 @@ import { NotificheScreen } from './src/screens/NotificheScreen';
 import { colors } from './src/theme/colors';
 
 const tabs = [
-  { key: 'catalog',  label: 'Catalogo', icon: 'grid-outline',         iconActive: 'grid' },
-  { key: 'create',   label: 'Crea',     icon: 'add-circle-outline',   iconActive: 'add-circle' },
-  { key: 'mine',     label: 'Miei',     icon: 'pricetag-outline',     iconActive: 'pricetag' },
-  { key: 'bookings', label: 'Prenot.',  icon: 'calendar-outline',     iconActive: 'calendar' },
-  { key: 'premi',    label: 'Premi',    icon: 'gift-outline',         iconActive: 'gift' },
-  { key: 'chat',     label: 'Chat',     icon: 'chatbubble-outline',   iconActive: 'chatbubble' },
-  { key: 'profile',  label: 'Profilo',  icon: 'person-circle-outline',iconActive: 'person-circle' },
+  { key: 'catalog',  label: 'Catalogo', icon: 'grid-outline',          iconActive: 'grid' },
+  { key: 'create',   label: 'Pubblica', icon: 'add-circle-outline',    iconActive: 'add-circle' },
+  { key: 'bookings', label: 'Scambi',   icon: 'swap-horizontal-outline',iconActive: 'swap-horizontal' },
+  { key: 'chat',     label: 'Messaggi', icon: 'chatbubble-outline',    iconActive: 'chatbubble' },
+  { key: 'profile',  label: 'Profilo',  icon: 'person-circle-outline', iconActive: 'person-circle' },
 ];
 
 export default function App() {
@@ -47,7 +45,7 @@ export default function App() {
 
   function handleCreated() {
     setRefreshKey((current) => current + 1);
-    setTab('mine');
+    setModal({ name: 'myAnnunci', params: {} });
   }
 
   function closeModal() { setModal(null); }
@@ -86,6 +84,18 @@ export default function App() {
     if (modal?.name === 'notifiche') {
       return <NotificheScreen onBack={closeModal} />;
     }
+    if (modal?.name === 'myAnnunci') {
+      return (
+        <MyAnnunciScreen
+          refreshKey={refreshKey}
+          onBack={closeModal}
+          onOpenAnnuncio={(id) => setModal({ name: 'annuncioDetail', params: { id } })}
+        />
+      );
+    }
+    if (modal?.name === 'premi') {
+      return <PremiScreen onBack={closeModal} />;
+    }
     if (modal?.name === 'chat') {
       return <ChatScreen conversazioneId={modal.params.id} onBack={closeModal} />;
     }
@@ -93,14 +103,6 @@ export default function App() {
     // Tab screens
     if (tab === 'create') {
       return <CreateAnnuncioScreen onCreated={handleCreated} />;
-    }
-    if (tab === 'mine') {
-      return (
-        <MyAnnunciScreen
-          refreshKey={refreshKey}
-          onOpenAnnuncio={(id) => setModal({ name: 'annuncioDetail', params: { id } })}
-        />
-      );
     }
     if (tab === 'bookings') {
       return (
@@ -117,9 +119,6 @@ export default function App() {
         />
       );
     }
-    if (tab === 'premi') {
-      return <PremiScreen />;
-    }
     if (tab === 'profile') {
       return (
         <ProfileScreen
@@ -130,6 +129,8 @@ export default function App() {
             setModal(null);
           }}
           onOpenNotifiche={() => setModal({ name: 'notifiche', params: {} })}
+          onOpenMyAnnunci={() => setModal({ name: 'myAnnunci', params: {} })}
+          onOpenPremi={() => setModal({ name: 'premi', params: {} })}
         />
       );
     }
@@ -210,9 +211,10 @@ const styles = StyleSheet.create({
   },
   nav: {
     flexDirection: 'row',
-    paddingHorizontal: 6,
+    paddingHorizontal: 10,
     paddingTop: 8,
     paddingBottom: 4,
+    gap: 4,
   },
   navItem: {
     flex: 1,
@@ -220,7 +222,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 14,
     minHeight: 52,
   },
   navItemActive: {
@@ -230,7 +232,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontWeight: '600',
     fontSize: 10,
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
   navTextActive: {
     color: colors.green,
