@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { api, getUserId } from '../api/client';
-import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
 
@@ -12,6 +12,24 @@ function formatDate(dateInput) {
   return new Intl.DateTimeFormat('it-IT', {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
   }).format(d);
+}
+
+function conversationTime(conv) {
+  return new Date(conv.ultimoMessaggio?.timestamp || conv.updatedAt || conv.createdAt || 0).getTime();
+}
+
+function dedupeConversations(convs, myId) {
+  const byKey = new Map();
+  convs.forEach((conv) => {
+    const altri = (conv.partecipanti || []).filter((p) => p._id !== myId).map((p) => p._id).sort();
+    const annuncioId = conv.prenotazione?.annuncio?._id || conv.prenotazione?.annuncio || conv.annuncio?._id || '';
+    const key = `${altri.join('-') || conv._id}:${annuncioId}`;
+    const previous = byKey.get(key);
+    if (!previous || conversationTime(conv) > conversationTime(previous)) {
+      byKey.set(key, conv);
+    }
+  });
+  return Array.from(byKey.values()).sort((a, b) => conversationTime(b) - conversationTime(a));
 }
 
 export function ChatListScreen({ onOpenChat }) {
@@ -44,15 +62,17 @@ export function ChatListScreen({ onOpenChat }) {
           <Text style={styles.empty}>Nessuna conversazione.</Text>
         ) : null}
 
-        {convs.map((c) => {
+        {dedupeConversations(convs, myId).map((c) => {
           const altri = (c.partecipanti || []).filter((p) => p._id !== myId);
           const nomeAltro = altri[0] ? `${altri[0].nome} ${altri[0].cognome}` : 'Utente';
+          const annuncio = c.prenotazione?.annuncio?.titolo || c.annuncio?.titolo || '';
 
           return (
-            <View key={c._id} style={styles.card}>
+            <Pressable key={c._id} onPress={() => onOpenChat(c._id)} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
               <View style={styles.row}>
                 <View style={styles.flex}>
                   <Text style={styles.nome}>{nomeAltro}</Text>
+                  {annuncio ? <Text style={styles.annuncio} numberOfLines={1}>{annuncio}</Text> : null}
                   {c.ultimoMessaggio ? (
                     <Text style={styles.preview} numberOfLines={1}>
                       {c.ultimoMessaggio.testo}
@@ -69,13 +89,9 @@ export function ChatListScreen({ onOpenChat }) {
                     </View>
                   ) : null}
                 </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.muted} />
               </View>
-              <Button
-                title="Apri chat"
-                variant="secondary"
-                onPress={() => onOpenChat(c._id)}
-              />
-            </View>
+            </Pressable>
           );
         })}
       </ScrollView>
@@ -84,19 +100,20 @@ export function ChatListScreen({ onOpenChat }) {
 }
 
 const styles = StyleSheet.create({
-  list: { gap: 12, paddingBottom: 112 },
+  list: { gap: 10, paddingBottom: 112 },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 14,
-    gap: 10,
   },
+  cardPressed: { opacity: 0.75 },
   row: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   flex: { flex: 1, gap: 4 },
   right: { alignItems: 'flex-end', gap: 6 },
   nome: { fontWeight: '700', color: colors.text, fontSize: 15 },
+  annuncio: { color: colors.greenDark, fontSize: 12, fontWeight: '700' },
   preview: { color: colors.muted, fontSize: 13 },
   time: { color: colors.muted, fontSize: 12 },
   badge: {
