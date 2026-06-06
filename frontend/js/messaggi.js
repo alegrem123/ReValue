@@ -7,6 +7,19 @@
 const convList = document.getElementById('conv-list');
 const msgAlert = document.getElementById('msg-alert');
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
 function showAlert(msg, type = 'danger') {
   msgAlert.textContent = msg;
   msgAlert.className = `alert alert-${type}`;
@@ -36,24 +49,27 @@ function initials(nome = '', cognome = '') {
 function buildCard(conv, myId) {
   const altri = (conv.partecipanti || []).filter((p) => p._id !== myId);
   const altro = altri[0];
-  const nomeAltro = altro ? `${altro.nome} ${altro.cognome}` : 'Utente';
-  const ini = altro ? initials(altro.nome, altro.cognome) : '?';
+  const nomeAltro = altro ? `${altro.nome || ''} ${altro.cognome || ''}`.trim() || 'Utente' : 'Utente';
+  const nomeAltroSafe = escapeHtml(nomeAltro);
+  const ini = escapeHtml(altro ? initials(altro.nome, altro.cognome) : '?');
 
   const hasUnread = conv.nonLetti > 0;
-  const preview = conv.ultimoMessaggio?.testo || 'Nessun messaggio';
-  const timestamp = formatTime(conv.ultimoMessaggio?.timestamp || conv.createdAt);
+  const preview = escapeHtml(conv.ultimoMessaggio?.testo || 'Nessun messaggio');
+  const timestamp = escapeHtml(formatTime(conv.ultimoMessaggio?.timestamp || conv.createdAt));
+  const convId = encodeURIComponent(conv._id);
+  const foto = altro?.fotoProfilo ? escapeAttr(altro.fotoProfilo) : '';
 
   return `
-    <a href="chat.html?id=${conv._id}"
+    <a href="chat.html?id=${convId}"
        class="conv-card card border-0 shadow-sm mb-3 p-3 d-block ${hasUnread ? 'unread' : ''}">
       <div class="d-flex align-items-center gap-3">
-        ${altro?.fotoProfilo
-          ? `<img src="${altro.fotoProfilo}" class="avatar" style="object-fit:cover;" alt="${nomeAltro}">`
+        ${foto
+          ? `<img src="${foto}" class="avatar" style="object-fit:cover;" alt="${nomeAltroSafe}">`
           : `<div class="avatar">${ini}</div>`
         }
         <div class="flex-grow-1 overflow-hidden">
           <div class="d-flex justify-content-between align-items-center gap-2">
-            <span class="fw-bold ${hasUnread ? 'text-dark' : 'text-secondary'}">${nomeAltro}</span>
+            <span class="fw-bold ${hasUnread ? 'text-dark' : 'text-secondary'}">${nomeAltroSafe}</span>
             <span class="text-muted small flex-shrink-0">${timestamp}</span>
           </div>
           <div class="d-flex justify-content-between align-items-center gap-2 mt-1">

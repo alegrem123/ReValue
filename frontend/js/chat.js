@@ -90,7 +90,7 @@ function buildBubble(msg, highlightQ = '') {
   const time = formatTime(msg.timestamp);
   const sender = participantsById.get(getSenderId(msg));
   const avatarHtml = !mine && sender?.fotoProfilo
-    ? `<img class="message-avatar" src="${sender.fotoProfilo}" alt="">`
+    ? `<img class="message-avatar" src="${escapeAttr(sender.fotoProfilo)}" alt="">`
     : '';
 
   let tick = '';
@@ -106,11 +106,11 @@ function buildBubble(msg, highlightQ = '') {
   // Immagine allegata (base64)
   let imgHtml = '';
   if (msg.immagine) {
-    imgHtml = `<img class="bubble-img" src="${msg.immagine}" alt="Immagine allegata" loading="lazy" onclick="openLightbox(this.src)" />`;
+    imgHtml = `<img class="bubble-img" src="${escapeAttr(msg.immagine)}" alt="Immagine allegata" loading="lazy" />`;
   }
 
   return `
-    <div class="bubble-row ${mine ? 'mine' : 'other'}" data-id="${msg._id}" data-letto="${msg.letto}">
+    <div class="bubble-row ${mine ? 'mine' : 'other'}" data-id="${escapeAttr(msg._id)}" data-letto="${escapeAttr(msg.letto)}">
       ${avatarHtml}
       <div class="bubble ${mine ? 'mine' : 'other'}">
         ${imgHtml}
@@ -141,11 +141,16 @@ function updateTicksInDom(messaggi) {
 }
 
 function escapeHtml(str) {
-  return String(str)
+  return String(str ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/`/g, '&#96;');
 }
 
 function groupByDate(messaggi) {
@@ -277,7 +282,7 @@ async function loadConversazione() {
     const nome = `${altro.nome} ${altro.cognome}`;
     headerName.textContent = nome;
     if (altro.fotoProfilo) {
-      headerAvatar.innerHTML = `<img src="${altro.fotoProfilo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="${nome}">`;
+      headerAvatar.innerHTML = `<img src="${escapeAttr(altro.fotoProfilo)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="${escapeAttr(nome)}">`;
       headerAvatar.style.background = 'none';
     } else {
       headerAvatar.textContent = `${altro.nome.charAt(0)}${altro.cognome.charAt(0)}`.toUpperCase();
@@ -588,6 +593,11 @@ window.openLightbox = function (src) {
 };
 
 function initLightbox() {
+  messagesArea.addEventListener('click', (event) => {
+    const image = event.target.closest('.bubble-img');
+    if (image) window.openLightbox(image.src);
+  });
+
   lightbox.addEventListener('click', () => {
     lightbox.classList.remove('open');
     lightboxImg.src = '';

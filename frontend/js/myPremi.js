@@ -73,11 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <small class="text-muted">Codice:</small>
-              <span
-                class="code-box"
-                title="Clicca per copiare"
-                onclick="copyCode(this)"
-              >${codice}</span>
+	              <span
+	                class="code-box"
+	                title="Clicca per copiare"
+	              >${codice}</span>
             </div>
             <small class="text-muted">Riscattato il ${data}</small>
           </div>
@@ -121,6 +120,11 @@ window.copyCode = function (el) {
     setTimeout(() => { el.textContent = orig; }, 1500);
   });
 };
+
+document.addEventListener('click', (event) => {
+  const codeBox = event.target.closest('.code-box');
+  if (codeBox) window.copyCode(codeBox);
+});
 
 function escHtml(s) {
   return String(s ?? '')

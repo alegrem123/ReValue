@@ -4,6 +4,19 @@
   let pendingAction = null;
   let confirmModal = null;
 
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/`/g, '&#96;');
+  }
+
   function statusBadge(user) {
     if (user.bannato) return '<span class="badge text-bg-danger">Bannato</span>';
     if (user.isSospeso) return '<span class="badge text-bg-warning">Sospeso</span>';
@@ -11,15 +24,17 @@
   }
 
   function actionButtons(user) {
+    const id = escapeAttr(user._id);
+    const email = escapeAttr(user.email || '');
     return `
       <div class="btn-group btn-group-sm" role="group">
-        <button class="btn btn-outline-warning" data-user-action="sospendi" data-user-id="${user._id}" data-user-email="${user.email}">
+        <button class="btn btn-outline-warning" data-user-action="sospendi" data-user-id="${id}" data-user-email="${email}">
           Sospendi
         </button>
-        <button class="btn btn-outline-danger" data-user-action="ban" data-user-id="${user._id}" data-user-email="${user.email}">
+        <button class="btn btn-outline-danger" data-user-action="ban" data-user-id="${id}" data-user-email="${email}">
           Banna
         </button>
-        <button class="btn btn-outline-success" data-user-action="riabilita" data-user-id="${user._id}" data-user-email="${user.email}">
+        <button class="btn btn-outline-success" data-user-action="riabilita" data-user-id="${id}" data-user-email="${email}">
           Riabilita
         </button>
       </div>`;
@@ -33,8 +48,8 @@
     } else {
       tbody.innerHTML = users.map((user) => `
         <tr>
-          <td>${user.nome || ''} ${user.cognome || ''}</td>
-          <td>${user.email}</td>
+          <td>${escapeHtml(`${user.nome || ''} ${user.cognome || ''}`.trim())}</td>
+          <td>${escapeHtml(user.email)}</td>
           <td>${statusBadge(user)}</td>
           <td>${user.malusCount ?? 0}</td>
           <td class="text-end">${actionButtons(user)}</td>
