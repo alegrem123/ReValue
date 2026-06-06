@@ -18,7 +18,7 @@ const assetUrl = (fileName) => (isViewsPage ? `../assets/${fileName}` : `assets/
 const _layoutApiBase = (function () {
   if (typeof API_BASE !== 'undefined') return API_BASE;
   if (window.REVALUE_API_BASE) return window.REVALUE_API_BASE;
-  if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://127.0.0.1:3000';
+  if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://localhost:3000';
   return 'https://revalue-backend-84jb.onrender.com';
 })();
 
@@ -439,12 +439,18 @@ window.showToast = function showToast(message, type = 'success', delay = 4000) {
 
   const icons = { success: '✓', danger: '✕', warning: '⚠', info: 'ℹ' };
   const id = `toast-${Date.now()}`;
+  const safeMessage = String(message ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
   const html = `
     <div id="${id}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
         <div class="toast-body fw-semibold">
-          <span class="me-2">${icons[type] || ''}</span>${message}
+          <span class="me-2">${icons[type] || ''}</span>${safeMessage}
         </div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Chiudi"></button>
       </div>

@@ -17,6 +17,7 @@
     integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+"
       crossorigin="anonymous"
     />
+    <link rel="stylesheet" href="../css/style.css" />
 
   </head>
   <body>
@@ -259,15 +260,41 @@
               ruolo = payload.ruolo || 'user';
             } catch { /* token malformato, fallback a user */ }
 
+            function safeRedirect(rawRedirect) {
+              if (!rawRedirect) return '../index.html';
+              const cleaned = rawRedirect.replace(/^\/(?:frontend\/)?views\//, '');
+              if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith('//')) return '../index.html';
+              if (cleaned.includes('..') || cleaned.startsWith('/')) return '../index.html';
+              const allowed = new Set([
+                'catalog.html',
+                'annuncio.html',
+                'create-annuncio.html',
+                'edit-annuncio.html',
+                'profile.html',
+                'wallethistory.html',
+                'premi.html',
+                'my-premi.html',
+                'my-annunci.html',
+                'mybookings.html',
+                'messaggi.html',
+                'chat.html',
+                'qr-display.html',
+                'qr-scan.html',
+                'segnala.html',
+                'my-reports.html',
+                'notifiche.html',
+                'public-profile.html',
+              ]);
+              const fileName = cleaned.split('?')[0];
+              return allowed.has(fileName) ? cleaned : '../index.html';
+            }
+
             let redirect;
             if (ruolo === 'admin') {
               redirect = 'admin/dashboard.html';
             } else {
               const params = new URLSearchParams(window.location.search);
-              const rawRedirect = params.get('redirect');
-              redirect = rawRedirect
-                ? rawRedirect.replace(/^\/(?:frontend\/)?views\//, '')
-                : '../index.html';
+              redirect = safeRedirect(params.get('redirect'));
             }
             setTimeout(() => {
               window.location.href = redirect;
@@ -288,8 +315,5 @@
         document.getElementById(id).addEventListener('blur', validate);
       });
     </script>
-  <!-- impeccable-live-start -->
-<script src="http://localhost:8400/live.js"></script>
-<!-- impeccable-live-end -->
 </body>
 </html>
