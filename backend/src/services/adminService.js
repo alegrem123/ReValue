@@ -58,7 +58,16 @@ async function getStatistiche() {
   inizioMese.setDate(1);
   inizioMese.setHours(0, 0, 0, 0);
 
-  const [scambiMensili, totaleUtenti, segnalazioniPendenti, wallets, creditiErogati, storicoMensile] = await Promise.all([
+  const [
+    scambiMensili,
+    totaleUtenti,
+    segnalazioniPendenti,
+    wallets,
+    creditiErogati,
+    storicoMensile,
+    utentiAttivi,
+    utentiSospesi,
+  ] = await Promise.all([
     Prenotazione.countDocuments({ stato: 'COMPLETATA', dataCompletamento: { $gte: inizioMese } }),
     User.countDocuments({ ruolo: 'user' }),
     Segnalazione.countDocuments({ stato: 'IN_ATTESA' }),
@@ -97,11 +106,14 @@ async function getStatistiche() {
       { $sort: { '_id.anno': 1, '_id.mese': 1 } },
       { $limit: 12 },
     ]),
+    User.countDocuments({ ruolo: 'user', bannato: false, isSospeso: false }),
+    User.countDocuments({ ruolo: 'user', isSospeso: true, bannato: false }),
   ]);
 
   const liquiditaAttuale = wallets[0]?.liquiditaAttuale ?? 0;
   const creditiErogatiTotali = creditiErogati[0]?.creditiErogatiTotali ?? 0;
   const creditiErogatiMese = creditiErogati[0]?.creditiErogatiMese ?? 0;
+  const utentiBannati = totaleUtenti - utentiAttivi - utentiSospesi;
 
   return {
     scambiMensili,
@@ -111,6 +123,9 @@ async function getStatistiche() {
     creditiErogatiTotali,
     creditiErogatiMese,
     totaleCrediti: liquiditaAttuale,
+    utentiAttivi,
+    utentiSospesi,
+    utentiBannati,
     storicoMensile: storicoMensile.map((item) => ({
       anno: item._id.anno,
       mese: item._id.mese,
@@ -126,11 +141,18 @@ function parsePagination(query, defaultLimit = 20) {
 }
 
 async function listUsers(queryParams) {
-  const { search = '' } = queryParams;
+  const { search, stato } = queryParams;
   const { page, limit, skip } = parsePagination(queryParams);
   const query = { ruolo: 'user' };
-  const normalizedSearch = String(search).trim();
 
+  const statoFiltri = {
+    attivo:  { bannato: false, isSospeso: false },
+    sospeso: { isSospeso: true, bannato: false },
+    bannato: { bannato: true },
+  };
+  if (statoFiltri[stato]) Object.assign(query, statoFiltri[stato]);
+
+  const normalizedSearch = String(search ?? '').trim();
   if (normalizedSearch) {
     const pattern = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     query.$or = [{ email: pattern }, { nome: pattern }, { cognome: pattern }];
@@ -250,10 +272,10 @@ async function sospendiUtente(id) {
 async function riabilitaUtente(id) {
   const utente = await User.findById(id);
   if (!utente) throw new AdminError(404, 'Utente non trovato');
-  if (utente.bannato) throw new AdminError(403, 'Account bannato non riabilitabile');
-  if (!utente.isSospeso) throw new AdminError(400, 'Account non sospeso');
+  if (!utente.isSospeso && !utente.bannato) throw new AdminError(400, 'Account già attivo');
 
   utente.isSospeso = false;
+  utente.bannato = false;
   await utente.save();
 
   return { message: `Utente ${utente.email} riabilitato` };

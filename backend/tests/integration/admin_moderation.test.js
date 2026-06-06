@@ -169,9 +169,8 @@ describe('Moderation and authentication integration', () => {
     expect(riabilitato.isSospeso).toBe(false);
   });
 
-  test('admin non può riabilitare un account bannato', async () => {
-    const { token, loginRes } = await createAdminAndLogin();
-    expect(loginRes.statusCode).toBe(200);
+  test('admin può riabilitare un account bannato', async () => {
+    const { token } = await createAdminAndLogin();
 
     const user = await User.create({
       idUtente: new mongoose.Types.ObjectId().toString(),
@@ -188,14 +187,14 @@ describe('Moderation and authentication integration', () => {
       .post(`/api/v1/admin/utenti/${user._id}/riabilita`)
       .set('Authorization', `Bearer ${token}`);
 
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(200);
     expect(res.body).toEqual(
-      expect.objectContaining({ error: 'Account bannato non riabilitabile' })
+      expect.objectContaining({ message: `Utente ${user.email} riabilitato` })
     );
 
-    const unchangedUser = await User.findById(user._id);
-    expect(unchangedUser.isSospeso).toBe(true);
-    expect(unchangedUser.bannato).toBe(true);
+    const updatedUser = await User.findById(user._id);
+    expect(updatedUser.isSospeso).toBe(false);
+    expect(updatedUser.bannato).toBe(false);
   });
 
   test('OCL #20: al terzo malus utente viene auto-sospeso', async () => {
@@ -374,5 +373,99 @@ describe('Moderation and authentication integration', () => {
 
     const disabled = await Coupon.findById(couponId);
     expect(disabled.attivo).toBe(false);
+  });
+
+  test('admin filtra utenti per stato', async () => {
+    const admin = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Admin',
+      cognome: 'Filtro',
+      email: 'admin-filtro@test.com',
+      passwordHash: await hashPassword('AdminPass123!'),
+      ruolo: 'admin',
+    });
+    const token = signToken({ id: admin._id.toString(), ruolo: 'admin' });
+
+    await User.create([
+      {
+        idUtente: new mongoose.Types.ObjectId().toString(),
+        nome: 'Attivo', cognome: 'Uno', email: 'attivo@test.com',
+        passwordHash: await hashPassword('pass'), ruolo: 'user',
+        isSospeso: false, bannato: false,
+      },
+      {
+        idUtente: new mongoose.Types.ObjectId().toString(),
+        nome: 'Sospeso', cognome: 'Due', email: 'sospeso2@test.com',
+        passwordHash: await hashPassword('pass'), ruolo: 'user',
+        isSospeso: true, bannato: false,
+      },
+      {
+        idUtente: new mongoose.Types.ObjectId().toString(),
+        nome: 'Bannato', cognome: 'Tre', email: 'bannato2@test.com',
+        passwordHash: await hashPassword('pass'), ruolo: 'user',
+        isSospeso: true, bannato: true,
+      },
+    ]);
+
+    const resAttivi = await request(app)
+      .get('/api/v1/admin/users?stato=attivo')
+      .set('Authorization', `Bearer ${token}`);
+    expect(resAttivi.statusCode).toBe(200);
+    expect(resAttivi.body.users.every(u => !u.bannato && !u.isSospeso)).toBe(true);
+    expect(resAttivi.body.users.some(u => u.email === 'attivo@test.com')).toBe(true);
+
+    const resSospesi = await request(app)
+      .get('/api/v1/admin/users?stato=sospeso')
+      .set('Authorization', `Bearer ${token}`);
+    expect(resSospesi.statusCode).toBe(200);
+    expect(resSospesi.body.users.every(u => u.isSospeso && !u.bannato)).toBe(true);
+
+    const resBannati = await request(app)
+      .get('/api/v1/admin/users?stato=bannato')
+      .set('Authorization', `Bearer ${token}`);
+    expect(resBannati.statusCode).toBe(200);
+    expect(resBannati.body.users.every(u => u.bannato)).toBe(true);
+  });
+
+  test('statistiche includono breakdown utenti per stato', async () => {
+    const admin = await User.create({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Admin', cognome: 'Breakdown', email: 'admin-breakdown@test.com',
+      passwordHash: await hashPassword('pass'), ruolo: 'admin',
+    });
+    const token = signToken({ id: admin._id.toString(), ruolo: 'admin' });
+
+    await User.create([
+      {
+        idUtente: new mongoose.Types.ObjectId().toString(),
+        nome: 'A', cognome: 'A', email: 'breakdown-attivo@test.com',
+        passwordHash: await hashPassword('pass'), ruolo: 'user',
+        isSospeso: false, bannato: false,
+      },
+      {
+        idUtente: new mongoose.Types.ObjectId().toString(),
+        nome: 'S', cognome: 'S', email: 'breakdown-sospeso@test.com',
+        passwordHash: await hashPassword('pass'), ruolo: 'user',
+        isSospeso: true, bannato: false,
+      },
+      {
+        idUtente: new mongoose.Types.ObjectId().toString(),
+        nome: 'B', cognome: 'B', email: 'breakdown-bannato@test.com',
+        passwordHash: await hashPassword('pass'), ruolo: 'user',
+        isSospeso: true, bannato: true,
+      },
+    ]);
+
+    const res = await request(app)
+      .get('/api/v1/admin/statistiche')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({
+      totaleUtenti: 3,
+      utentiAttivi: 1,
+      utentiSospesi: 1,
+      utentiBannati: 1,
+    });
   });
 });
