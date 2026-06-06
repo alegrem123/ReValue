@@ -1,7 +1,9 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
@@ -26,13 +28,108 @@ const initialForm = {
   longitudineComune: '',
 };
 
-const CATEGORIE = ['Mobili', 'Elettrodomestici', 'Elettronica', 'Abbigliamento', 'Libri', 'Giocattoli', 'Attrezzi', 'Altro'];
-const MATERIALI = ['Legno', 'Metallo', 'Plastica', 'Vetro', 'Tessuto', 'Carta', 'Misto'];
-const DIMENSIONI = ['piccolo', 'medio', 'grande', 'molto grande'];
-const PAESI = ['Italia'];
-const REGIONI = ['Trentino-Alto Adige', 'Veneto', 'Lombardia', 'Emilia-Romagna'];
-const PROVINCE = ['Trento', 'Bolzano', 'Verona', 'Brescia'];
+const CATEGORIE = [
+  'Arredo e mobili',
+  'Bagno e sanitari',
+  'Biciclette e mobilita',
+  'Cancelleria',
+  'Cucina e casalinghi',
+  'Decorazioni',
+  'Edilizia leggera',
+  'Elettrodomestici',
+  'Elettronica',
+  'Ferramenta',
+  'Giardino e outdoor',
+  'Giocattoli',
+  'Illuminazione',
+  'Infanzia',
+  'Libri e manuali',
+  'Materiale scolastico',
+  'Musica e strumenti',
+  'Ricambi auto e moto',
+  'Sport e tempo libero',
+  'Tessili e biancheria',
+  'Utensili e attrezzi',
+  'Vasi e contenitori',
+  'Altro',
+];
+const MATERIALI = [
+  'Legno',
+  'Legno massello',
+  'Truciolare',
+  'MDF',
+  'Metallo',
+  'Acciaio',
+  'Alluminio',
+  'Ferro',
+  'Plastica',
+  'PVC',
+  'Vetro',
+  'Ceramica',
+  'Tessuto',
+  'Cotone',
+  'Lana',
+  'Pelle',
+  'Carta',
+  'Cartone',
+  'Gomma',
+  'Rame',
+  'Ottone',
+  'Misto',
+];
+const DIMENSIONI = [
+  { label: 'Piccolo', value: 'piccolo' },
+  { label: 'Medio', value: 'medio' },
+  { label: 'Grande', value: 'grande' },
+  { label: 'Molto grande', value: 'molto grande' },
+];
+const PAESI = ['Italia', 'San Marino', 'Citta del Vaticano', 'Svizzera', 'Austria', 'Francia', 'Slovenia', 'Croazia', 'Germania'];
+const REGIONI = [
+  'Abruzzo',
+  'Basilicata',
+  'Calabria',
+  'Campania',
+  'Emilia-Romagna',
+  'Friuli-Venezia Giulia',
+  'Lazio',
+  'Liguria',
+  'Lombardia',
+  'Marche',
+  'Molise',
+  'Piemonte',
+  'Puglia',
+  'Sardegna',
+  'Sicilia',
+  'Toscana',
+  'Trentino-Alto Adige/Südtirol',
+  'Umbria',
+  "Valle d'Aosta/Vallée d'Aoste",
+  'Veneto',
+];
+const PROVINCE = ['Trento', 'Bolzano/Bozen', 'Verona', 'Brescia'];
 const COMUNI = ['Trento', 'Rovereto', 'Pergine Valsugana', 'Riva del Garda', 'Arco'];
+
+function dateToInputValue(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDisplayDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('it-IT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
+function tomorrow() {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  date.setHours(12, 0, 0, 0);
+  return date;
+}
 
 export function CreateAnnuncioScreen({ onCreated }) {
   const [form, setForm] = useState(initialForm);
@@ -69,7 +166,7 @@ export function CreateAnnuncioScreen({ onCreated }) {
   async function useCurrentLocation() {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permesso necessario', 'Abilita la posizione per compilare le coordinate.');
+      Alert.alert('Permesso necessario', 'Abilita la posizione per compilare automaticamente l indirizzo.');
       return;
     }
 
@@ -178,12 +275,12 @@ export function CreateAnnuncioScreen({ onCreated }) {
 
     setForm(initialForm);
     setPhotos([]);
-    Alert.alert('Annuncio pubblicato', 'Il tuo annuncio e ora disponibile nel catalogo.');
+    Alert.alert('Annuncio pubblicato', 'Il tuo annuncio è ora disponibile nel catalogo.');
     onCreated?.();
   }
 
   return (
-    <Screen title="Nuovo annuncio" subtitle="Pubblica un oggetto da recuperare.">
+    <Screen title="Nuovo annuncio" subtitle="Pubblica un oggetto e rendilo prenotabile dalla community.">
       <TextField label="Titolo" value={form.titolo} onChangeText={(value) => setField('titolo', value)} />
       <TextField
         label="Descrizione"
@@ -191,35 +288,61 @@ export function CreateAnnuncioScreen({ onCreated }) {
         multiline
         onChangeText={(value) => setField('descrizione', value)}
       />
-      <TextField label="Categoria" value={form.categoria} onChangeText={(value) => setField('categoria', value)} />
-      <PresetChips items={CATEGORIE} selected={form.categoria} onSelect={(value) => setField('categoria', value)} />
-      <TextField label="Materiale" value={form.materiale} onChangeText={(value) => setField('materiale', value)} />
-      <PresetChips items={MATERIALI} selected={form.materiale} onSelect={(value) => setField('materiale', value)} />
-      <TextField
-        label="Dimensione"
-        value={form.dimensioni}
-        placeholder="piccolo, medio, grande, molto grande"
-        onChangeText={(value) => setField('dimensioni', value)}
+      <DropdownField
+        label="Categoria"
+        placeholder="Seleziona categoria"
+        options={CATEGORIE}
+        value={form.categoria}
+        onSelect={(value) => setField('categoria', value)}
       />
-      <PresetChips items={DIMENSIONI} selected={form.dimensioni} onSelect={(value) => setField('dimensioni', value)} />
-      <TextField
+      <DropdownField
+        label="Materiale"
+        placeholder="Seleziona materiale"
+        options={MATERIALI}
+        value={form.materiale}
+        onSelect={(value) => setField('materiale', value)}
+      />
+      <DropdownField
+        label="Dimensione"
+        options={DIMENSIONI}
+        value={form.dimensioni}
+        onSelect={(value) => setField('dimensioni', value)}
+      />
+      <DateField
         label="Scadenza"
         value={form.dataScadenza}
-        placeholder="2026-06-30T18:00"
-        autoCapitalize="none"
-        onChangeText={(value) => setField('dataScadenza', value)}
+        onSelect={(value) => setField('dataScadenza', value)}
       />
-      <TextField label="Stato / paese" value={form.paese} onChangeText={(value) => setField('paese', value)} />
-      <PresetChips items={PAESI} selected={form.paese} onSelect={(value) => setField('paese', value)} />
-      <TextField label="Regione" value={form.regione} onChangeText={(value) => setField('regione', value)} />
-      <PresetChips items={REGIONI} selected={form.regione} onSelect={(value) => setField('regione', value)} />
-      <TextField label="Provincia" value={form.provincia} onChangeText={(value) => setField('provincia', value)} />
-      <PresetChips items={PROVINCE} selected={form.provincia} onSelect={(value) => setField('provincia', value)} />
-      <TextField label="Comune / città" value={form.comune} onChangeText={(value) => setField('comune', value)} />
-      <PresetChips items={COMUNI} selected={form.comune} onSelect={(value) => setField('comune', value)} />
+      <DropdownField
+        label="Stato / paese"
+        options={PAESI}
+        value={form.paese}
+        onSelect={(value) => setField('paese', value)}
+      />
+      <DropdownField
+        label="Regione"
+        placeholder="Seleziona regione"
+        options={REGIONI}
+        value={form.regione}
+        onSelect={(value) => setField('regione', value)}
+      />
+      <DropdownField
+        label="Provincia"
+        placeholder="Seleziona provincia"
+        options={PROVINCE}
+        value={form.provincia}
+        onSelect={(value) => setField('provincia', value)}
+      />
+      <DropdownField
+        label="Comune / città"
+        placeholder="Seleziona comune"
+        options={COMUNI}
+        value={form.comune}
+        onSelect={(value) => setField('comune', value)}
+      />
       <TextField label="Via" value={form.via} onChangeText={(value) => setField('via', value)} />
-      <Button title="Usa posizione attuale" variant="secondary" onPress={useCurrentLocation} />
-      <Button title={`Seleziona foto (${photos.length}/5)`} variant="secondary" onPress={pickPhotos} />
+      <Button title="Usa posizione attuale" variant="secondary" size="compact" fullWidth onPress={useCurrentLocation} />
+      <Button title={`Seleziona foto (${photos.length}/5)`} variant="secondary" size="compact" fullWidth onPress={pickPhotos} />
       <View style={styles.photos}>
         {photos.map((photo, index) => (
           <Pressable key={`${photo.slice(0, 24)}-${index}`} onPress={() => setPhotos(photos.filter((_, i) => i !== index))}>
@@ -227,63 +350,231 @@ export function CreateAnnuncioScreen({ onCreated }) {
           </Pressable>
         ))}
       </View>
-      <Button title="Pubblica annuncio" onPress={submit} loading={loading} />
+      <Button title="Pubblica annuncio" onPress={submit} loading={loading} fullWidth />
     </Screen>
   );
 }
 
-function PresetChips({ items, selected, onSelect }) {
+function normalizeOption(option) {
+  if (typeof option === 'string') return { label: option, value: option };
+  return option;
+}
+
+function DropdownField({ label, placeholder = 'Seleziona', options, value, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const normalized = options.map(normalizeOption);
+  const selected = normalized.find((option) => option.value === value);
+
   return (
-    <View style={styles.chips}>
-      {items.map((item) => {
-        const active = item.toLowerCase() === String(selected || '').toLowerCase();
-        return (
-          <Pressable
-            key={item}
-            onPress={() => onSelect(item)}
-            style={[styles.chip, active && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, active && styles.chipTextActive]}>{item}</Text>
-          </Pressable>
-        );
-      })}
+    <View style={styles.dropdownWrap}>
+      <Text style={styles.dropdownLabel}>{label}</Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [styles.dropdownButton, pressed && styles.dropdownButtonPressed]}
+      >
+        <Text style={[styles.dropdownValue, !selected && styles.dropdownPlaceholder]}>
+          {selected?.label || placeholder}
+        </Text>
+        <Ionicons name="chevron-down" size={18} color={colors.muted} />
+      </Pressable>
+
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.dropdownBackdrop} onPress={() => setOpen(false)} />
+        <View style={styles.dropdownSheet}>
+          <View style={styles.dropdownSheetHeader}>
+            <Text style={styles.dropdownSheetTitle}>{label}</Text>
+            <Pressable accessibilityRole="button" onPress={() => setOpen(false)} style={styles.dropdownClose}>
+              <Ionicons name="close" size={20} color={colors.text} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.dropdownOptions}>
+            {normalized.map((option) => {
+              const active = option.value === value;
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    onSelect(option.value);
+                    setOpen(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.dropdownOption,
+                    active && styles.dropdownOptionActive,
+                    pressed && styles.dropdownOptionPressed,
+                  ]}
+                >
+                  <Text style={[styles.dropdownOptionText, active && styles.dropdownOptionTextActive]}>
+                    {option.label}
+                  </Text>
+                  {active ? <Ionicons name="checkmark" size={18} color={colors.green} /> : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+function DateField({ label, value, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const minDate = tomorrow();
+  const currentDate = value && !Number.isNaN(new Date(value).getTime())
+    ? new Date(value)
+    : minDate;
+
+  return (
+    <View style={styles.dropdownWrap}>
+      <Text style={styles.dropdownLabel}>{label}</Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [styles.dropdownButton, pressed && styles.dropdownButtonPressed]}
+      >
+        <Text style={[styles.dropdownValue, !value && styles.dropdownPlaceholder]}>
+          {formatDisplayDate(value) || 'Seleziona scadenza'}
+        </Text>
+        <Ionicons name="calendar-outline" size={18} color={colors.muted} />
+      </Pressable>
+
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.dropdownBackdrop} onPress={() => setOpen(false)} />
+        <View style={styles.dateSheet}>
+          <View style={styles.dropdownSheetHeader}>
+            <Text style={styles.dropdownSheetTitle}>{label}</Text>
+            <Pressable accessibilityRole="button" onPress={() => setOpen(false)} style={styles.dropdownClose}>
+              <Ionicons name="close" size={20} color={colors.text} />
+            </Pressable>
+          </View>
+          <DateTimePicker
+            value={currentDate}
+            mode="date"
+            display="inline"
+            minimumDate={minDate}
+            locale="it-IT"
+            onChange={(event, selectedDate) => {
+              if (event.type === 'dismissed') {
+                setOpen(false);
+                return;
+              }
+              if (selectedDate) {
+                onSelect(dateToInputValue(selectedDate));
+              }
+            }}
+          />
+          <Button title="Conferma data" size="compact" fullWidth onPress={() => setOpen(false)} />
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 10,
+  dropdownWrap: {
+    gap: 6,
   },
-  half: {
-    flex: 1,
+  dropdownLabel: {
+    color: colors.text,
+    fontWeight: '700',
+    fontSize: 14,
   },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: -8,
-  },
-  chip: {
+  dropdownButton: {
+    minHeight: 48,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  chipActive: {
-    borderColor: colors.green,
-    backgroundColor: colors.green,
+  dropdownButtonPressed: {
+    opacity: 0.78,
   },
-  chipText: {
+  dropdownValue: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+  },
+  dropdownPlaceholder: {
     color: colors.muted,
-    fontWeight: '700',
-    fontSize: 12,
   },
-  chipTextActive: {
-    color: colors.surface,
+  dropdownBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.32)',
+  },
+  dropdownSheet: {
+    maxHeight: '70%',
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 26,
+  },
+  dateSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 26,
+    gap: 12,
+  },
+  dropdownSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dropdownSheetTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  dropdownClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.greenXLight,
+  },
+  dropdownOptions: {
+    paddingTop: 8,
+  },
+  dropdownOption: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingVertical: 10,
+  },
+  dropdownOptionActive: {
+    backgroundColor: colors.greenXLight,
+  },
+  dropdownOptionPressed: {
+    opacity: 0.72,
+  },
+  dropdownOptionText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+  },
+  dropdownOptionTextActive: {
+    color: colors.greenDark,
+    fontWeight: '800',
   },
   photos: {
     flexDirection: 'row',
@@ -293,7 +584,7 @@ const styles = StyleSheet.create({
   photo: {
     width: 76,
     height: 76,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: colors.border,
   },
 });
