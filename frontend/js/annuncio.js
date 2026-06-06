@@ -62,10 +62,44 @@ function normalizeDimensione(value) {
   }
 }
 
-const CREDITI_SCAMBIO = 50;
+const DETAIL_TIER_A = { acqMin: 10, acqMax: 100 };
+const DETAIL_TIER_B = { acqMin:  6, acqMax:  60 };
+const DETAIL_TIER_C = { acqMin:  3, acqMax:  30 };
 
-function calculateEstimatedCredits() {
-  return CREDITI_SCAMBIO.toString();
+const DETAIL_CATEGORIA_TIER = {
+  'Elettronica':          DETAIL_TIER_A,
+  'Elettrodomestici':     DETAIL_TIER_A,
+  'Arredo e mobili':      DETAIL_TIER_A,
+  'Biciclette e mobilita': DETAIL_TIER_A,
+  'Ricambi auto e moto':  DETAIL_TIER_A,
+  'Utensili e attrezzi':  DETAIL_TIER_A,
+  'Cucina e casalinghi':  DETAIL_TIER_B,
+  'Sport e tempo libero': DETAIL_TIER_B,
+  'Musica e strumenti':   DETAIL_TIER_B,
+  'Ferramenta':           DETAIL_TIER_B,
+  'Giardino e outdoor':   DETAIL_TIER_B,
+  'Edilizia leggera':     DETAIL_TIER_B,
+  'Bagno e sanitari':     DETAIL_TIER_B,
+  'Illuminazione':        DETAIL_TIER_B,
+  'Libri e manuali':      DETAIL_TIER_C,
+  'Cancelleria':          DETAIL_TIER_C,
+  'Decorazioni':          DETAIL_TIER_C,
+  'Giocattoli':           DETAIL_TIER_C,
+  'Infanzia':             DETAIL_TIER_C,
+  'Materiale scolastico': DETAIL_TIER_C,
+  'Tessili e biancheria': DETAIL_TIER_C,
+  'Vasi e contenitori':   DETAIL_TIER_C,
+  'Altro':                DETAIL_TIER_C,
+};
+
+const MAX_FINESTRA_DETAIL_MS = 14 * 24 * 60 * 60 * 1000;
+
+function calculateEstimatedCredits(annuncio) {
+  if (!annuncio?.dataScadenza) return DETAIL_TIER_C.acqMin;
+  const tier = DETAIL_CATEGORIA_TIER[annuncio.oggetto?.categoria] || DETAIL_TIER_C;
+  const remaining = Math.max(0, new Date(annuncio.dataScadenza).getTime() - Date.now());
+  const ratio = 1 - Math.min(1, remaining / MAX_FINESTRA_DETAIL_MS);
+  return Math.round(tier.acqMin + (tier.acqMax - tier.acqMin) * ratio);
 }
 
 function showAlert(message, type = 'danger') {

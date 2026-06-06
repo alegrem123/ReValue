@@ -39,6 +39,46 @@ function statoBadgeClass(stato) {
   return map[(stato || '').toLowerCase()] || 'badge-stato-disponibile';
 }
 
+const CARD_TIER_A = { acqMin: 10, acqMax: 100 };
+const CARD_TIER_B = { acqMin:  6, acqMax:  60 };
+const CARD_TIER_C = { acqMin:  3, acqMax:  30 };
+
+const CARD_CATEGORIA_TIER = {
+  'Elettronica':          CARD_TIER_A,
+  'Elettrodomestici':     CARD_TIER_A,
+  'Arredo e mobili':      CARD_TIER_A,
+  'Biciclette e mobilita': CARD_TIER_A,
+  'Ricambi auto e moto':  CARD_TIER_A,
+  'Utensili e attrezzi':  CARD_TIER_A,
+  'Cucina e casalinghi':  CARD_TIER_B,
+  'Sport e tempo libero': CARD_TIER_B,
+  'Musica e strumenti':   CARD_TIER_B,
+  'Ferramenta':           CARD_TIER_B,
+  'Giardino e outdoor':   CARD_TIER_B,
+  'Edilizia leggera':     CARD_TIER_B,
+  'Bagno e sanitari':     CARD_TIER_B,
+  'Illuminazione':        CARD_TIER_B,
+  'Libri e manuali':      CARD_TIER_C,
+  'Cancelleria':          CARD_TIER_C,
+  'Decorazioni':          CARD_TIER_C,
+  'Giocattoli':           CARD_TIER_C,
+  'Infanzia':             CARD_TIER_C,
+  'Materiale scolastico': CARD_TIER_C,
+  'Tessili e biancheria': CARD_TIER_C,
+  'Vasi e contenitori':   CARD_TIER_C,
+  'Altro':                CARD_TIER_C,
+};
+
+const MAX_FINESTRA_CARD_MS = 14 * 24 * 60 * 60 * 1000;
+
+function calcolaCreditiCard(categoria, dataScadenza) {
+  if (!dataScadenza) return CARD_TIER_C.acqMin;
+  const tier = CARD_CATEGORIA_TIER[categoria] || CARD_TIER_C;
+  const remaining = Math.max(0, new Date(dataScadenza).getTime() - Date.now());
+  const ratio = 1 - Math.min(1, remaining / MAX_FINESTRA_CARD_MS);
+  return Math.round(tier.acqMin + (tier.acqMax - tier.acqMin) * ratio);
+}
+
 function createAnnuncioCard(annuncio) {
   const foto =
     annuncio.oggetto?.foto?.[0] ||
@@ -51,7 +91,7 @@ function createAnnuncioCard(annuncio) {
   const dettaglioUrl = `annuncio.html?id=${encodeURIComponent(annuncio._id)}`;
   const stato = escapeHtml(annuncio.stato) || 'disponibile';
   const categoria = escapeHtml(annuncio.oggetto?.categoria || annuncio.categoria || '');
-  const crediti = Number(annuncio.creditiRichiesti ?? annuncio.crediti ?? 0);
+  const crediti = calcolaCreditiCard(categoria, annuncio.dataScadenza);
 
   const col = document.createElement('div');
   col.className = 'col-md-6 col-lg-4 mb-4';
@@ -73,8 +113,10 @@ function createAnnuncioCard(annuncio) {
             <span class="small text-muted">
               <i class="bi bi-clock me-1"></i>${scadenza}
             </span>
-            <span class="rv-card-credits">
-              <i class="bi bi-gem me-1"></i>${crediti} cr.
+            <span class="rv-card-credits"
+                  data-categoria="${escapeHtml(categoria)}"
+                  data-scadenza="${escapeHtml(annuncio.dataScadenza || '')}">
+              <i class="bi bi-gem me-1"></i><span class="rv-credits-value">${crediti}</span> cr.
             </span>
           </div>
         </div>
@@ -84,6 +126,8 @@ function createAnnuncioCard(annuncio) {
 
   return col;
 }
+
+window.calcolaCreditiCard = calcolaCreditiCard;
 
 window.createAnnuncioCard = createAnnuncioCard;
 window.formatDistanceLabel = formatDistanceLabel;

@@ -177,10 +177,32 @@ function useCurrentPosition() {
   );
 }
 
+function tickCredits() {
+  document.querySelectorAll('.rv-card-credits[data-scadenza]').forEach((el) => {
+    const categoria = el.dataset.categoria;
+    const dataScadenza = el.dataset.scadenza;
+    if (!dataScadenza) return;
+
+    const nuovi = window.calcolaCreditiCard(categoria, dataScadenza);
+    const valueEl = el.querySelector('.rv-credits-value');
+    if (!valueEl) return;
+
+    const attuali = parseInt(valueEl.textContent, 10);
+    if (nuovi !== attuali) {
+      valueEl.textContent = nuovi;
+      el.classList.remove('rv-card-credits--bump');
+      void el.offsetWidth; // reflow per ripartire animazione
+      el.classList.add('rv-card-credits--bump');
+      el.addEventListener('animationend', () => el.classList.remove('rv-card-credits--bump'), { once: true });
+    }
+  });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   window.initCatalogMap?.();
   catalogFilters?.addEventListener('submit', handleFilterSubmit);
   catalogFilters?.addEventListener('reset', handleFilterReset);
   usePositionBtn?.addEventListener('click', useCurrentPosition);
   loadCatalogo();
+  setInterval(tickCredits, 60_000);
 });

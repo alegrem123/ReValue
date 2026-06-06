@@ -933,6 +933,18 @@ a:hover { color: var(--rv-green-dark); }
   font-weight: 700;
   color: var(--rv-green);
   font-size: 0.95rem;
+  transition: transform 0.2s ease;
+}
+
+@keyframes credits-bump {
+  0%   { transform: scale(1);    color: var(--rv-green); }
+  40%  { transform: scale(1.22); color: #f4a820; }
+  70%  { transform: scale(1.10); color: #f4a820; }
+  100% { transform: scale(1);    color: var(--rv-green); }
+}
+
+.rv-card-credits--bump {
+  animation: credits-bump 0.55s ease forwards;
 }
 
 /* ── Chip filtri orizzontali ── */
