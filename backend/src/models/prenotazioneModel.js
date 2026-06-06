@@ -35,6 +35,14 @@ const prenotazioneSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    creditiDonatore: {
+      type: Number,
+      default: null,
+    },
+    creditiAcquirente: {
+      type: Number,
+      default: null,
+    },
   },
   {
     timestamps: false,
