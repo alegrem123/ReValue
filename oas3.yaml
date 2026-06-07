@@ -3,18 +3,7 @@ info:
   title: RE-VALUE API
   version: 1.0.0
   description: |
-    Specifica OpenAPI 3.0 delle API REST implementate, compatibile con
-    Swagger Editor/SwaggerHub come richiesto nelle slide del corso. Questo file
-    e' il contratto machine-readable; `apiary.apib` resta la versione
-    API Blueprint pubblicabile su Apiary. I path sono relativi ai server
-    versionati `/api/v1`, come negli esempi OpenAPI del corso.
-
-    Note Sprint 2:
-    - Il flusso QR ufficiale usa `/qr/genera` e `/qr/valida` sotto `/api/v1`.
-    - Gli endpoint `/api/v1/scambi/*` sono legacy deprecati e rispondono `410 Gone`.
-    - I crediti di scambio sono dinamici, calcolati alla prenotazione e accreditati dopo QR valido.
-    - Il ban amministrativo blocca login e operazioni utente ma e' riabilitabile dall'admin.
-    - SPID/SSO, Gestore Email e backend OpenStreetMap restano progettuali/opzionali.
+    Specifica OpenAPI 3.0 delle API REST di RE-VALUE.
 servers:
   - url: https://revalue-backend-84jb.onrender.com/api/v1
     description: Ambiente production Render
