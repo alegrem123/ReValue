@@ -14,7 +14,7 @@ ReValue/
 ├── backend/      # API REST — Node.js + Express + MongoDB
 ├── frontend/     # Web app — HTML/CSS/JS (Bootstrap 5)
 ├── mobile/       # App mobile — React Native (Expo)
-├── docs/         # OpenAPI/Swagger e documentazione operativa
+├── docs/         # Documentazione operativa e materiali di supporto
 ├── oas3.yaml     # Specifica OpenAPI 3 nel nome usato nelle slide del corso
 ├── report/       # Deliverable 4 e PDF finale
 └── apiary.apib   # Versione API Blueprint pubblicabile su Apiary
@@ -188,7 +188,7 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.x:3000 npm start
 |------|-------|--------------------------------|-------------|
 | `.nvmrc` | Versione Node locale (`22`). | No: CI usa Node 22 in `.github/workflows/ci.yml`; npm continua a funzionare se Node e' corretto. | Da tenere: riduce errori ambientali prima di push/merge. |
 | `.prettierrc` | Convenzioni Prettier per formattazione manuale/editor. | No: non ci sono script `format`/`prettier` nella pipeline corrente. | Non essenziale, ma tenerlo costa zero e mantiene stile condiviso. |
-| `oas3.yaml` / `docs/openapi.yaml` | Specifica OpenAPI 3 / Swagger-compatible. | No runtime, ma si rompe la consegna API-first se manca o non e' allineata. | Essenziale per il corso: `oas3.yaml` usa il nome delle slide ed e' validabile in Swagger Editor/SwaggerHub. |
+| `oas3.yaml` | Specifica OpenAPI 3 / Swagger-compatible. | No runtime, ma si rompe la consegna API-first se manca o non e' allineata. | Essenziale per il corso: alimenta Swagger UI ed e' validabile in Swagger Editor/SwaggerHub. |
 | `docs/deploy.md` | Procedura Render backend/frontend e smoke test produzione. | No: e' documentazione. | Da tenere: utile per PB-22, deploy ripetibile e discussione finale. |
 | `docs/mongodb-atlas-setup.md` | Appunti minimi sul cluster Atlas usato. | No: e' documentazione. | Utile ma opzionale; non deve contenere password o segreti. |
 | `apiary.apib` | Versione API Blueprint pubblicabile su Apiary. | No runtime. | Utile come documentazione Apiary; non sostituisce OpenAPI 3. |
@@ -202,7 +202,7 @@ per una consegna pulita bastano sorgente `.tex` e PDF finale.
 
 ## Evidenze Sprint 2
 
-- Specifica OpenAPI/Swagger: `oas3.yaml` (copia allineata anche in `docs/openapi.yaml`)
+- Specifica OpenAPI/Swagger: `oas3.yaml`
 - Swagger UI interattiva: `/api-docs/` sul backend deployato, alias versionato `/api/v1/docs/`
 - Documentazione Apiary/API Blueprint: `apiary.apib`
 - Report finale: `report/Deliverable4.tex` e `report/Deliverable4.pdf`
