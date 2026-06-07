@@ -21,8 +21,8 @@ import { colors } from './src/theme/colors';
 
 const tabs = [
   { key: 'catalog',  label: 'Catalogo', icon: 'grid-outline',          iconActive: 'grid' },
-  { key: 'create',   label: 'Pubblica', icon: 'add-circle-outline',    iconActive: 'add-circle' },
   { key: 'bookings', label: 'Scambi',   icon: 'swap-horizontal-outline',iconActive: 'swap-horizontal' },
+  { key: 'create',   label: 'Pubblica', icon: 'add-circle-outline',    iconActive: 'add-circle' },
   { key: 'chat',     label: 'Messaggi', icon: 'chatbubble-outline',    iconActive: 'chatbubble' },
   { key: 'profile',  label: 'Profilo',  icon: 'person-circle-outline', iconActive: 'person-circle' },
 ];

@@ -50,6 +50,11 @@ describe('mobile smoke', () => {
     ['catalog', 'create', 'bookings', 'chat', 'profile'].forEach((tab) => {
       assert.match(source, new RegExp(`key: '${tab}'`), tab);
     });
+    assert.match(
+      source,
+      /key: 'catalog'[\s\S]*key: 'bookings'[\s\S]*key: 'create'[\s\S]*key: 'chat'[\s\S]*key: 'profile'/,
+      'bottom tab order: Catalogo, Scambi, Pubblica, Messaggi, Profilo'
+    );
     ['mine', 'premi'].forEach((removedTab) => {
       assert.doesNotMatch(source, new RegExp(`key: '${removedTab}'`), removedTab);
     });
