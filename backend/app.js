@@ -2,8 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
+const swaggerUi = require('swagger-ui-express');
+const yaml = require('js-yaml');
 const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler');
 const { authLimiter } = require('./src/middleware/rateLimitMiddleware');
 
@@ -14,6 +17,10 @@ const corsOrigin =
   process.env.NODE_ENV === 'production'
     ? (process.env.FRONTEND_URL || '').split(',').map((origin) => origin.trim()).filter(Boolean)
     : true;
+const swaggerDocument = yaml.load(fs.readFileSync(path.join(__dirname, '../oas3.yaml'), 'utf8'));
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Security middleware (RNF4/RNF10) — skip in test to avoid interfering with supertest
 if (process.env.NODE_ENV !== 'test') {

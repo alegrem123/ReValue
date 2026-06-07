@@ -4,11 +4,13 @@ HOST: https://revalue-backend-84jb.onrender.com
 # RE-VALUE API
 
 Documentazione API Blueprint per la pubblicazione su Apiary.
-La specifica equivalente in formato OpenAPI e mantenuta in `docs/openapi.yaml`.
+La specifica Swagger/OpenAPI 3 machine-readable e' mantenuta in `docs/openapi.yaml`;
+questo file e' la versione API Blueprint pubblicabile su Apiary.
 
-Questa specifica descrive le API REST implementate nello Sprint 1 e allineate
-alla progettazione D2. Il backend reale espone le route sotto il prefisso
-`/api/v1`, considerato autorevole anche nella D3 aggiornata.
+Questa specifica descrive le API REST implementate e verificate a fine Sprint 2,
+allineate alle decisioni inspect-and-adapt riportate in D4. Il backend reale
+espone tutte le route sotto il prefisso `/api/v1`, considerato obbligatorio e
+autorevole per la consegna finale.
 L'host indicato sopra e' l'ambiente production Render; in locale usare
 `http://localhost:3000`.
 
@@ -26,20 +28,24 @@ Formato errore prevalente:
       "error": "Messaggio di errore"
     }
 
-Alcuni endpoint piu recenti usano:
+Alcuni endpoint piu recenti, soprattutto chat/notifiche/admin, usano:
 
     {
       "ok": false,
       "error": "Messaggio di errore"
     }
 
-## Stato implementativo D2
+## Stato implementativo Sprint 2
 
 - Flusso QR ufficiale: `/api/v1/qr/genera` e `/api/v1/qr/valida`.
 - Flusso legacy deprecato: `/api/v1/scambi/:prenotazioneId/qr` e
   `/api/v1/scambi/:prenotazioneId/valida` rispondono `410 Gone`.
-- SPID/SSO, Gestore Email e backend OpenStreetMap restano elementi progettuali:
-  non sono esposti come servizi attivi nello Sprint 1.
+- I crediti dello scambio non sono fissi: vengono calcolati dinamicamente alla
+  prenotazione, congelati sulla prenotazione e accreditati solo dopo QR valido.
+- Il ban amministrativo e' implementato come blocco reversibile: finche'
+  `bannato=true` l'utente non puo fare login, ma un admin puo riabilitarlo.
+- SPID/SSO, Gestore Email obbligatorio e backend OpenStreetMap restano elementi
+  progettuali o opzionali: non sono esposti come servizi attivi nello Sprint 2.
 - La posizione esatta degli annunci viene nascosta nel catalogo pubblico e
   mostrata solo a utenti autorizzati.
 
@@ -87,6 +93,18 @@ Registra un utente, crea il wallet iniziale e restituisce un JWT.
           "error": "Campi obbligatori mancanti"
         }
 
++ Response 400 (application/json)
+
+        {
+          "error": "Formato email non valido"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "La password deve contenere almeno 8 caratteri"
+        }
+
 + Response 409 (application/json)
 
         {
@@ -116,6 +134,12 @@ Registra un utente, crea il wallet iniziale e restituisce un JWT.
           }
         }
 
++ Response 400 (application/json)
+
+        {
+          "error": "Email e password obbligatorie"
+        }
+
 + Response 401 (application/json)
 
         {
@@ -126,6 +150,12 @@ Registra un utente, crea il wallet iniziale e restituisce un JWT.
 
         {
           "error": "Account sospeso"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Account bannato"
         }
 
 ## Logout [POST /api/v1/auth/logout]
@@ -144,6 +174,42 @@ Registra un utente, crea il wallet iniziale e restituisce un JWT.
 # Group Users
 
 Gestione profilo utente e profilo pubblico con riepilogo recensioni.
+
+## Profilo autenticato [GET /api/v1/users/me]
+
+Restituisce il profilo privato dell'utente autenticato. Il middleware di auth
+ricarica l'utente dal database, quindi sospensioni e ban correnti sono verificati
+anche se il JWT e' ancora formalmente valido.
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-token
+
++ Response 200 (application/json)
+
+        {
+          "user": {
+            "idUtente": "664f1b7b1f8a2c0012345678",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@example.com",
+            "ruolo": "user",
+            "malusCount": 0,
+            "isSospeso": false,
+            "telefono": "+393331234567",
+            "citta": "Milano",
+            "descrizione": "Recupero e dono oggetti usati.",
+            "fotoProfilo": null,
+            "createdAt": "2026-05-21T10:00:00.000Z"
+          }
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Utente non trovato"
+        }
 
 ## Aggiorna profilo [PUT /api/v1/users/me]
 
@@ -296,7 +362,7 @@ Accessibile anche senza autenticazione. Se l'utente non e autorizzato, la
 risposta non contiene coordinate esatte.
 
 + Parameters
-    + categoria: `arredo` (string, optional)
+    + categoria: `Mobili` (string, optional)
     + dimensione: `medio` (string, optional)
     + materiale: `legno` (string, optional)
     + scadenzaDopo: `2026-05-21` (string, optional)
@@ -318,7 +384,7 @@ risposta non contiene coordinate esatte.
               "stato": "DISPONIBILE",
               "dataScadenza": "2026-06-01T12:00:00.000Z",
               "oggetto": {
-                "categoria": "arredo",
+                "categoria": "Mobili",
                 "descrizione": "Sedia usata in buono stato",
                 "dimensioni": "medio",
                 "materiale": "legno",
@@ -337,6 +403,12 @@ risposta non contiene coordinate esatte.
             "total": 1,
             "pages": 1
           }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Parametro scadenzaDopo non valido"
         }
 
 ## I miei annunci [GET /api/v1/annunci/me]
@@ -370,12 +442,13 @@ risposta non contiene coordinate esatte.
           "stato": "DISPONIBILE",
           "dataScadenza": "2026-06-01T12:00:00.000Z",
           "oggetto": {
-            "categoria": "arredo",
+            "categoria": "Mobili",
             "descrizione": "Sedia usata in buono stato",
             "dimensioni": "medio",
             "materiale": "legno",
             "foto": []
-          }
+          },
+          "posizioneApprossimata": true
         }
 
 + Response 404 (application/json)
@@ -399,7 +472,7 @@ risposta non contiene coordinate esatte.
               "latitudine": 45.4642,
               "longitudine": 9.1900,
               "oggetto": {
-                "categoria": "arredo",
+                "categoria": "Mobili",
                 "descrizione": "Sedia usata in buono stato",
                 "dimensioni": "medio",
                 "materiale": "legno",
@@ -424,6 +497,18 @@ risposta non contiene coordinate esatte.
           "error": "titolo, dataScadenza e oggetto sono obbligatori"
         }
 
++ Response 400 (application/json)
+
+        {
+          "error": "dataScadenza deve essere nel futuro (OCL #5)"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Gli amministratori non possono pubblicare annunci"
+        }
+
 ## Modifica annuncio [PUT /api/v1/annunci/{id}]
 
 + Parameters
@@ -439,7 +524,7 @@ risposta non contiene coordinate esatte.
             {
               "titolo": "Sedia in legno restaurata",
               "oggetto": {
-                "categoria": "arredo",
+                "categoria": "Mobili",
                 "descrizione": "Sedia restaurata",
                 "dimensioni": "medio",
                 "materiale": "legno",
@@ -467,6 +552,12 @@ risposta non contiene coordinate esatte.
           "error": "Annuncio non modificabile: stato PRENOTATO"
         }
 
++ Response 400 (application/json)
+
+        {
+          "error": "dataScadenza deve essere nel futuro"
+        }
+
 ## Cancella annuncio [DELETE /api/v1/annunci/{id}]
 
 + Parameters
@@ -481,6 +572,12 @@ risposta non contiene coordinate esatte.
 
         {
           "message": "Annuncio rimosso"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Annuncio non cancellabile: stato PRENOTATO"
         }
 
 ## Cambia stato annuncio [PATCH /api/v1/annunci/{id}/stato]
@@ -507,11 +604,23 @@ risposta non contiene coordinate esatte.
           "stato": "PRENOTATO"
         }
 
++ Response 400 (application/json)
+
+        {
+          "error": "Transizione non valida da PRENOTATO a DISPONIBILE"
+        }
+
 # Group Prenotazioni
 
 Gestione prenotazione, annullamento, no-show e disdetta.
 
 ## Crea prenotazione [POST /api/v1/prenotazioni]
+
+Alla prenotazione il backend calcola i crediti potenziali con un modello a
+fasce per categoria, proporzionali alla scadenza (`calcolaCrediti`), e li
+congela su `creditiDonatore`/`creditiAcquirente`. L'accredito effettivo avviene
+solo alla validazione QR. `creditiAssegnati` nella risposta e' quindi
+un'anteprima dei crediti previsti per donatore e acquirente.
 
 + Request (application/json)
     + Headers
@@ -532,7 +641,13 @@ Gestione prenotazione, annullamento, no-show e disdetta.
             "annuncio": "665000000000000000000001",
             "acquirente": "664f1b7b1f8a2c0012345679",
             "donatore": "664f1b7b1f8a2c0012345678",
-            "stato": "ATTIVA"
+            "stato": "ATTIVA",
+            "creditiDonatore": 38,
+            "creditiAcquirente": 24
+          },
+          "creditiAssegnati": {
+            "donatore": 38,
+            "acquirente": 24
           },
           "indirizzo": {
             "latitudine": 45.4642,
@@ -544,6 +659,24 @@ Gestione prenotazione, annullamento, no-show e disdetta.
 
         {
           "error": "Oggetto gia prenotato"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "annuncioId is required"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Gli amministratori non possono eseguire questa operazione"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Annuncio non trovato"
         }
 
 ## Le mie prenotazioni [GET /api/v1/prenotazioni/me{?stato}]
@@ -615,6 +748,18 @@ Consentito all'acquirente entro 15 minuti dalla prenotazione.
           "error": "Finestra di annullamento (15 min) scaduta"
         }
 
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Prenotazione attiva non trovata"
+        }
+
 ## Segnala no-show [POST /api/v1/prenotazioni/{id}/no-show]
 
 Il donatore segnala il mancato ritiro da parte dell'acquirente.
@@ -633,6 +778,18 @@ Il donatore segnala il mancato ritiro da parte dell'acquirente.
           "message": "Mancato ritiro segnalato con successo"
         }
 
++ Response 403 (application/json)
+
+        {
+          "error": "Solo il donatore può segnalare il mancato ritiro"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Prenotazione attiva non trovata"
+        }
+
 ## Disdici ritiro [POST /api/v1/prenotazioni/{id}/disdici]
 
 Il donatore disdice il ritiro entro la finestra prevista.
@@ -649,6 +806,18 @@ Il donatore disdice il ritiro entro la finestra prevista.
 
         {
           "message": "Ritiro disdetto"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Disdetta consentita solo entro 3 giorni dalla data di ritiro (RF20)"
         }
 
 # Group QR
@@ -677,15 +846,30 @@ Solo il donatore della prenotazione puo generare il QR.
           "scadenza": "2026-05-22T10:00:00.000Z"
         }
 
++ Response 400 (application/json)
+
+        {
+          "error": "prenotazioneId is required"
+        }
+
 + Response 403 (application/json)
 
         {
           "error": "Solo il donatore puo generare il QR per questa prenotazione"
         }
 
++ Response 409 (application/json)
+
+        {
+          "error": "Scambio già completato"
+        }
+
 ## Valida QR [POST /api/v1/qr/valida]
 
-Solo l'acquirente valida il codice durante il ritiro fisico.
+Solo l'acquirente valida il codice durante il ritiro fisico. La chiusura e'
+atomica (transazione MongoDB): accredita ai due wallet i crediti congelati alla
+prenotazione (`creditiDonatore`/`creditiAcquirente`). `creditiAssegnati`
+riporta i valori effettivamente accreditati a donatore e acquirente.
 
 + Request (application/json)
     + Headers
@@ -703,13 +887,40 @@ Solo l'acquirente valida il codice durante il ritiro fisico.
         {
           "message": "Scambio validato con successo",
           "prenotazione": "666000000000000000000001",
-          "creditiAssegnati": 50
+          "creditiAssegnati": {
+            "donatore": 38,
+            "acquirente": 24
+          }
         }
 
 + Response 404 (application/json)
 
         {
-          "error": "Codice QR non valido, gia scaduto o non esistente"
+          "error": "Codice QR non valido o non esistente"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Codice QR obbligatorio"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Scansione non autorizzata. Solo l'acquirente può validare lo scambio."
+        }
+
++ Response 409 (application/json)
+
+        {
+          "error": "Scambio già completato"
+        }
+
++ Response 410 (application/json)
+
+        {
+          "error": "Codice QR scaduto"
         }
 
 # Group Wallet
@@ -733,13 +944,13 @@ Saldo e storico crediti.
 + Response 200 (application/json)
 
         {
-          "bilancio": 50,
+          "bilancio": 38,
           "storico": {
             "data": [
               {
                 "tipo": "accredito",
-                "ammontare": 50,
-                "motivo": "Scambio completato",
+                "ammontare": 38,
+                "motivo": "Scambio completato (Donatore)",
                 "data": "2026-05-21T10:00:00.000Z"
               }
             ],
@@ -759,7 +970,7 @@ Saldo e storico crediti.
 + Response 200 (application/json)
 
         {
-          "bilancio": 50
+          "bilancio": 38
         }
 
 ## Storico [GET /api/v1/wallet/storico{?tipo,from,to,page,limit}]
@@ -1035,6 +1246,13 @@ Supporta messaggio testuale e immagine opzionale in base64, con limite 1 MB.
           "error": "immagine supera il limite di 1 MB"
         }
 
++ Response 413 (application/json)
+
+        {
+          "ok": false,
+          "error": "limite immagini conversazione raggiunto"
+        }
+
 ## Messaggi recenti [GET /api/v1/conversazioni/{id}/messaggi/recenti{?since,page,limit}]
 
 Polling ottimizzato: restituisce solo i messaggi con timestamp successivo a `since`.
@@ -1121,6 +1339,18 @@ UI nuova e quello del gruppo Conversazioni.
           }
         ]
 
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Conversazione non trovata"
+        }
+
 ## Invia per prenotazione [POST /api/v1/messaggi/{prenotazioneId}]
 
 + Parameters
@@ -1145,6 +1375,24 @@ UI nuova e quello del gruppo Conversazioni.
           "timestamp": "2026-05-21T10:00:00.000Z"
         }
 
++ Response 400 (application/json)
+
+        {
+          "error": "testo obbligatorio"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Conversazione non trovata"
+        }
+
 ## Marca messaggio letto [PATCH /api/v1/messaggi/{id}/letto]
 
 + Parameters
@@ -1163,6 +1411,20 @@ UI nuova e quello del gruppo Conversazioni.
             "_id": "668000000000000000000001",
             "letto": true
           }
+        }
+
++ Response 403 (application/json)
+
+        {
+          "ok": false,
+          "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Messaggio non trovato"
         }
 
 # Group Notifiche
@@ -1470,13 +1732,24 @@ Endpoint riservati al ruolo `admin`.
           "liquiditaAttuale": 120,
           "creditiErogatiTotali": 240,
           "creditiErogatiMese": 40,
-          "totaleCrediti": 120
+          "totaleCrediti": 120,
+          "utentiAttivi": 15,
+          "utentiSospesi": 2,
+          "utentiBannati": 1,
+          "storicoMensile": [
+            {
+              "anno": 2026,
+              "mese": 5,
+              "totale": 4
+            }
+          ]
         }
 
-## Lista utenti [GET /api/v1/admin/users{?search,page,limit}]
+## Lista utenti [GET /api/v1/admin/users{?search,stato,page,limit}]
 
 + Parameters
     + search: `mario` (string, optional)
+    + stato: `attivo` (string, optional) - Uno tra `attivo`, `sospeso`, `bannato`.
     + page: `1` (number, optional)
     + limit: `20` (number, optional)
 
@@ -1506,7 +1779,7 @@ Endpoint riservati al ruolo `admin`.
 
 + Response 403 (application/json)
 
-        { "error": "Accesso negato" }
+        { "error": "Accesso riservato agli amministratori" }
 
 ## Segnalazioni [GET /api/v1/admin/segnalazioni]
 
@@ -1553,6 +1826,10 @@ Endpoint riservati al ruolo `admin`.
 
 ## Banna utente [POST /api/v1/admin/utenti/{id}/ban]
 
+Il ban amministrativo dello Sprint 2 blocca login e operazioni utente, ma resta
+reversibile tramite `riabilita`: questa e' una decisione implementativa di
+percorso allineata al comportamento effettivo del backend.
+
 + Parameters
     + id: `664f1b7b1f8a2c0012345678` (string)
 
@@ -1565,6 +1842,22 @@ Endpoint riservati al ruolo `admin`.
 
         {
           "message": "Utente mario.rossi@example.com bannato"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "ok": false,
+          "error": "Non puoi bannare un amministratore",
+          "message": "Non puoi bannare un amministratore"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Utente non trovato",
+          "message": "Utente non trovato"
         }
 
 ## Sospendi utente [POST /api/v1/admin/utenti/{id}/sospendi]
@@ -1583,7 +1876,26 @@ Endpoint riservati al ruolo `admin`.
           "message": "Utente mario.rossi@example.com sospeso"
         }
 
++ Response 403 (application/json)
+
+        {
+          "ok": false,
+          "error": "Non puoi sospendere un amministratore",
+          "message": "Non puoi sospendere un amministratore"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Utente non trovato",
+          "message": "Utente non trovato"
+        }
+
 ## Riabilita utente [POST /api/v1/admin/utenti/{id}/riabilita]
+
+Riabilita sia utenti sospesi sia utenti bannati, azzerando `isSospeso` e
+`bannato`. Se l'account e' gia attivo, il backend restituisce `400`.
 
 + Parameters
     + id: `664f1b7b1f8a2c0012345678` (string)
@@ -1599,10 +1911,26 @@ Endpoint riservati al ruolo `admin`.
           "message": "Utente mario.rossi@example.com riabilitato"
         }
 
++ Response 400 (application/json)
+
+        {
+          "ok": false,
+          "error": "Account già attivo",
+          "message": "Account già attivo"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Utente non trovato",
+          "message": "Utente non trovato"
+        }
+
 ## Lista annunci admin [GET /api/v1/admin/annunci{?stato,page,limit}]
 
 + Parameters
-    + stato: `DISPONIBILE` (string, optional) - Uno tra DISPONIBILE, PRENOTATO, CEDUTO, SCADUTO
+    + stato: `DISPONIBILE` (string, optional) - Uno tra DISPONIBILE, PRENOTATO, RITIRATO, SCADUTO
     + page: `1` (number, optional)
     + limit: `20` (number, optional)
 
@@ -1629,7 +1957,7 @@ Endpoint riservati al ruolo `admin`.
 
 + Response 403 (application/json)
 
-        { "error": "Accesso negato" }
+        { "error": "Accesso riservato agli amministratori" }
 
 ## Forza stato annuncio [PATCH /api/v1/admin/annunci/{id}/forza]
 
@@ -1659,6 +1987,22 @@ Endpoint riservati al ruolo `admin`.
           }
         }
 
++ Response 400 (application/json)
+
+        {
+          "ok": false,
+          "error": "Stato annuncio non valido",
+          "message": "Stato annuncio non valido"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Annuncio non trovato",
+          "message": "Annuncio non trovato"
+        }
+
 ## Rimuovi annuncio [DELETE /api/v1/admin/annunci/{id}]
 
 + Parameters
@@ -1670,6 +2014,193 @@ Endpoint riservati al ruolo `admin`.
             Authorization: Bearer jwt-admin-token
 
 + Response 204
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Annuncio non trovato",
+          "message": "Annuncio non trovato"
+        }
+
+## Lista coupon admin [GET /api/v1/admin/coupon{?search,attivo,page,limit}]
+
++ Parameters
+    + search: `libreria` (string, optional)
+    + attivo: `true` (boolean, optional)
+    + page: `1` (number, optional)
+    + limit: `20` (number, optional)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "coupon": [
+            {
+              "_id": "672000000000000000000001",
+              "titolo": "Sconto 10% libreria",
+              "descrizione": "Coupon valido presso partner locale.",
+              "partner": "Libreria Centro",
+              "costoCrediti": 50,
+              "stock": 10,
+              "attivo": true,
+              "immagine": null,
+              "createdAt": "2026-05-24T10:00:00.000Z"
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "limit": 20,
+            "total": 1,
+            "pages": 1
+          }
+        }
+
+## Crea coupon admin [POST /api/v1/admin/coupon]
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
+    + Body
+
+            {
+              "titolo": "Sconto 10% libreria",
+              "descrizione": "Coupon valido presso partner locale.",
+              "partner": "Libreria Centro",
+              "costoCrediti": 50,
+              "stock": 10,
+              "attivo": true,
+              "immagine": null
+            }
+
++ Response 201 (application/json)
+
+        {
+          "message": "Coupon \"Sconto 10% libreria\" creato",
+          "coupon": {
+            "_id": "672000000000000000000001",
+            "titolo": "Sconto 10% libreria",
+            "descrizione": "Coupon valido presso partner locale.",
+            "partner": "Libreria Centro",
+            "costoCrediti": 50,
+            "stock": 10,
+            "attivo": true,
+            "immagine": null
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "ok": false,
+          "error": "Titolo, descrizione e partner sono obbligatori",
+          "message": "Titolo, descrizione e partner sono obbligatori"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "ok": false,
+          "error": "Il costo in crediti deve essere almeno 1",
+          "message": "Il costo in crediti deve essere almeno 1"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "ok": false,
+          "error": "Lo stock deve essere un numero maggiore o uguale a 0",
+          "message": "Lo stock deve essere un numero maggiore o uguale a 0"
+        }
+
+## Aggiorna coupon admin [PATCH /api/v1/admin/coupon/{id}]
+
++ Parameters
+    + id: `672000000000000000000001` (string)
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
+    + Body
+
+            {
+              "titolo": "Sconto 15% libreria",
+              "descrizione": "Coupon aggiornato presso partner locale.",
+              "partner": "Libreria Centro",
+              "costoCrediti": 60,
+              "stock": 5,
+              "attivo": true,
+              "immagine": null
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Coupon \"Sconto 15% libreria\" aggiornato",
+          "coupon": {
+            "_id": "672000000000000000000001",
+            "titolo": "Sconto 15% libreria",
+            "descrizione": "Coupon aggiornato presso partner locale.",
+            "partner": "Libreria Centro",
+            "costoCrediti": 60,
+            "stock": 5,
+            "attivo": true,
+            "immagine": null
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "ok": false,
+          "error": "Il costo in crediti deve essere almeno 1",
+          "message": "Il costo in crediti deve essere almeno 1"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Coupon non trovato",
+          "message": "Coupon non trovato"
+        }
+
+## Disattiva coupon admin [PATCH /api/v1/admin/coupon/{id}/disattiva]
+
++ Parameters
+    + id: `672000000000000000000001` (string)
+
++ Request
+    + Headers
+
+            Authorization: Bearer jwt-admin-token
+
++ Response 200 (application/json)
+
+        {
+          "message": "Coupon \"Sconto 10% libreria\" disattivato",
+          "coupon": {
+            "_id": "672000000000000000000001",
+            "titolo": "Sconto 10% libreria",
+            "attivo": false
+          }
+        }
+
++ Response 404 (application/json)
+
+        {
+          "ok": false,
+          "error": "Coupon non trovato",
+          "message": "Coupon non trovato"
+        }
 
 # Group Supporto
 

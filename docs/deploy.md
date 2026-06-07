@@ -19,7 +19,7 @@
    - **Name**: `revalue-backend`
    - **Root Directory**: `backend`
    - **Runtime**: Node
-   - **Build Command**: `npm install`
+   - **Build Command**: `npm ci`
    - **Start Command**: `node server.js`
    - **Instance Type**: Free
 
@@ -40,7 +40,7 @@
 
 ### 1.3 MongoDB Atlas — whitelist IP
 
-Atlas Dashboard → **Network Access → Add IP Address** → inserire `0.0.0.0/0` (tutti gli IP, necessario per Render piano gratuito).
+Atlas Dashboard → **Network Access → Add IP Address** → inserire `0.0.0.0/0` per il prototipo su Render piano gratuito, oppure una whitelist piu restrittiva se il piano/ambiente lo consente.
 
 ### 1.4 Verifica
 
@@ -49,6 +49,12 @@ Dopo il deploy, aprire:
 https://revalue-backend-84jb.onrender.com/api/v1/annunci
 ```
 Atteso: risposta JSON (anche array vuoto), non errore 503.
+
+Documentazione interattiva Swagger UI:
+```
+https://revalue-backend-84jb.onrender.com/api-docs/
+```
+Atteso: pagina Swagger UI generata da `oas3.yaml`, con endpoint raggruppati per tag.
 
 ---
 
@@ -66,7 +72,7 @@ Atteso: risposta JSON (anche array vuoto), non errore 503.
 
 ### 2.2 Configurare URL backend
 
-In `frontend/js/apiClient.js`, `API_BASE` deve puntare all'URL backend Render in produzione (vedere step seguente nel file).
+In `frontend/js/apiClient.js`, `DEFAULT_API_BASE` punta al backend Render. In caso di URL diverso, configurare `window.REVALUE_API_BASE` o `window.REVALUE_CONFIG.API_BASE` prima del caricamento del client.
 
 ### 2.3 Aggiornare FRONTEND_URL nel backend
 
@@ -83,6 +89,7 @@ Aprire `https://revalue-frontend.onrender.com/views/login.html` → pagina caric
 | Servizio | URL |
 |----------|-----|
 | Backend | `https://revalue-backend-84jb.onrender.com` |
+| Swagger UI | `https://revalue-backend-84jb.onrender.com/api-docs/` |
 | Frontend | `https://revalue-frontend.onrender.com` |
 
 ---
@@ -97,6 +104,6 @@ Eseguito manualmente su `https://revalue-frontend.onrender.com`.
 | 2 | Login + JWT restituito | PASS | JWT presente in localStorage |
 | 3 | Creazione annuncio | PASS | Redirect a `annuncio.html` anziché `my-annunci.html` (comportamento accettabile) |
 | 4 | Prenotazione annuncio | PASS | — |
-| 5 | Visualizzazione crediti utente | PASS | Saldo visibile; crediti iniziali 50pt non mostrati per utenti nuovi (seed non eseguito in produzione) |
+| 5 | Visualizzazione crediti utente | PASS | Saldo visibile; i crediti di scambio sono dinamici e vengono accreditati dopo QR valido. |
 
 **Tutti i flussi principali operativi in produzione.**

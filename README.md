@@ -14,7 +14,10 @@ ReValue/
 ├── backend/      # API REST — Node.js + Express + MongoDB
 ├── frontend/     # Web app — HTML/CSS/JS (Bootstrap 5)
 ├── mobile/       # App mobile — React Native (Expo)
-└── docs/         # Documentazione deliverable
+├── docs/         # OpenAPI/Swagger e documentazione operativa
+├── oas3.yaml     # Specifica OpenAPI 3 nel nome usato nelle slide del corso
+├── report/       # Deliverable 4 e PDF finale
+└── apiary.apib   # Versione API Blueprint pubblicabile su Apiary
 ```
 
 ---
@@ -27,6 +30,12 @@ ReValue/
 | npm | 9.x |
 | Expo CLI | `npx expo` (incluso con Expo SDK 54) |
 | MongoDB Atlas | account con cluster attivo |
+
+La versione Node di riferimento e' dichiarata anche in `.nvmrc`. Con `nvm`:
+
+```bash
+nvm use
+```
 
 ---
 
@@ -168,17 +177,38 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.x:3000 npm start
 2. Donatore crea annuncio con foto e posizione
 3. Acquirente sfoglia catalogo, prenota annuncio
 4. Donatore mostra QR (da `qr-display`) → Acquirente scansiona (`qr-scan`)
-5. Backend valida QR → trasferisce crediti (50pt ciascuno)
+5. Backend valida QR → accredita i crediti dinamici congelati sulla prenotazione
 6. Acquirente e donatore possono chattare via messaggi integrati
+
+---
+
+## Documentazione e file di supporto
+
+| File | Ruolo | Se rimosso rompe runtime/test? | Valutazione |
+|------|-------|--------------------------------|-------------|
+| `.nvmrc` | Versione Node locale (`22`). | No: CI usa Node 22 in `.github/workflows/ci.yml`; npm continua a funzionare se Node e' corretto. | Da tenere: riduce errori ambientali prima di push/merge. |
+| `.prettierrc` | Convenzioni Prettier per formattazione manuale/editor. | No: non ci sono script `format`/`prettier` nella pipeline corrente. | Non essenziale, ma tenerlo costa zero e mantiene stile condiviso. |
+| `oas3.yaml` / `docs/openapi.yaml` | Specifica OpenAPI 3 / Swagger-compatible. | No runtime, ma si rompe la consegna API-first se manca o non e' allineata. | Essenziale per il corso: `oas3.yaml` usa il nome delle slide ed e' validabile in Swagger Editor/SwaggerHub. |
+| `docs/deploy.md` | Procedura Render backend/frontend e smoke test produzione. | No: e' documentazione. | Da tenere: utile per PB-22, deploy ripetibile e discussione finale. |
+| `docs/mongodb-atlas-setup.md` | Appunti minimi sul cluster Atlas usato. | No: e' documentazione. | Utile ma opzionale; non deve contenere password o segreti. |
+| `apiary.apib` | Versione API Blueprint pubblicabile su Apiary. | No runtime. | Utile come documentazione Apiary; non sostituisce OpenAPI 3. |
+
+File generati o temporanei (`*.log`, cache, build output, `.env`, credenziali)
+non vanno committati. I file di report generati (`.aux`, `.toc`, `.out`, `.log`)
+sono utili solo se il team vuole rendere riproducibile localmente la build LaTeX;
+per una consegna pulita bastano sorgente `.tex` e PDF finale.
 
 ---
 
 ## Evidenze Sprint 2
 
-- Casi di test strutturati: `docs/test-cases-sprint2.md`
-- Evidenza RNF2 e piano load test: `docs/performance/rnf2-load-test.md`
-- Checklist Postman endpoint: `docs/postman/README.md`
-- Demo video: placeholder da compilare quando disponibile.
+- Specifica OpenAPI/Swagger: `oas3.yaml` (copia allineata anche in `docs/openapi.yaml`)
+- Swagger UI interattiva: `/api-docs/` sul backend deployato, alias versionato `/api/v1/docs/`
+- Documentazione Apiary/API Blueprint: `apiary.apib`
+- Report finale: `report/Deliverable4.tex` e `report/Deliverable4.pdf`
+- Deploy: `docs/deploy.md`
+- Setup MongoDB Atlas: `docs/mongodb-atlas-setup.md`
+- Suite automatica: backend Jest/Supertest, smoke test frontend e smoke test mobile.
 
 ---
 
