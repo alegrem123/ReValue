@@ -169,4 +169,4 @@ In sviluppo locale cambia l'URL con l'IP della tua macchina (es. `http://192.168
 ## Autori
 
 Gruppo 21 — Università di Trento  
-Alessandro Turri · [altri membri del gruppo]
+Alessandro Turri · Alessandro Gremes . Paolo Sarcletti
