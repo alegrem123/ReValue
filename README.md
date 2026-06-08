@@ -106,7 +106,10 @@ Per registrare il video demo usare il seed completo:
 
 ```bash
 cd backend
+npm install
 npm run seed:demo
+node server.js
+
 ```
 
 Il seed demo prepara utenti, 10 annunci con foto, indirizzi specifici nella provincia di Trento, prenotazioni, QR, chat gia' popolate, wallet e coupon locali trentini con immagini. Gli annunci coprono Trento, Rovereto, Pergine Valsugana, Riva del Garda, Arco, Levico Terme, Mezzolombardo, Cles, Borgo Valsugana e Mori. E' idempotente: puo' essere rilanciato prima della registrazione e rimuove/ricrea solo dati demo riconoscibili.
@@ -119,7 +122,6 @@ Account demo:
 | Donatore Rovereto | `demo.donatore.rovereto@revalue.local` | `Demo1234!` |
 | Donatore Pergine | `demo.donatore.pergine@revalue.local` | `Demo1234!` |
 | Acquirente | `demo.acquirente@revalue.local` | `Demo1234!` |
-| Admin | `demo.admin@revalue.local` | `Demo1234!` |
 
 Seed legacy solo coupon:
 
