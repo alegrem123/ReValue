@@ -114,14 +114,14 @@ node server.js
 
 Il seed demo prepara utenti, 10 annunci con foto, indirizzi specifici nella provincia di Trento, prenotazioni, QR, chat gia' popolate, wallet e coupon locali trentini con immagini. Gli annunci coprono Trento, Rovereto, Pergine Valsugana, Riva del Garda, Arco, Levico Terme, Mezzolombardo, Cles, Borgo Valsugana e Mori. E' idempotente: puo' essere rilanciato prima della registrazione e rimuove/ricrea solo dati demo riconoscibili.
 
-Account demo:
+Account demo principali:
 
 | Ruolo | Email | Password |
 |------|-------|----------|
-| Donatore Trento | `demo.donatore@revalue.local` | `Demo1234!` |
-| Donatore Rovereto | `demo.donatore.rovereto@revalue.local` | `Demo1234!` |
-| Donatore Pergine | `demo.donatore.pergine@revalue.local` | `Demo1234!` |
-| Acquirente | `demo.acquirente@revalue.local` | `Demo1234!` |
+| Utente standard | `demo.acquirente@revalue.local` | `Demo1234!` |
+| Admin | `demo.admin@revalue.local` | `Demo1234!` |
+
+Le credenziali demo sono valide sia sul frontend web sia sull'app mobile. L'account utente standard e' quello consigliato per provare i flussi applicativi principali; l'account admin serve per la dashboard amministrativa web. Sul client mobile non esistono route o schermate amministrative, quindi il ruolo admin non abilita privilegi operativi nell'app. Il seed crea anche altri utenti demo per popolare catalogo, prenotazioni e chat, ma non sono necessari per la demo principale.
 
 Seed legacy solo coupon:
 
