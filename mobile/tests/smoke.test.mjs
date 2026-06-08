@@ -99,6 +99,14 @@ describe('mobile smoke', () => {
     assert.match(qrDisplay, /selectable/);
   });
 
+  it('le card premi mobile usano immagini coupon senza mostrare descrizioni lunghe', () => {
+    const premi = readFileSync(join(root, 'src/screens/PremiScreen.js'), 'utf8');
+
+    assert.match(premi, /Image/);
+    assert.match(premi, /coupon\.immagine/);
+    assert.doesNotMatch(premi, /coupon\.descrizione/);
+  });
+
   it('il QR mobile mostra i crediti acquirente quando il backend restituisce donatore e acquirente', () => {
     const qrScan = readFileSync(join(root, 'src/screens/QRScanScreen.js'), 'utf8');
     const success = readFileSync(join(root, 'src/screens/SwapSuccessScreen.js'), 'utf8');

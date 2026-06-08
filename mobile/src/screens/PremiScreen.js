@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -154,26 +155,30 @@ function CouponCard({ coupon, onRiscatta }) {
   const esaurito = coupon.stock === 0;
   return (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{coupon.titolo}</Text>
-        <View style={styles.costoBadge}>
-          <Text style={styles.costoText}>{coupon.costoCrediti} cr.</Text>
+      {coupon.immagine ? (
+        <Image source={{ uri: coupon.immagine }} style={styles.couponImage} resizeMode="cover" />
+      ) : null}
+      <View style={styles.cardContent}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>{coupon.titolo}</Text>
+          <View style={styles.costoBadge}>
+            <Text style={styles.costoText}>{coupon.costoCrediti} cr.</Text>
+          </View>
         </View>
+        <Text style={styles.partner}>{coupon.partner}</Text>
+        {coupon.stock > 0 ? (
+          <Text style={styles.stock}>{coupon.stock} rimasti</Text>
+        ) : (
+          <Text style={[styles.stock, { color: colors.danger }]}>Esauriti</Text>
+        )}
+        <Button
+          title={esaurito ? 'Esaurito' : 'Riscatta'}
+          onPress={onRiscatta}
+          disabled={esaurito}
+          variant={esaurito ? 'secondary' : 'primary'}
+          size="compact"
+        />
       </View>
-      <Text style={styles.partner}>{coupon.partner}</Text>
-      <Text style={styles.descrizione} numberOfLines={3}>{coupon.descrizione}</Text>
-      {coupon.stock > 0 ? (
-        <Text style={styles.stock}>{coupon.stock} rimasti</Text>
-      ) : (
-        <Text style={[styles.stock, { color: colors.danger }]}>Esauriti</Text>
-      )}
-      <Button
-        title={esaurito ? 'Esaurito' : 'Riscatta'}
-        onPress={onRiscatta}
-        disabled={esaurito}
-        variant={esaurito ? 'secondary' : 'primary'}
-        size="compact"
-      />
     </View>
   );
 }
@@ -197,6 +202,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  couponImage: {
+    width: '100%',
+    height: 132,
+    backgroundColor: colors.greenXLight,
+  },
+  cardContent: {
     padding: 16,
     gap: 8,
   },
@@ -227,11 +240,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
     fontWeight: '600',
-  },
-  descrizione: {
-    color: colors.text,
-    lineHeight: 20,
-    fontSize: 14,
   },
   stock: {
     color: colors.green,

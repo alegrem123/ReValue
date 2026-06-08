@@ -102,10 +102,33 @@ I test usano `mongodb-memory-server`: durante l'esecuzione viene avviata una ist
 
 ### Seed database
 
+Per registrare il video demo usare il seed completo:
+
 ```bash
 cd backend
-node seeds/coupons.js   # popola i coupon/premi di default
+npm run seed:demo
 ```
+
+Il seed demo prepara utenti, 10 annunci con foto, indirizzi specifici nella provincia di Trento, prenotazioni, QR, chat gia' popolate, wallet e coupon locali trentini con immagini. Gli annunci coprono Trento, Rovereto, Pergine Valsugana, Riva del Garda, Arco, Levico Terme, Mezzolombardo, Cles, Borgo Valsugana e Mori. E' idempotente: puo' essere rilanciato prima della registrazione e rimuove/ricrea solo dati demo riconoscibili.
+
+Account demo:
+
+| Ruolo | Email | Password |
+|------|-------|----------|
+| Donatore Trento | `demo.donatore@revalue.local` | `Demo1234!` |
+| Donatore Rovereto | `demo.donatore.rovereto@revalue.local` | `Demo1234!` |
+| Donatore Pergine | `demo.donatore.pergine@revalue.local` | `Demo1234!` |
+| Acquirente | `demo.acquirente@revalue.local` | `Demo1234!` |
+| Admin | `demo.admin@revalue.local` | `Demo1234!` |
+
+Seed legacy solo coupon:
+
+```bash
+cd backend
+npm run seed:coupons
+```
+
+Attenzione: il seed solo coupon cancella e ricrea tutti i coupon. Non usarlo per la demo completa, perche' non prepara utenti, annunci, wallet, QR o chat.
 
 ---
 

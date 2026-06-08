@@ -113,6 +113,14 @@ describe('frontend smoke', () => {
     assert.match(mybookings, /bi-qr-code-scan/);
   });
 
+  it('le card premi web usano immagini coupon senza mostrare descrizioni lunghe', () => {
+    const premi = readFileSync(join(root, 'js/premi.js'), 'utf8');
+
+    assert.match(premi, /c\.immagine/);
+    assert.match(premi, /coupon-img/);
+    assert.doesNotMatch(premi, /c\.descrizione/);
+  });
+
   it('il valore crediti web si aggiorna e mostra il valore acquirente dopo QR', () => {
     const catalog = readFileSync(join(root, 'js/catalog.js'), 'utf8');
     const detail = readFileSync(join(root, 'js/annuncio.js'), 'utf8');

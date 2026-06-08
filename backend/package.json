@@ -8,7 +8,9 @@
     "dev": "node server.js",
     "test": "jest --forceExit --detectOpenHandles",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --forceExit"
+    "test:coverage": "jest --coverage --forceExit",
+    "seed:coupons": "node seeds/coupons.js",
+    "seed:demo": "node seeds/demo.js"
   },
   "keywords": [],
   "author": "",

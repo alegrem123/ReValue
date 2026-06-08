@@ -69,26 +69,24 @@ function couponCard(c) {
   const stockBadge = c.stock > 0
     ? `<span class="badge bg-success-subtle text-success-emphasis ms-1">${c.stock} rimasti</span>`
     : `<span class="badge bg-info-subtle text-info-emphasis ms-1">Illimitato</span>`;
+  const imageMarkup = c.immagine
+    ? `<img class="coupon-img rounded-top" src="${escAttr(c.immagine)}" alt="${escAttr(c.titolo)}" loading="lazy">`
+    : `<div class="coupon-img-placeholder rounded-top"><i class="bi bi-gift"></i></div>`;
 
   return `
     <div class="col-sm-6 col-lg-4">
       <div class="card h-100 shadow-sm coupon-card">
-        <div class="coupon-img-placeholder rounded-top">
-          <i class="bi bi-gift"></i>
-        </div>
+        ${imageMarkup}
         <div class="card-body d-flex flex-column">
           <div class="d-flex align-items-start justify-content-between mb-1">
             <h5 class="card-title fw-bold mb-0 me-2" style="font-size:1rem;">${escHtml(c.titolo)}</h5>
             <span class="badge costo-badge text-nowrap">${c.costoCrediti} cr.</span>
           </div>
-          <p class="text-muted small mb-1">
+          <p class="text-muted small mb-3">
             <i class="bi bi-building me-1"></i>${escHtml(c.partner)}${stockBadge}
           </p>
-          <p class="card-text text-muted small flex-grow-1" style="overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">
-            ${escHtml(c.descrizione)}
-          </p>
           <button
-            class="btn btn-success btn-sm mt-3 btn-riscatta"
+            class="btn btn-success btn-sm mt-auto btn-riscatta"
             data-id="${c._id}"
             data-nome="${escAttr(c.titolo)}"
             data-costo="${c.costoCrediti}"
