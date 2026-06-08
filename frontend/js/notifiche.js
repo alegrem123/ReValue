@@ -41,11 +41,12 @@ function renderNotifiche(notifiche) {
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c])
     );
   }
+  const escAttr = (s) => escHtml(s).replace(/`/g, '&#96;');
 
   notificheList.innerHTML = notifiche
     .map(
       (n) => `
-    <div class="card notifica-card mb-3 ${n.letta ? 'letta' : 'non-letta'}" id="notifica-${n._id}">
+    <div class="card notifica-card mb-3 ${n.letta ? 'letta' : 'non-letta'}" id="notifica-${escAttr(n._id)}">
       <div class="card-body d-flex justify-content-between align-items-start gap-3">
         <div class="flex-grow-1">
           <p class="mb-1">${escHtml(n.testo)}</p>
@@ -55,7 +56,7 @@ function renderNotifiche(notifiche) {
           !n.letta
             ? `<button
                 class="btn btn-sm btn-outline-success flex-shrink-0 btn-segna-letta"
-                data-id="${n._id}">
+                data-id="${escAttr(n._id)}">
                 Segna letta
               </button>`
             : `<span class="text-success small flex-shrink-0"><i class="bi bi-check2"></i> Letta</span>`

@@ -1,6 +1,6 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
 
 process.env.JWT_SECRET = 'test-secret-key-for-unit-tests';
 
@@ -13,7 +13,7 @@ const Wallet = require('../../src/models/walletModel');
 let mongoServer;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongoServer.getUri());
 });
 
@@ -35,7 +35,7 @@ async function createUser(email) {
     nome: 'Test',
     cognome: 'User',
     email,
-    passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRj75O',
+    passwordHash: 'a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea',
     ruolo: 'user',
   });
 }
@@ -131,5 +131,58 @@ describe('Prenotazioni - vincoli controller', () => {
         error: 'Non puoi prenotare il tuo stesso annuncio',
       })
     );
+  });
+
+  test('salva e restituisce i crediti calcolati al momento della prenotazione', async () => {
+    const donorRegister = await request(app)
+      .post('/api/v1/auth/register')
+      .send({
+        nome: 'Dina',
+        cognome: 'Donor',
+        email: 'crediti-donor@test.com',
+        password: 'password123',
+      });
+    const buyerRegister = await request(app)
+      .post('/api/v1/auth/register')
+      .send({
+        nome: 'Bruno',
+        cognome: 'Buyer',
+        email: 'crediti-buyer@test.com',
+        password: 'password123',
+      });
+
+    expect(donorRegister.statusCode).toBe(201);
+    expect(buyerRegister.statusCode).toBe(201);
+
+    const create = await request(app)
+      .post('/api/v1/annunci')
+      .set('Authorization', `Bearer ${donorRegister.body.token}`)
+      .send({
+        titolo: 'Monitor funzionante',
+        dataScadenza: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        oggetto: {
+          categoria: 'Elettronica',
+          descrizione: 'Monitor in buono stato',
+        },
+      });
+
+    expect(create.statusCode).toBe(201);
+
+    const booking = await request(app)
+      .post('/api/v1/prenotazioni')
+      .set('Authorization', `Bearer ${buyerRegister.body.token}`)
+      .send({ annuncioId: create.body._id });
+
+    expect(booking.statusCode).toBe(201);
+    expect(booking.body.creditiAssegnati).toEqual({
+      donatore: expect.any(Number),
+      acquirente: expect.any(Number),
+    });
+    expect(booking.body.creditiAssegnati.donatore).toBeGreaterThan(20);
+    expect(booking.body.creditiAssegnati.acquirente).toBeGreaterThan(10);
+
+    const saved = await Prenotazione.findById(booking.body.prenotazione._id);
+    expect(saved.creditiDonatore).toBe(booking.body.creditiAssegnati.donatore);
+    expect(saved.creditiAcquirente).toBe(booking.body.creditiAssegnati.acquirente);
   });
 });

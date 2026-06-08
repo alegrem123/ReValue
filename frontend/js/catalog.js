@@ -135,27 +135,32 @@ function getDistanceKm(lat1, lng1, lat2, lng2) {
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function getPublicCoordinates(annuncio) {
+  const lat = annuncio.indirizzo?.latitudineComune ?? annuncio.latitudineComune ?? annuncio.latitudine;
+  const lng = annuncio.indirizzo?.longitudineComune ?? annuncio.longitudineComune ?? annuncio.longitudine;
+  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  return { lat: Number(lat), lng: Number(lng) };
+}
+
 function enrichWithDistance(annunci) {
   if (catalogState.lat == null || catalogState.lng == null) return annunci;
 
-  const userLat = Number(catalogState.lat);
-  const userLng = Number(catalogState.lng);
-  return annunci.map((annuncio) => {
-    if (
-      !Number.isFinite(Number(annuncio.latitudine)) ||
-      !Number.isFinite(Number(annuncio.longitudine))
-    ) {
-      return annuncio;
-    }
+	  const userLat = Number(catalogState.lat);
+	  const userLng = Number(catalogState.lng);
+	  return annunci.map((annuncio) => {
+	    const coords = getPublicCoordinates(annuncio);
+	    if (!coords) {
+	      return annuncio;
+	    }
 
     return {
       ...annuncio,
-      distanza: getDistanceKm(
-        userLat,
-        userLng,
-        Number(annuncio.latitudine),
-        Number(annuncio.longitudine)
-      ),
+	      distanza: getDistanceKm(
+	        userLat,
+	        userLng,
+	        coords.lat,
+	        coords.lng
+	      ),
     };
   });
 }
@@ -271,6 +276,27 @@ function useCurrentPosition() {
   );
 }
 
+function tickCredits() {
+  document.querySelectorAll('.rv-card-credits[data-scadenza]').forEach((el) => {
+    const categoria = el.dataset.categoria;
+    const dataScadenza = el.dataset.scadenza;
+    if (!dataScadenza) return;
+
+    const nuovi = window.calcolaCreditiCard(categoria, dataScadenza);
+    const valueEl = el.querySelector('.rv-credits-value');
+    if (!valueEl) return;
+
+    const attuali = parseInt(valueEl.textContent, 10);
+    if (nuovi !== attuali) {
+      valueEl.textContent = nuovi;
+      el.classList.remove('rv-card-credits--bump');
+      void el.offsetWidth; // reflow per ripartire animazione
+      el.classList.add('rv-card-credits--bump');
+      el.addEventListener('animationend', () => el.classList.remove('rv-card-credits--bump'), { once: true });
+    }
+  });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   window.initCatalogMap?.();
   updateDistanceControl();
@@ -281,4 +307,5 @@ window.addEventListener('DOMContentLoaded', () => {
   catalogFilters?.addEventListener('reset', handleFilterReset);
   usePositionBtn?.addEventListener('click', useCurrentPosition);
   loadCatalogo();
+  setInterval(tickCredits, 60_000);
 });

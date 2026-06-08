@@ -19,6 +19,8 @@ Per dispositivo fisico o Android emulator, imposta `EXPO_PUBLIC_API_BASE_URL` su
 EXPO_PUBLIC_API_BASE_URL=http://192.168.1.20:3000 npm start
 ```
 
+La configurazione e le chiamate API sono centralizzate in `mobile/src/api/client.js`; il client aggiunge il prefisso `/api/v1` e usa `EXPO_PUBLIC_API_BASE_URL` quando non puo' derivare automaticamente l'host Expo.
+
 ## Flussi inclusi
 
 - Login e registrazione con JWT.

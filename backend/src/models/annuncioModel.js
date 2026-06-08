@@ -38,6 +38,43 @@ const oggettoSchema = new Schema(
   { _id: false }
 );
 
+const indirizzoSchema = new Schema(
+  {
+    paese: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    regione: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    provincia: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    comune: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    via: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    latitudineComune: {
+      type: Number,
+    },
+    longitudineComune: {
+      type: Number,
+    },
+  },
+  { _id: false }
+);
+
 const annuncioSchema = new Schema(
   {
     donatore: {
@@ -80,6 +117,10 @@ const annuncioSchema = new Schema(
     longitudine: {
       type: Number,
     },
+    indirizzo: {
+      type: indirizzoSchema,
+      default: () => ({}),
+    },
     oggetto: {
       type: oggettoSchema,
       required: [true, 'oggetto is required'],
@@ -91,9 +132,9 @@ const annuncioSchema = new Schema(
   }
 );
 
-// Indici: filtraggio per stato+isAttivo (catalogo) e scadenza (soft-delete automatico)
-annuncioSchema.index({ stato: 1, isAttivo: 1 });
-annuncioSchema.index({ dataScadenza: 1 });
+// Indici: catalogo pubblico, scadenza (soft-delete automatico) e annunci per donatore
+annuncioSchema.index({ isAttivo: 1, stato: 1, dataScadenza: 1 });
+annuncioSchema.index({ 'oggetto.categoria': 1, stato: 1, isAttivo: 1 });
 annuncioSchema.index({ donatore: 1 });
 
 module.exports = mongoose.models.Annuncio || mongoose.model('Annuncio', annuncioSchema);

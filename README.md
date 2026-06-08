@@ -1,5 +1,7 @@
 # RE-VALUE
 
+[![CI](https://github.com/alegrem123/ReValue/actions/workflows/ci.yml/badge.svg)](https://github.com/alegrem123/ReValue/actions/workflows/ci.yml)
+
 Piattaforma di scambio e donazione di beni usati tra privati.  
 Progetto accademico — Gruppo 21, Ingegneria del Software, UniTN A.A. 2025/2026.
 
@@ -12,7 +14,10 @@ ReValue/
 ├── backend/      # API REST — Node.js + Express + MongoDB
 ├── frontend/     # Web app — HTML/CSS/JS (Bootstrap 5)
 ├── mobile/       # App mobile — React Native (Expo)
-└── docs/         # Documentazione deliverable
+├── docs/         # Materiali di consegna/versionamento documentale
+├── oas3.yaml     # Specifica OpenAPI 3 nel nome usato nelle slide del corso
+├── report/       # Deliverable 4 e PDF finale
+└── apiary.apib   # Versione API Blueprint pubblicabile su Apiary
 ```
 
 ---
@@ -21,10 +26,16 @@ ReValue/
 
 | Tool | Versione minima |
 |------|-----------------|
-| Node.js | 18.18.2 consigliata (vedi `.nvmrc`) |
+| Node.js | 22.x (LTS) |
 | npm | 9.x |
 | Expo CLI | `npx expo` (incluso con Expo SDK 54) |
 | MongoDB Atlas | account con cluster attivo |
+
+La versione Node di riferimento e' dichiarata anche in `.nvmrc`. Con `nvm`:
+
+```bash
+nvm use
+```
 
 ---
 
@@ -34,7 +45,7 @@ ReValue/
 
 ```bash
 cd backend
-npm ci
+npm install            # oppure: npm ci  (installazione riproducibile da lockfile)
 cp .env.example .env   # compila le variabili (vedi sotto)
 ```
 
@@ -46,23 +57,32 @@ cp .env.example .env   # compila le variabili (vedi sotto)
 | `JWT_SECRET` | Chiave segreta per firma JWT | stringa lunga e casuale |
 | `PORT` | Porta del server (default: 3000) | `3000` |
 | `REQUEST_BODY_LIMIT` | Limite body JSON (default: 10mb) | `10mb` |
+| `FRONTEND_URL` | Origin CORS consentita (in produzione) | `http://localhost:3000` |
+| `SMTP_USER` | Utente SMTP per email (Nodemailer) | App Password se Gmail |
+| `SMTP_PASS` | Password SMTP | — |
+| `NODE_ENV` | Ambiente | `development` \| `production` |
 
 ### Avvio
 
 ```bash
-# Produzione
-npm start
+cd backend
+node server.js
+```
 
-# Sviluppo (ricarica automatica non inclusa — usa nodemon se vuoi)
-npm run dev
+In alternativa, tramite gli script npm:
+
+```bash
+npm start       # node server.js (produzione)
+npm run dev     # alias di npm start (ricarica automatica non inclusa — usa nodemon se vuoi)
 ```
 
 Server disponibile su `http://localhost:3000`.
+> Nota: `server.js` esce con errore se `MONGODB_URI` o `JWT_SECRET` non sono configurati in `backend/.env`.
 
 ### Esecuzione test backend
 
 Prerequisiti:
-- Node.js 18.18.2, come indicato nel file `.nvmrc` nella root del repository.
+- Node.js 22.x, come indicato nel file `.nvmrc` nella root del repository.
 - npm 9.x.
 - Dipendenze installate a partire da `backend/package-lock.json`.
 
@@ -84,7 +104,7 @@ I test usano `mongodb-memory-server`: durante l'esecuzione viene avviata una ist
 
 ```bash
 cd backend
-node seeds/<nome-seed>.js
+node seeds/coupons.js   # popola i coupon/premi di default
 ```
 
 ---
@@ -104,8 +124,6 @@ Opzione B — serve statico:
 ```bash
 npx serve frontend
 ```
-
-Il frontend chiama l'API su `/api/...` — assicurati che il backend giri su porta 3000 e che il browser punti allo stesso host (o configura un proxy).
 
 ### Pagine principali
 
@@ -150,8 +168,13 @@ Poi:
 
 ### Configurazione API
 
-L'app punta al backend tramite `API_BASE_URL` definita in `mobile/src/api/apiClient.js`.  
-In sviluppo locale cambia l'URL con l'IP della tua macchina (es. `http://192.168.1.x:3000`).
+Il client mobile e' in `mobile/src/api/client.js`. In sviluppo prova a derivare l'host dal dev server Expo e usa la porta `3000`; in alternativa puoi impostare `EXPO_PUBLIC_API_BASE_URL`.
+
+Per dispositivo fisico o rete LAN:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.x:3000 npm start
+```
 
 ---
 
@@ -161,12 +184,38 @@ In sviluppo locale cambia l'URL con l'IP della tua macchina (es. `http://192.168
 2. Donatore crea annuncio con foto e posizione
 3. Acquirente sfoglia catalogo, prenota annuncio
 4. Donatore mostra QR (da `qr-display`) → Acquirente scansiona (`qr-scan`)
-5. Backend valida QR → trasferisce crediti (50pt ciascuno)
+5. Backend valida QR → accredita i crediti dinamici congelati sulla prenotazione
 6. Acquirente e donatore possono chattare via messaggi integrati
+
+---
+
+## Documentazione e file di supporto
+
+| File | Ruolo | Se rimosso rompe runtime/test? | Valutazione |
+|------|-------|--------------------------------|-------------|
+| `.nvmrc` | Versione Node locale (`22`). | No: CI usa Node 22 in `.github/workflows/ci.yml`; npm continua a funzionare se Node e' corretto. | Da tenere: riduce errori ambientali prima di push/merge. |
+| `.prettierrc` | Convenzioni Prettier per formattazione manuale/editor. | No: non ci sono script `format`/`prettier` nella pipeline corrente. | Non essenziale, ma tenerlo costa zero e mantiene stile condiviso. |
+| `oas3.yaml` | Specifica OpenAPI 3 / Swagger-compatible. | No runtime, ma si rompe la consegna API-first se manca o non e' allineata. | Essenziale per il corso: alimenta Swagger UI ed e' validabile in Swagger Editor/SwaggerHub. |
+| `apiary.apib` | Versione API Blueprint pubblicabile su Apiary. | No runtime. | Utile come documentazione Apiary; non sostituisce OpenAPI 3. |
+
+File generati o temporanei (`*.log`, cache, build output, `.env`, credenziali)
+non vanno committati. I file di report generati (`.aux`, `.toc`, `.out`, `.log`)
+sono utili solo se il team vuole rendere riproducibile localmente la build LaTeX;
+per una consegna pulita bastano sorgente `.tex` e PDF finale.
+
+---
+
+## Evidenze Sprint 2
+
+- Specifica OpenAPI/Swagger: `oas3.yaml`
+- Swagger UI interattiva: `/api-docs/` sul backend deployato, alias versionato `/api/v1/docs/`
+- Documentazione Apiary/API Blueprint: `apiary.apib`
+- Report finale: `report/Deliverable4.tex` e `report/Deliverable4.pdf`
+- Suite automatica: backend Jest/Supertest, smoke test frontend e smoke test mobile.
 
 ---
 
 ## Autori
 
 Gruppo 21 — Università di Trento  
-Alessandro Turri · Alessandro Gremes . Paolo Sarcletti
+Alessandro Turri · Alessandro Gremes · Paolo Sarcletti

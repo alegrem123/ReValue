@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const Wallet = require('../../src/models/walletModel');
 const {
   creaWallet,
@@ -13,7 +13,7 @@ let mongoServer;
 let userId;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongoServer.getUri());
 });
 
@@ -213,6 +213,25 @@ describe('getStorico', () => {
     expect(tx.ammontare).toBeDefined();
     expect(tx.motivo).toBeDefined();
     expect(tx.data).toBeDefined();
+  });
+
+  test('limita lo storico alle transazioni piu recenti', async () => {
+    await Wallet.collection.insertOne({
+      idUtente: userId,
+      bilancio: 0,
+      transazioni: Array.from({ length: 1005 }, (_, i) => ({
+        tipo: 'accredito',
+        ammontare: 1,
+        motivo: `tx ${i}`,
+        data: new Date(2026, 0, 1, 0, 0, i),
+      })),
+    });
+
+    const storico = await getStorico(userId);
+
+    expect(storico).toHaveLength(1000);
+    expect(storico[0].motivo).toBe('tx 5');
+    expect(storico[999].motivo).toBe('tx 1004');
   });
 
   test('throw se wallet non trovato', async () => {

@@ -36,15 +36,32 @@ const segnalazioneSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    stato: {
+      type: String,
+      enum: ['IN_ATTESA', 'RISOLTA', 'ARCHIVIATA'],
+      default: 'IN_ATTESA',
+    },
   },
   {
     versionKey: false,
   }
 );
 
-// OCL #19: segnalante !== segnalato — enforced a livello di service
+segnalazioneSchema.pre('validate', function validateDifferentUsers(next) {
+  if (
+    this.segnalante &&
+    this.segnalato &&
+    this.segnalante.equals(this.segnalato)
+  ) {
+    return next(new Error('Il segnalante non può coincidere con il segnalato (OCL #19)'));
+  }
+  return next();
+});
+
+// OCL #19: segnalante !== segnalato — enforced at schema (pre-validate) and service level
 segnalazioneSchema.index({ segnalato: 1 });
 segnalazioneSchema.index({ annuncio: 1 });
+segnalazioneSchema.index({ stato: 1 });
 
 module.exports =
   mongoose.models.Segnalazione || mongoose.model('Segnalazione', segnalazioneSchema);

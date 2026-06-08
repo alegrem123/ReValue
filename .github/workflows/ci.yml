@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main, preRelease]
+  pull_request:
+    branches: [main, preRelease]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests and coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Backend tests with coverage
+        working-directory: backend
+        run: npm test -- --coverage --coverageReporters=text
+        env:
+          NODE_ENV: test
+
+      - name: Frontend smoke tests
+        run: node --test frontend/tests/*.test.mjs
+
+      - name: Mobile smoke tests
+        run: node --test mobile/tests/*.test.mjs
+
+  smoke-test:
+    name: Smoke Test (Produzione)
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/preRelease'
+
+    steps:
+      - name: Health check backend
+        run: |
+          STATUS=000
+          for ATTEMPT in 1 2 3; do
+            STATUS=$(curl --max-time 20 -s -o /dev/null -w "%{http_code}" https://revalue-backend-84jb.onrender.com/api/v1/annunci) || STATUS=000
+            echo "Attempt $ATTEMPT HTTP status: $STATUS"
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Backend smoke test PASSED"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Backend smoke test FAILED — HTTP $STATUS"
+          exit 1
+
+      - name: Health check frontend
+        run: |
+          STATUS=000
+          for ATTEMPT in 1 2 3; do
+            STATUS=$(curl --max-time 20 -s -o /dev/null -w "%{http_code}" https://revalue-frontend.onrender.com) || STATUS=000
+            echo "Attempt $ATTEMPT HTTP status: $STATUS"
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Frontend smoke test PASSED"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Frontend smoke test FAILED — HTTP $STATUS"
+          exit 1

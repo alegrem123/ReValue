@@ -1,5 +1,7 @@
 const Wallet = require('../models/walletModel');
 
+const MAX_STORICO_TRANSAZIONI = 1000;
+
 async function creaWallet(idUtente) {
   const wallet = new Wallet({ idUtente });
   return wallet.save();
@@ -47,9 +49,19 @@ async function getSaldo(idUtente) {
 }
 
 async function getStorico(idUtente) {
-  const wallet = await Wallet.findOne({ idUtente }, 'transazioni');
+  const wallet = await Wallet.findOne(
+    { idUtente },
+    { transazioni: { $slice: -MAX_STORICO_TRANSAZIONI } }
+  ).lean();
   if (!wallet) throw new Error('Wallet non trovato');
-  return wallet.transazioni;
+  return wallet.transazioni || [];
 }
 
-module.exports = { creaWallet, addPunti, sottraiPunti, getSaldo, getStorico };
+module.exports = {
+  creaWallet,
+  addPunti,
+  sottraiPunti,
+  getSaldo,
+  getStorico,
+  MAX_STORICO_TRANSAZIONI,
+};

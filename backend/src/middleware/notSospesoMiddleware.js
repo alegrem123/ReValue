@@ -1,32 +1,18 @@
-const User = require('../models/userModel');
-
-async function notSospeso(req, res, next) {
+/**
+ * Middleware: blocca utenti sospesi su route che richiedono account attivo.
+ *
+ * Deve essere usato dopo `authenticate`, che popola req.user.isSospeso
+ * con il valore fresco dal DB. La query DB di fallback è irraggiungibile
+ * in quel contesto ed è stata rimossa (OCL #3).
+ */
+function notSospeso(req, res, next) {
   if (!req.user || !req.user.id) {
     return res.status(401).json({ error: 'Autenticazione richiesta' });
   }
-
-  if (req.user.isSospeso === true) {
+  if (req.user.isSospeso) {
     return res.status(403).json({ error: 'Account sospeso' });
   }
-
-  if (req.user.isSospeso === false) {
-    return next();
-  }
-
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ error: 'Utente non trovato' });
-    }
-
-    if (user.isSospeso) {
-      return res.status(403).json({ error: 'Account sospeso' });
-    }
-
-    next();
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
+  next();
 }
 
 module.exports = { notSospeso };

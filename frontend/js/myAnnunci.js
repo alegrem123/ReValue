@@ -12,6 +12,10 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/`/g, '&#96;');
+}
+
 const listEl = document.getElementById('my-annunci-list');
 const loadingEl = document.getElementById('my-annunci-loading');
 const emptyEl = document.getElementById('my-annunci-empty');
@@ -85,33 +89,35 @@ function renderAnnunci() {
   listEl.innerHTML = '';
   emptyEl.classList.toggle('d-none', annunci.length !== 0);
 
-  annunci.forEach((annuncio) => {
-    const foto = annuncio.oggetto?.foto?.[0] || '';
-    const item = document.createElement('article');
+	  annunci.forEach((annuncio) => {
+	    const foto = escapeAttr(annuncio.oggetto?.foto?.[0] || '');
+	    const titolo = escapeHtml(annuncio.titolo) || 'Annuncio senza titolo';
+	    const id = encodeURIComponent(annuncio._id);
+	    const item = document.createElement('article');
     item.className = 'list-group-item p-3';
     item.innerHTML = `
       <div class="d-flex flex-column flex-lg-row gap-3 align-items-lg-center">
         <img
-          src="${foto || 'https://via.placeholder.com/160x120/ced4da/6c757d?text=Foto'}"
-          class="annuncio-thumb rounded-3 flex-shrink-0"
-          alt="Foto annuncio ${annuncio.titolo || ''}"
-        />
+	          src="${foto || 'https://via.placeholder.com/160x120/ced4da/6c757d?text=Foto'}"
+	          class="annuncio-thumb rounded-3 flex-shrink-0"
+	          alt="Foto annuncio ${titolo}"
+	        />
         <div class="flex-grow-1">
           <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
-            <h3 class="h5 fw-bold mb-0">${escapeHtml(annuncio.titolo) || 'Annuncio senza titolo'}</h3>
+	            <h3 class="h5 fw-bold mb-0">${titolo}</h3>
             <span class="badge status-badge ${statusClass(annuncio.stato)}">${escapeHtml(annuncio.stato) || 'N/D'}</span>
           </div>
           <p class="text-muted mb-1">${escapeHtml(annuncio.oggetto?.categoria) || 'Categoria non indicata'}</p>
           <p class="small text-muted mb-0">Scadenza: ${formatDateItalian(annuncio.dataScadenza)}</p>
         </div>
         <div class="d-flex flex-column flex-sm-row gap-2">
-          <a href="annuncio.html?id=${encodeURIComponent(annuncio._id)}" class="btn btn-outline-success btn-sm">
+	          <a href="annuncio.html?id=${id}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-eye me-1"></i>Apri
           </a>
-          <a href="edit-annuncio.html?id=${encodeURIComponent(annuncio._id)}" class="btn btn-outline-secondary btn-sm">
+	          <a href="edit-annuncio.html?id=${id}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-pencil me-1"></i>Modifica
           </a>
-          <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${annuncio._id}">
+	          <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${escapeAttr(annuncio._id)}">
             <i class="bi bi-trash me-1"></i>Elimina
           </button>
         </div>

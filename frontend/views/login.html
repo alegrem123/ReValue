@@ -17,6 +17,7 @@
     integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+"
       crossorigin="anonymous"
     />
+    <link rel="stylesheet" href="../css/style.css" />
 
   </head>
   <body>
@@ -26,7 +27,12 @@
       <div class="auth-wrapper">
         <div class="auth-card">
           <div class="auth-card-header">
-            <div class="auth-logo">RE-VALUE</div>
+            <div class="auth-logo d-inline-flex align-items-center justify-content-center gap-2">
+              <span class="rv-brand-mark" aria-hidden="true">
+                <img src="../assets/logo.png" alt="">
+              </span>
+              RE-VALUE
+            </div>
             <h1 class="h4 mb-1 fw-bold">Accedi</h1>
             <p class="mb-0 small" style="opacity:0.75">Bentornato nella community</p>
           </div>
@@ -148,7 +154,8 @@
           if (!token) return;
           const payload = JSON.parse(atob(token.split('.')[1]));
           if (!payload.exp || Date.now() / 1000 < payload.exp) {
-            window.location.href = '../index.html';
+            window.location.href =
+              payload.ruolo === 'admin' ? 'admin/dashboard.html' : '../index.html';
           }
         } catch {
           /* token malformato, ignora */
@@ -246,12 +253,49 @@
               '<i class="bi bi-check-circle me-2"></i>Accesso effettuato! Reindirizzamento…';
             alertEl.classList.remove('d-none');
 
-            /* Redirect a pagina di origine se passata in query string, altrimenti home */
-            const params = new URLSearchParams(window.location.search);
-            const rawRedirect = params.get('redirect');
-            const redirect = rawRedirect
-              ? rawRedirect.replace(/^\/(?:frontend\/)?views\//, '')
-              : '../index.html';
+            /* Decode ruolo dal JWT per redirect differenziato */
+            let ruolo = 'user';
+            try {
+              const payload = JSON.parse(atob(response.data.token.split('.')[1]));
+              ruolo = payload.ruolo || 'user';
+            } catch { /* token malformato, fallback a user */ }
+
+            function safeRedirect(rawRedirect) {
+              if (!rawRedirect) return '../index.html';
+              const cleaned = rawRedirect.replace(/^\/(?:frontend\/)?views\//, '');
+              if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith('//')) return '../index.html';
+              if (cleaned.includes('..') || cleaned.startsWith('/')) return '../index.html';
+              const allowed = new Set([
+                'catalog.html',
+                'annuncio.html',
+                'create-annuncio.html',
+                'edit-annuncio.html',
+                'profile.html',
+                'wallethistory.html',
+                'premi.html',
+                'my-premi.html',
+                'my-annunci.html',
+                'mybookings.html',
+                'messaggi.html',
+                'chat.html',
+                'qr-display.html',
+                'qr-scan.html',
+                'segnala.html',
+                'my-reports.html',
+                'notifiche.html',
+                'public-profile.html',
+              ]);
+              const fileName = cleaned.split('?')[0];
+              return allowed.has(fileName) ? cleaned : '../index.html';
+            }
+
+            let redirect;
+            if (ruolo === 'admin') {
+              redirect = 'admin/dashboard.html';
+            } else {
+              const params = new URLSearchParams(window.location.search);
+              redirect = safeRedirect(params.get('redirect'));
+            }
             setTimeout(() => {
               window.location.href = redirect;
             }, 1000);
@@ -271,8 +315,5 @@
         document.getElementById(id).addEventListener('blur', validate);
       });
     </script>
-  <!-- impeccable-live-start -->
-<script src="http://localhost:8400/live.js"></script>
-<!-- impeccable-live-end -->
 </body>
 </html>

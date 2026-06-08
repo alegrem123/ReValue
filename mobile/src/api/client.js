@@ -1,14 +1,56 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 const TOKEN_KEY = 'revalue.jwt';
 const USER_KEY = 'revalue.user';
-const DEFAULT_API_BASE_URL = 'http://127.0.0.1:3000';
+const DEFAULT_API_BASE_URL = 'https://revalue-backend-84jb.onrender.com';
 
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
+function cleanApiBase(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function resolveApiBase() {
+  const explicitBase = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (explicitBase) return cleanApiBase(explicitBase);
+
+  if (__DEV__) {
+    const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
+    if (hostUri) {
+      const host = hostUri.split(':')[0];
+      if (host === '127.0.0.1' || host === 'localhost') {
+        return cleanApiBase('http://localhost:3000');
+      }
+      return cleanApiBase(`http://${host}:3000`);
+    }
+  }
+
+  return cleanApiBase(DEFAULT_API_BASE_URL);
+}
+
+export const API_BASE_URL = resolveApiBase();
+const API_PREFIX = '/api/v1';
+
+function normalizeEndpoint(endpoint) {
+  if (endpoint.startsWith(`${API_PREFIX}/`)) return endpoint;
+  if (endpoint === '/api') return API_PREFIX;
+  if (endpoint.startsWith('/api/')) return `${API_PREFIX}${endpoint.slice(4)}`;
+  return endpoint;
+}
 
 export async function getToken() {
   return AsyncStorage.getItem(TOKEN_KEY);
+}
+
+export async function getUserId() {
+  try {
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (!token) return null;
+    let b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return JSON.parse(atob(b64)).id || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function setToken(token) {
@@ -61,7 +103,7 @@ export async function apiRequest(endpoint, { method = 'GET', body, auth = true }
 
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
       method,
       headers,
       body: hasBody ? JSON.stringify(body) : undefined,
@@ -89,11 +131,17 @@ export async function apiRequest(endpoint, { method = 'GET', body, auth = true }
     await clearSession();
   }
 
+  const normalized = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'ok')
+    ? data
+    : null;
+  const ok = normalized ? normalized.ok && response.ok : response.ok;
+  const payload = normalized && normalized.ok ? normalized.data : data;
+
   return {
-    ok: response.ok,
+    ok,
     status: response.status,
-    data,
-    error: response.ok ? null : data?.error || data?.message || `Errore ${response.status}`,
+    data: payload,
+    error: ok ? null : normalized?.message || data?.message || data?.error || `Errore ${response.status}`,
   };
 }
 
@@ -106,6 +154,9 @@ export const api = {
   },
   put(endpoint, body, opts = {}) {
     return apiRequest(endpoint, { ...opts, method: 'PUT', body });
+  },
+  patch(endpoint, body, opts = {}) {
+    return apiRequest(endpoint, { ...opts, method: 'PATCH', body });
   },
   delete(endpoint, opts = {}) {
     return apiRequest(endpoint, { ...opts, method: 'DELETE' });

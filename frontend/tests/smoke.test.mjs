@@ -113,6 +113,18 @@ describe('frontend smoke', () => {
     assert.match(mybookings, /bi-qr-code-scan/);
   });
 
+  it('il valore crediti web si aggiorna e mostra il valore acquirente dopo QR', () => {
+    const catalog = readFileSync(join(root, 'js/catalog.js'), 'utf8');
+    const detail = readFileSync(join(root, 'js/annuncio.js'), 'utf8');
+    const qrScan = readFileSync(join(root, 'js/qr-scan.js'), 'utf8');
+
+    assert.match(catalog, /setInterval\(tickCredits, 60_000\)/);
+    assert.match(detail, /function updateDisplayedCredits\(\)/);
+    assert.match(detail, /setInterval\(updateDisplayedCredits, 60_000\)/);
+    assert.match(qrScan, /function normalizeCreditiAccreditati\(value\)/);
+    assert.match(qrScan, /value\.acquirente/);
+  });
+
   it('la mappa catalogo usa pin custom e popup dettagliati', () => {
     const map = readFileSync(join(root, 'js/map.js'), 'utf8');
     const css = readFileSync(join(root, 'css/style.css'), 'utf8');

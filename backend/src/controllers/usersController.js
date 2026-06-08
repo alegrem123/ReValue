@@ -10,6 +10,7 @@ function sanitizePublicProfile(user) {
     cognome,
     citta,
     descrizione,
+    fotoProfilo,
     createdAt,
   } = user;
 
@@ -19,12 +20,32 @@ function sanitizePublicProfile(user) {
     cognome,
     citta,
     descrizione,
+    fotoProfilo,
     createdAt,
   };
 }
 
+function sanitizePrivateProfile(user) {
+  if (!user) return null;
+  return {
+    idUtente: user.idUtente,
+    nome: user.nome,
+    cognome: user.cognome,
+    email: user.email,
+    ruolo: user.ruolo,
+    malusCount: user.malusCount,
+    isSospeso: user.isSospeso,
+    telefono: user.telefono,
+    citta: user.citta,
+    descrizione: user.descrizione,
+    fotoProfilo: user.fotoProfilo,
+    saldo: user.saldo,
+    createdAt: user.createdAt,
+  };
+}
+
 function buildUpdatePayload(body) {
-  const allowedFields = ['nome', 'cognome', 'telefono', 'citta', 'descrizione'];
+  const allowedFields = ['nome', 'cognome', 'telefono', 'citta', 'descrizione', 'fotoProfilo'];
   return allowedFields.reduce((acc, field) => {
     if (Object.prototype.hasOwnProperty.call(body, field)) {
       acc[field] =
@@ -52,7 +73,17 @@ async function updateProfile(req, res) {
 
     return res.status(200).json({ user: sanitizePublicProfile(user) });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+async function getMe(req, res) {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+    return res.status(200).json({ user: sanitizePrivateProfile(user) });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
@@ -73,14 +104,23 @@ async function getPublicProfile(req, res) {
       return res.status(404).json({ error: 'Profilo utente non trovato' });
     }
 
-    const [positive, negative, recentReviews] = await Promise.all([
-      Recensione.countDocuments({ recensito: user._id, positiva: true }),
-      Recensione.countDocuments({ recensito: user._id, positiva: false }),
+    const [conteggi, recentReviews] = await Promise.all([
+      Recensione.aggregate([
+        { $match: { recensito: user._id } },
+        {
+          $group: {
+            _id: null,
+            positive: { $sum: { $cond: ['$positiva', 1, 0] } },
+            negative: { $sum: { $cond: ['$positiva', 0, 1] } },
+          },
+        },
+      ]),
       Recensione.find({ recensito: user._id })
         .sort({ data: -1 })
         .limit(5)
         .populate('recensore', 'nome cognome'),
     ]);
+    const { positive = 0, negative = 0 } = conteggi[0] || {};
 
     return res.status(200).json({
       user: sanitizePublicProfile(user),
@@ -103,11 +143,36 @@ async function getPublicProfile(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+async function updatePushToken(req, res) {
+  try {
+    const { expoPushToken } = req.body || {};
+    if (
+      typeof expoPushToken !== 'string' ||
+      !/^ExponentPushToken\[[A-Za-z0-9_-]+\]$|^ExpoPushToken\[[A-Za-z0-9_-]+\]$/.test(expoPushToken.trim())
+    ) {
+      return res.status(400).json({ error: 'expoPushToken non valido' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { expoPushToken: expoPushToken.trim() },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+    return res.status(200).json({ user: sanitizePublicProfile(user) });
+  } catch (err) {
+    return res.status(500).json({ error: 'Errore interno del server' });
   }
 }
 
 module.exports = {
   updateProfile,
+  updatePushToken,
   getPublicProfile,
+  getMe,
 };

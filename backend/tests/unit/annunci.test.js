@@ -1,13 +1,18 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
+const request = require('supertest');
+const app = require('../../app');
 const Annuncio = require('../../src/models/annuncioModel');
 const Utente = require('../../src/models/userModel');
+const { signToken } = require('../../src/utils/jwt');
+
+process.env.JWT_SECRET = 'test-secret-key-for-unit-tests';
 
 let mongoServer;
 
 // Setup e teardown
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   const mongoUri = mongoServer.getUri();
   await mongoose.connect(mongoUri);
 });
@@ -26,7 +31,7 @@ beforeEach(async () => {
 function createTestUser(dati) {
   return Utente.create({
     idUtente: new mongoose.Types.ObjectId().toString(),
-    passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRj75O',
+    passwordHash: 'a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea',
     ruolo: 'user',
     ...dati,
   });
@@ -164,8 +169,10 @@ describe('Annunci - CRUD Operations', () => {
 
   describe('UPDATE', () => {
     let annuncio;
+    let tokenDonatore;
 
     beforeEach(async () => {
+      tokenDonatore = signToken({ id: donatore._id.toString(), ruolo: donatore.ruolo });
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       annuncio = await Annuncio.create({
         donatore: donatore._id,
@@ -193,13 +200,15 @@ describe('Annunci - CRUD Operations', () => {
     });
 
     test('Rifiuta modifica se stato non è DISPONIBILE', async () => {
-      annuncio.stato = 'PRENOTATO';
-      await annuncio.save();
+      await Annuncio.findByIdAndUpdate(annuncio._id, { stato: 'PRENOTATO' });
 
-      // Simulazione del controllo logico di business
-      if (annuncio.stato !== 'DISPONIBILE') {
-        expect(annuncio.stato).not.toBe('DISPONIBILE');
-      }
+      const res = await request(app)
+        .put(`/api/v1/annunci/${annuncio._id}`)
+        .set('Authorization', `Bearer ${tokenDonatore}`)
+        .send({ titolo: 'Nuovo titolo' });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBeDefined();
     });
 
     test('Aggiorna correttamente la data di scadenza', async () => {
@@ -216,8 +225,10 @@ describe('Annunci - CRUD Operations', () => {
 
   describe('DELETE (Soft-Delete)', () => {
     let annuncio;
+    let tokenDonatore;
 
     beforeEach(async () => {
+      tokenDonatore = signToken({ id: donatore._id.toString(), ruolo: donatore.ruolo });
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       annuncio = await Annuncio.create({
         donatore: donatore._id,
@@ -248,11 +259,14 @@ describe('Annunci - CRUD Operations', () => {
     });
 
     test('Rifiuta soft-delete se stato non è DISPONIBILE', async () => {
-      annuncio.stato = 'PRENOTATO';
-      await annuncio.save();
+      await Annuncio.findByIdAndUpdate(annuncio._id, { stato: 'PRENOTATO' });
 
-      // Controllo logico
-      expect(annuncio.stato).not.toBe('DISPONIBILE');
+      const res = await request(app)
+        .delete(`/api/v1/annunci/${annuncio._id}`)
+        .set('Authorization', `Bearer ${tokenDonatore}`);
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBeDefined();
     });
   });
 });
@@ -363,6 +377,39 @@ describe('Annunci - Filtri', () => {
     });
     expect(result).toHaveLength(1);
     expect(result[0].titolo).toBe('Divano rosso');
+  });
+
+  test('Catalogo API pagina e ordina lato backend senza filtri in-memory', async () => {
+    const res = await request(app).get('/api/v1/annunci?categoria=Mobili&page=1&limit=1&ordinamento=dataScadenza_asc');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].titolo).toBe('Divano rosso');
+    expect(res.body.data[0].latitudine).toBeUndefined();
+    expect(res.body.pagination).toEqual({
+      page: 1,
+      limit: 1,
+      total: 2,
+      pages: 2,
+    });
+  });
+
+  test('Catalogo API rifiuta parametri data scadenza non validi', async () => {
+    const dopo = await request(app).get('/api/v1/annunci?scadenzaDopo=not-a-date');
+    expect(dopo.status).toBe(400);
+    expect(dopo.body).toMatchObject({
+      ok: false,
+      error: 'BAD_REQUEST',
+      message: 'Parametro scadenzaDopo non valido',
+    });
+
+    const prima = await request(app).get('/api/v1/annunci?scadenzaPrima=not-a-date');
+    expect(prima.status).toBe(400);
+    expect(prima.body).toMatchObject({
+      ok: false,
+      error: 'BAD_REQUEST',
+      message: 'Parametro scadenzaPrima non valido',
+    });
   });
 });
 

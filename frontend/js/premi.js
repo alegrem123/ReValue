@@ -174,7 +174,7 @@ function escHtml(s) {
 }
 
 function escAttr(s) {
-  return String(s ?? '').replace(/"/g, '&quot;');
+  return escHtml(s).replace(/`/g, '&#96;');
 }
 
 /* ── Event listeners filtri ── */

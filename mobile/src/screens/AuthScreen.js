@@ -4,6 +4,7 @@ import { api, setStoredUser, setToken } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { TextField } from '../components/TextField';
+import { registerForPushNotificationsAsync } from '../services/pushRegistration';
 import { colors } from '../theme/colors';
 
 export function AuthScreen({ onAuthenticated }) {
@@ -41,16 +42,21 @@ export function AuthScreen({ onAuthenticated }) {
 
     await setToken(response.data.token);
     await setStoredUser(response.data.user);
+    void registerForPushNotificationsAsync();
     onAuthenticated(response.data.user);
   }
 
   return (
     <Screen
       title="RE-VALUE"
-      subtitle="Accedi all'app per pubblicare annunci, prenotare oggetti e seguire il tuo wallet."
+      subtitle="Dai nuova vita ai tuoi oggetti. Accedi per pubblicare, prenotare e usare i crediti."
+      variant="gradient"
     >
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{isRegister ? 'Crea account' : 'Accedi'}</Text>
+        <Text style={styles.cardTitle}>{isRegister ? 'Crea il tuo account' : 'Accedi'}</Text>
+        <Text style={styles.cardSubtitle}>
+          {isRegister ? 'Unisciti alla community locale' : 'Bentornato nella community'}
+        </Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {isRegister ? (
           <View style={styles.row}>
@@ -81,10 +87,11 @@ export function AuthScreen({ onAuthenticated }) {
           secureTextEntry
           onChangeText={(value) => setField('password', value)}
         />
-        <Button title={isRegister ? 'Registrati' : 'Accedi'} onPress={submit} loading={loading} />
+        <Button title={isRegister ? 'Registrati' : 'Accedi'} onPress={submit} loading={loading} fullWidth />
         <Button
           title={isRegister ? 'Ho già un account' : 'Crea un account'}
           variant="secondary"
+          fullWidth
           onPress={() => {
             setError('');
             setMode(isRegister ? 'login' : 'register');
@@ -98,16 +105,28 @@ export function AuthScreen({ onAuthenticated }) {
 const styles = StyleSheet.create({
   card: {
     gap: 14,
-    borderRadius: 8,
+    borderRadius: 20,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    elevation: 5,
+    marginHorizontal: 4,
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: '800',
     color: colors.text,
+    letterSpacing: 0,
+  },
+  cardSubtitle: {
+    marginTop: -8,
+    color: colors.muted,
+    fontSize: 14,
   },
   row: {
     flexDirection: 'row',

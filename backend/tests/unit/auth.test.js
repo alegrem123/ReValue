@@ -1,16 +1,26 @@
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
+const express = require('express');
+const request = require('supertest');
 const User = require('../../src/models/userModel');
-const { hashPassword } = require('../../src/utils/password');
+const { hashPassword, comparePassword } = require('../../src/utils/password');
+
+jest.mock('../../src/services/emailService', () => ({
+  sendWelcome: jest.fn(() => Promise.resolve({ skipped: true })),
+  sendBookingConfirmation: jest.fn(() => Promise.resolve({ skipped: true })),
+  sendSwapCompleted: jest.fn(() => Promise.resolve({ skipped: true })),
+}));
+
+const emailService = require('../../src/services/emailService');
 const { register, login } = require('../../src/controllers/authController');
-const { verifyToken } = require('../../src/utils/jwt');
+const { authLimiter } = require('../../src/middleware/rateLimitMiddleware');
+const { verifyToken, signToken } = require('../../src/utils/jwt');
 
 let mongoServer;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'test-jwt-secret';
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongoServer.getUri());
 });
 
@@ -21,6 +31,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await User.deleteMany({});
+  jest.clearAllMocks();
 });
 
 function createMockRes() {
@@ -54,6 +65,12 @@ describe('Auth flow', () => {
       email: 'mario.rossi@example.com',
     });
     expect(response.user.passwordHash).toBeUndefined();
+    expect(emailService.sendWelcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nome: 'Mario',
+        email: 'mario.rossi@example.com',
+      })
+    );
   });
 
   test('register fail se email già esiste', async () => {
@@ -111,6 +128,46 @@ describe('Auth flow', () => {
     const response = res.json.mock.calls[0][0];
     expect(response.token).toBeDefined();
     expect(response.user).toMatchObject({ nome: 'Luca', cognome: 'Bianchi' });
+  });
+
+  test('password hash usa SHA-256 salato', async () => {
+    const hashA = await hashPassword('Password123!');
+    const hashB = await hashPassword('Password123!');
+
+    expect(hashA).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/i);
+    expect(hashB).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/i);
+    expect(hashA).not.toBe(hashB);
+    await expect(comparePassword('Password123!', hashA)).resolves.toBe(true);
+  });
+
+  test('login migra hash SHA-256 legacy a hash salato', async () => {
+    const password = 'Password123!';
+    const legacyHash = 'a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea';
+    const user = new User({
+      idUtente: new mongoose.Types.ObjectId().toString(),
+      nome: 'Legacy',
+      cognome: 'User',
+      email: 'legacy.user@example.com',
+      passwordHash: legacyHash,
+      ruolo: 'user',
+    });
+    await user.save();
+
+    const req = {
+      body: {
+        email: 'legacy.user@example.com',
+        password,
+      },
+    };
+    const res = createMockRes();
+
+    await login(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const updated = await User.findById(user._id);
+    expect(updated.passwordHash).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/i);
+    expect(updated.passwordHash).not.toBe(legacyHash);
+    await expect(comparePassword(password, updated.passwordHash)).resolves.toBe(true);
   });
 
   test('login fail con password errata', async () => {
@@ -172,15 +229,29 @@ describe('Auth flow', () => {
   });
 });
 
+describe('Auth rate limiter', () => {
+  test('limita il sesto tentativo sullo stesso identificatore anche in NODE_ENV=test', async () => {
+    const app = express();
+    app.use(express.json());
+    app.post('/api/v1/auth/login', authLimiter, (req, res) => res.status(200).json({ ok: true }));
+
+    const email = 'limited@example.com';
+    await authLimiter.resetKey(`POST:/api/v1/auth/login:${email}`);
+
+    for (let i = 0; i < 5; i += 1) {
+      const res = await request(app).post('/api/v1/auth/login').send({ email });
+      expect(res.statusCode).toBe(200);
+    }
+
+    const limited = await request(app).post('/api/v1/auth/login').send({ email });
+    expect(limited.statusCode).toBe(429);
+    expect(limited.body.error).toMatch(/troppi tentativi/i);
+  });
+});
+
 describe('JWT utility', () => {
   test('verifyToken fallisce per JWT scaduto', async () => {
-    const token = jwt.sign(
-      { id: 'test-id', ruolo: 'user' },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: '-1s',
-      }
-    );
+    const token = signToken({ id: 'test-id', ruolo: 'user' }, { expiresIn: '-1s' });
 
     expect(() => verifyToken(token)).toThrow('Token expired');
   });

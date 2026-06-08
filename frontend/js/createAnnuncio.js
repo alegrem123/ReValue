@@ -172,7 +172,7 @@ function readFileAsDataUrl(file) {
 function renderPreviews() {
   previewGrid.innerHTML = photoBase64.map((src, index) => `
     <div class="col-4">
-      <img src="${src}" alt="Anteprima foto ${index + 1}" class="photo-preview rounded-3 border" />
+      <img src="${String(src).replace(/"/g, '&quot;')}" alt="Anteprima foto ${index + 1}" class="photo-preview rounded-3 border" />
     </div>
   `).join('');
 }

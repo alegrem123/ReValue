@@ -1,0 +1,446 @@
+const Annuncio = require('../models/annuncioModel');
+const Prenotazione = require('../models/prenotazioneModel');
+
+class AnnunciError extends Error {
+  constructor(statusCode, message) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
+function normalizeDimensione(value) {
+  if (value == null) return 1;
+  const parsed = parseFloat(value);
+  if (!Number.isNaN(parsed)) return parsed;
+
+  const normalized = String(value).trim().toLowerCase();
+  switch (normalized) {
+    case 'piccolo':
+    case 'small':
+    case 's':
+      return 1;
+    case 'medio':
+    case 'medium':
+    case 'm':
+      return 2;
+    case 'grande':
+    case 'large':
+    case 'l':
+      return 3;
+    case 'molto grande':
+    case 'extra large':
+    case 'xl':
+    case 'xlarge':
+      return 4;
+    default:
+      return 1;
+  }
+}
+
+function giorniRimanenti(dataScadenza) {
+  const diff = new Date(dataScadenza).getTime() - Date.now();
+  return Math.max(0, diff / (1000 * 60 * 60 * 24));
+}
+
+function calcolaValoreAnnuncio(annuncio) {
+  return normalizeDimensione(annuncio.oggetto?.dimensioni) * giorniRimanenti(annuncio.dataScadenza);
+}
+
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function buildCatalogFilter(query) {
+  const { categoria, dimensione, materiale, scadenzaDopo, scadenzaPrima } = query;
+  const filtro = { isAttivo: true, stato: 'DISPONIBILE' };
+
+  if (categoria) filtro['oggetto.categoria'] = String(categoria);
+  if (dimensione) filtro['oggetto.dimensioni'] = String(dimensione);
+  if (materiale) filtro['oggetto.materiale'] = String(materiale);
+
+  if (scadenzaDopo || scadenzaPrima) {
+    filtro.dataScadenza = {};
+    if (scadenzaDopo) {
+      const d = new Date(scadenzaDopo);
+      if (Number.isNaN(d.getTime())) {
+        throw new AnnunciError(400, 'Parametro scadenzaDopo non valido');
+      }
+      filtro.dataScadenza.$gte = d;
+    }
+    if (scadenzaPrima) {
+      const d = new Date(scadenzaPrima);
+      if (Number.isNaN(d.getTime())) {
+        throw new AnnunciError(400, 'Parametro scadenzaPrima non valido');
+      }
+      filtro.dataScadenza.$lte = d;
+    }
+  }
+
+  return filtro;
+}
+
+function parsePagination(query) {
+  const page = Math.max(1, parseInt(query.page, 10) || 1);
+  const limit = Math.max(1, Math.min(100, parseInt(query.limit, 10) || 10));
+  return { page, limit, skip: (page - 1) * limit };
+}
+
+function resolveSort(ordinamento) {
+  const sortKey = String(ordinamento || 'dataScadenza_asc').toLowerCase();
+  if (sortKey === 'valore_asc' || sortKey === 'valore_desc') {
+    return { sortKey, dbSort: null };
+  }
+  return {
+    sortKey,
+    dbSort: sortKey === 'dataScadenza_desc' ? { dataScadenza: -1 } : { dataScadenza: 1 },
+  };
+}
+
+async function getBookedAnnuncioIdsForUser(userId, annuncioIds) {
+  if (!userId || annuncioIds.length === 0) return new Set();
+
+  const prenotazioni = await Prenotazione.find(
+    {
+      acquirente: userId,
+      annuncio: { $in: annuncioIds },
+      stato: { $in: ['ATTIVA', 'COMPLETATA'] },
+    },
+    'annuncio'
+  );
+
+  return new Set(prenotazioni.map((prenotazione) => prenotazione.annuncio.toString()));
+}
+
+function isDonatoreOfAnnuncio(annuncio, userId) {
+  if (!userId || !annuncio?.donatore) return false;
+  const donatoreId = annuncio.donatore._id ?? annuncio.donatore;
+  return donatoreId.toString() === userId;
+}
+
+function removeExactCoordinates(annuncio) {
+  const indirizzo = annuncio.indirizzo || {};
+
+  if (
+    Number.isFinite(Number(indirizzo.latitudineComune)) &&
+    Number.isFinite(Number(indirizzo.longitudineComune))
+  ) {
+    annuncio.latitudine = indirizzo.latitudineComune;
+    annuncio.longitudine = indirizzo.longitudineComune;
+    annuncio.posizioneApprossimata = true;
+  } else {
+    delete annuncio.latitudine;
+    delete annuncio.longitudine;
+  }
+
+  if (annuncio.indirizzo) {
+    delete annuncio.indirizzo.via;
+    delete annuncio.indirizzo.latitudineComune;
+    delete annuncio.indirizzo.longitudineComune;
+  }
+
+  return annuncio;
+}
+
+function normalizeIndirizzo(indirizzo = {}) {
+  const normalized = {
+    paese: String(indirizzo.paese || '').trim(),
+    regione: String(indirizzo.regione || '').trim(),
+    provincia: String(indirizzo.provincia || '').trim(),
+    comune: String(indirizzo.comune || '').trim(),
+    via: String(indirizzo.via || '').trim(),
+  };
+
+  if (indirizzo.latitudineComune !== undefined) {
+    normalized.latitudineComune = Number(indirizzo.latitudineComune);
+  }
+  if (indirizzo.longitudineComune !== undefined) {
+    normalized.longitudineComune = Number(indirizzo.longitudineComune);
+  }
+
+  return normalized;
+}
+
+async function applyCoordinatePrivacy(annunci, user) {
+  const bookedAnnuncioIds = user?.ruolo === 'admin'
+    ? new Set()
+    : await getBookedAnnuncioIdsForUser(user?.id, annunci.map((annuncio) => annuncio._id));
+
+  return annunci.map((annuncio) => {
+    const dati = typeof annuncio.toObject === 'function' ? annuncio.toObject() : { ...annuncio };
+    const canSeeExactCoordinates = user && (
+      user.ruolo === 'admin' ||
+      isDonatoreOfAnnuncio(annuncio, user.id) ||
+      bookedAnnuncioIds.has(annuncio._id.toString())
+    );
+
+    return canSeeExactCoordinates ? dati : removeExactCoordinates(dati);
+  });
+}
+
+function hasDistanceFilter(query) {
+  return Boolean(query.lat && query.lng && query.raggio);
+}
+
+/**
+ * Aggregation pipeline per ordinamento per valore (RNF1).
+ * Calcola `valore = dimensioniNum * giorniRimanenti` lato MongoDB ed esegue
+ * sort + paginazione a livello DB, evitando il caricamento in memoria di
+ * tutti i documenti (limite del precedente approccio in-memory).
+ *
+ * Limite noto: non combinabile con filtro haversine (distanza geografica);
+ * in quel caso si ricade sul path in-memory che post-filtra per raggio.
+ */
+async function getCatalogoPerValore(filtro, skip, limit, sortKey) {
+  const now = new Date();
+  const DAY_MS = 1000 * 60 * 60 * 24;
+  const sortDir = sortKey === 'valore_asc' ? 1 : -1;
+
+  // Replica di normalizeDimensione() in linguaggio aggregation MongoDB.
+  const dimensioniNumExpr = {
+    $let: {
+      vars: {
+        dim: { $toLower: { $trim: { input: { $ifNull: ['$oggetto.dimensioni', ''] } } } },
+      },
+      in: {
+        $switch: {
+          branches: [
+            { case: { $in: ['$$dim', ['piccolo', 'small', 's']] }, then: 1 },
+            { case: { $in: ['$$dim', ['medio', 'medium', 'm']] }, then: 2 },
+            { case: { $in: ['$$dim', ['grande', 'large', 'l']] }, then: 3 },
+            { case: { $in: ['$$dim', ['molto grande', 'extra large', 'xl', 'xlarge']] }, then: 4 },
+          ],
+          // Stringa numerica (es. "2.5") → conversione diretta; fallback a 1
+          default: {
+            $convert: { input: { $ifNull: ['$oggetto.dimensioni', '1'] }, to: 'double', onError: 1, onNull: 1 },
+          },
+        },
+      },
+    },
+  };
+
+  const giorniRimanentiExpr = {
+    $max: [0, { $divide: [{ $subtract: ['$dataScadenza', now] }, DAY_MS] }],
+  };
+
+  const [result] = await Annuncio.aggregate([
+    { $match: filtro },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'donatore',
+        foreignField: '_id',
+        as: 'donatore',
+      },
+    },
+    { $unwind: { path: '$donatore', preserveNullAndEmptyArrays: true } },
+    { $project: { 'donatore.email': 0, 'donatore.passwordHash': 0, 'donatore.__v': 0 } },
+    { $addFields: { _valore: { $multiply: [dimensioniNumExpr, giorniRimanentiExpr] } } },
+    { $sort: { _valore: sortDir } },
+    {
+      $facet: {
+        data: [{ $skip: skip }, { $limit: limit }, { $project: { _valore: 0, __v: 0 } }],
+        count: [{ $count: 'total' }],
+      },
+    },
+  ]);
+
+  return {
+    annunci: result?.data ?? [],
+    total: result?.count?.[0]?.total ?? 0,
+  };
+}
+
+async function getCatalogo(query, user) {
+  const filtro = buildCatalogFilter(query);
+  const { page, limit, skip } = parsePagination(query);
+  const { sortKey, dbSort } = resolveSort(query.ordinamento);
+  const isValoreSort = sortKey === 'valore_asc' || sortKey === 'valore_desc';
+  const needsHaversine = hasDistanceFilter(query);
+
+  // Fast path: sort nativo DB, nessun filtro geografico
+  if (!isValoreSort && !needsHaversine) {
+    const [annunci, total] = await Promise.all([
+      Annuncio.find(filtro, '-__v')
+        .populate('donatore', 'nome cognome')
+        .sort(dbSort)
+        .skip(skip)
+        .limit(limit),
+      Annuncio.countDocuments(filtro),
+    ]);
+
+    return {
+      data: await applyCoordinatePrivacy(annunci, user),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  // Valore sort senza haversine: aggregation pipeline (sort + paginazione DB-side)
+  if (isValoreSort && !needsHaversine) {
+    const { annunci, total } = await getCatalogoPerValore(filtro, skip, limit, sortKey);
+    return {
+      data: await applyCoordinatePrivacy(annunci, user),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  // Path in-memory: haversine post-filtra per raggio geografico.
+  // Il filtro di distanza riduce il dataset prima della paginazione;
+  // il caricamento integrale è accettabile per ricerche geografiche circoscritte.
+  let dbQuery = Annuncio.find(filtro, '-__v').populate('donatore', 'nome cognome');
+  if (dbSort) dbQuery = dbQuery.sort(dbSort);
+  let annunci = await dbQuery;
+
+  if (needsHaversine) {
+    const userLat = parseFloat(query.lat);
+    const userLng = parseFloat(query.lng);
+    const maxDist = parseFloat(query.raggio);
+    annunci = annunci.filter((annuncio) => {
+      if (annuncio.latitudine == null || annuncio.longitudine == null) return false;
+      return haversineDistance(userLat, userLng, annuncio.latitudine, annuncio.longitudine) <= maxDist;
+    });
+  }
+
+  if (isValoreSort) {
+    annunci = annunci
+      .map((annuncio) => ({ annuncio, valore: calcolaValoreAnnuncio(annuncio) }))
+      .sort((a, b) => (sortKey === 'valore_asc' ? a.valore - b.valore : b.valore - a.valore))
+      .map((item) => item.annuncio);
+  }
+
+  const total = annunci.length;
+  const paginatedAnnunci = annunci.slice(skip, skip + limit);
+
+  return {
+    data: await applyCoordinatePrivacy(paginatedAnnunci, user),
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+  };
+}
+
+async function getAnnuncio(id, user) {
+  const annuncio = await Annuncio.findById(id).populate('donatore', 'nome cognome');
+  if (!annuncio || !annuncio.isAttivo) throw new AnnunciError(404, 'Annuncio non trovato');
+
+  const dati = annuncio.toObject();
+  const canSeeExactCoordinates = user && (
+    user.ruolo === 'admin' ||
+    isDonatoreOfAnnuncio(annuncio, user.id) ||
+    await Prenotazione.exists({
+      annuncio: annuncio._id,
+      acquirente: user.id,
+      stato: { $in: ['ATTIVA', 'COMPLETATA'] },
+    })
+  );
+
+  return canSeeExactCoordinates ? dati : removeExactCoordinates(dati);
+}
+
+async function creaAnnuncio(body, user) {
+  if (user?.ruolo === 'admin') {
+    throw new AnnunciError(403, 'Gli amministratori non possono pubblicare annunci');
+  }
+
+  const { titolo, dataScadenza, latitudine, longitudine, indirizzo, oggetto } = body;
+  if (!titolo || !dataScadenza || !oggetto) {
+    throw new AnnunciError(400, 'titolo, dataScadenza e oggetto sono obbligatori');
+  }
+  if (new Date(dataScadenza) <= new Date()) {
+    throw new AnnunciError(400, 'dataScadenza deve essere nel futuro (OCL #5)');
+  }
+
+  return Annuncio.create({
+    donatore: user.id,
+    titolo,
+    dataScadenza,
+    latitudine,
+    longitudine,
+    indirizzo: normalizeIndirizzo(indirizzo),
+    oggetto,
+  });
+}
+
+async function modificaAnnuncio(id, body, user) {
+  const annuncio = await Annuncio.findById(id);
+  if (!annuncio || !annuncio.isAttivo) throw new AnnunciError(404, 'Annuncio non trovato');
+  if (annuncio.donatore.toString() !== user.id) throw new AnnunciError(403, 'Non autorizzato');
+  if (annuncio.stato !== 'DISPONIBILE') {
+    throw new AnnunciError(409, `Annuncio non modificabile: stato ${annuncio.stato}`);
+  }
+
+  const { titolo, dataScadenza, latitudine, longitudine, indirizzo, oggetto } = body;
+  if (dataScadenza && new Date(dataScadenza) <= new Date()) {
+    throw new AnnunciError(400, 'dataScadenza deve essere nel futuro');
+  }
+
+  Object.assign(annuncio, {
+    ...(titolo && { titolo }),
+    ...(dataScadenza && { dataScadenza }),
+    ...(latitudine !== undefined && { latitudine }),
+    ...(longitudine !== undefined && { longitudine }),
+    ...(indirizzo && { indirizzo: normalizeIndirizzo(indirizzo) }),
+    ...(oggetto && { oggetto }),
+  });
+
+  return annuncio.save();
+}
+
+async function cancellaAnnuncio(id, user) {
+  const annuncio = await Annuncio.findById(id);
+  if (!annuncio || !annuncio.isAttivo) throw new AnnunciError(404, 'Annuncio non trovato');
+  if (annuncio.donatore.toString() !== user.id) throw new AnnunciError(403, 'Non autorizzato');
+  if (annuncio.stato !== 'DISPONIBILE') {
+    throw new AnnunciError(409, `Annuncio non cancellabile: stato ${annuncio.stato}`);
+  }
+
+  annuncio.isAttivo = false;
+  await annuncio.save();
+  return { message: 'Annuncio rimosso' };
+}
+
+async function cambiaStatoAnnuncio(id, stato, user) {
+  if (!stato || !['DISPONIBILE', 'PRENOTATO', 'RITIRATO', 'SCADUTO'].includes(stato)) {
+    throw new AnnunciError(400, 'Stato non valido');
+  }
+
+  const annuncio = await Annuncio.findById(id);
+  if (!annuncio) throw new AnnunciError(404, 'Annuncio non trovato');
+  if (annuncio.donatore.toString() !== user.id) throw new AnnunciError(403, 'Non autorizzato');
+
+  const transizioniValide = {
+    DISPONIBILE: ['PRENOTATO', 'SCADUTO'],
+    PRENOTATO: ['RITIRATO'],
+    RITIRATO: [],
+    SCADUTO: [],
+  };
+
+  if (!transizioniValide[annuncio.stato].includes(stato)) {
+    throw new AnnunciError(400, `Transizione non valida da ${annuncio.stato} a ${stato}`);
+  }
+
+  annuncio.stato = stato;
+  return annuncio.save();
+}
+
+async function getMieiAnnunci(user) {
+  return Annuncio.find({ donatore: user.id, isAttivo: true })
+    .populate('donatore', 'nome cognome')
+    .sort({ dataScadenza: -1 });
+}
+
+module.exports = {
+  AnnunciError,
+  calcolaValoreAnnuncio,
+  getCatalogo,
+  getAnnuncio,
+  creaAnnuncio,
+  modificaAnnuncio,
+  cancellaAnnuncio,
+  cambiaStatoAnnuncio,
+  getMieiAnnunci,
+};

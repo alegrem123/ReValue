@@ -4,23 +4,32 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { api, getStoredUser } from '../api/client';
-import { Button } from '../components/Button';
-import { Screen } from '../components/Screen';
+import { Ionicons } from '@expo/vector-icons';
+import { api, getUserId } from '../api/client';
 import { colors } from '../theme/colors';
 
 const POLL_MS = 5000;
+const SEND_RETRY_DELAYS = [400, 1200];
 
 function formatTime(dateInput) {
   const d = new Date(dateInput);
   if (Number.isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(d);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetriableSendError(res) {
+  return !res.ok && (res.status === 0 || res.status === 408 || res.status === 429 || res.status >= 500);
 }
 
 export function ChatScreen({ conversazioneId, onBack }) {
@@ -29,34 +38,48 @@ export function ChatScreen({ conversazioneId, onBack }) {
   const [loading, setLoading]   = useState(false);
   const [sending, setSending]   = useState(false);
   const [myId, setMyId]         = useState(null);
-  const flatRef = useRef(null);
-  const pollRef = useRef(null);
+  const myIdRef                 = useRef(null);
+  const flatRef                 = useRef(null);
+  const pollRef                 = useRef(null);
 
   const load = useCallback(async () => {
     const res = await api.get(`/api/v1/conversazioni/${conversazioneId}/messaggi?limit=50`);
     if (!res.ok) return;
     const lista = res.data?.data?.messaggi || res.data?.messaggi || [];
     setMessaggi(lista);
+    const currentId = myIdRef.current;
+    const unread = lista.filter((m) => {
+      const mid = m.mittente?._id || m.mittente;
+      return mid?.toString() !== currentId?.toString() && !m.letto && m._id;
+    });
+    if (unread.length > 0) {
+      Promise.all(unread.map((m) => api.patch(`/api/v1/messaggi/${m._id}/letto`, {}))).catch(() => {});
+    }
   }, [conversazioneId]);
 
   useEffect(() => {
     async function init() {
       setLoading(true);
-      const user = await getStoredUser();
-      if (user) setMyId(user._id || user.id);
+      const id = await getUserId();
+      if (id) { myIdRef.current = id; setMyId(id); }
       await load();
       setLoading(false);
     }
     init();
-    // Polling ogni 5s (RNF7: latenza 1-3s in condizioni normali)
     pollRef.current = setInterval(load, POLL_MS);
     return () => clearInterval(pollRef.current);
   }, [load]);
 
   async function invia() {
-    if (!testo.trim()) return;
+    const testoDaInviare = testo.trim();
+    if (!testoDaInviare) return;
     setSending(true);
-    const res = await api.post(`/api/v1/conversazioni/${conversazioneId}/messaggi`, { testo });
+    let res = null;
+    for (let attempt = 0; attempt <= SEND_RETRY_DELAYS.length; attempt += 1) {
+      res = await api.post(`/api/v1/conversazioni/${conversazioneId}/messaggi`, { testo: testoDaInviare });
+      if (!isRetriableSendError(res) || attempt === SEND_RETRY_DELAYS.length) break;
+      await wait(SEND_RETRY_DELAYS[attempt]);
+    }
     setSending(false);
     if (!res.ok) return;
     setTesto('');
@@ -66,38 +89,50 @@ export function ChatScreen({ conversazioneId, onBack }) {
 
   function isMio(msg) {
     const mid = msg.mittente?._id || msg.mittente;
-    return mid?.toString() === myId?.toString();
+    const id = myIdRef.current || myId;
+    return mid?.toString() === id?.toString();
   }
 
   return (
-    <Screen
-      title="Chat"
-      right={<Button title="Indietro" variant="secondary" onPress={onBack} />}
-      scroll={false}
-    >
-      {loading ? <ActivityIndicator color={colors.green} /> : null}
+    <SafeAreaView style={styles.safe}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack} style={styles.backBtn} hitSlop={8}>
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chat</Text>
+      </View>
+
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={colors.green} />
+        </View>
+      ) : null}
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={120}
+        keyboardVerticalOffset={90}
       >
         <FlatList
           ref={flatRef}
           data={messaggi}
-          keyExtractor={(m) => m._id || m.timestamp}
+          keyExtractor={(m) => m._id || String(m.timestamp)}
           contentContainerStyle={styles.messageList}
           onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: false })}
           renderItem={({ item }) => {
             const mio = isMio(item);
             return (
               <View style={[styles.bubble, mio ? styles.bubbleMio : styles.bubbleAltro]}>
-                <Text style={[styles.bubbleText, mio && styles.bubbleTextMio]}>
-                  {item.testo}
-                </Text>
-                <Text style={[styles.bubbleTime, mio && styles.bubbleTimeMio]}>
-                  {formatTime(item.timestamp)}
-                </Text>
+                <Text style={styles.bubbleText}>{item.testo}</Text>
+                <View style={styles.bubbleFooter}>
+                  <Text style={styles.bubbleTime}>{formatTime(item.timestamp)}</Text>
+                  {mio ? (
+                    <Text style={[styles.tick, item.letto ? styles.tickLetto : styles.tickInviato]}>
+                      ✓✓
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             );
           }}
@@ -119,50 +154,105 @@ export function ChatScreen({ conversazioneId, onBack }) {
             onPress={invia}
             disabled={!testo.trim() || sending}
           >
-            <Text style={styles.sendBtnText}>{'→'}</Text>
+            <Ionicons name="send" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </Screen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.cream,
+  },
   flex: { flex: 1 },
-  messageList: { gap: 10, paddingBottom: 12 },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  backBtn: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  loadingWrap: {
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+
+  // Messages
+  messageList: {
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingBottom: 16,
+  },
   bubble: {
-    maxWidth: '80%',
-    borderRadius: 14,
-    padding: 10,
+    maxWidth: '78%',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#dee2e6',
     alignSelf: 'flex-start',
-    gap: 3,
   },
   bubbleMio: {
     alignSelf: 'flex-end',
-    backgroundColor: colors.green,
-    borderColor: colors.green,
+    borderBottomRightRadius: 4,
   },
-  bubbleText: { color: colors.text, lineHeight: 20 },
-  bubbleTextMio: { color: '#fff' },
-  bubbleTime: { fontSize: 11, color: colors.muted, alignSelf: 'flex-end' },
-  bubbleTimeMio: { color: 'rgba(255,255,255,0.7)' },
+  bubbleAltro: {
+    borderBottomLeftRadius: 4,
+  },
+  bubbleText: {
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  bubbleFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 3,
+    marginTop: 3,
+  },
+  bubbleTime: {
+    fontSize: 11,
+    color: colors.muted,
+  },
+  tick: { fontSize: 12, fontWeight: '700' },
+  tickInviato: { color: colors.muted },
+  tickLetto:   { color: colors.green },
+
+  // Input
   inputRow: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'flex-end',
-    paddingTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   input: {
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cream,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.border,
@@ -179,6 +269,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendBtnDisabled: { opacity: 0.4 },
-  sendBtnText: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  sendBtnDisabled: { opacity: 0.35 },
 });

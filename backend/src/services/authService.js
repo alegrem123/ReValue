@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const User = require('../models/userModel');
-const { hashPassword, comparePassword } = require('../utils/password');
+const { hashPassword, comparePassword, isLegacySha256Hash } = require('../utils/password');
 const { signToken } = require('../utils/jwt');
-const { creaWallet } = require('./walletService');
+const { creaWallet, addPunti } = require('./walletService');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -66,7 +66,7 @@ async function registerUser({ nome, cognome, email, password }) {
     throw createAuthError(400, 'Formato email non valido', 'INVALID_EMAIL');
   }
 
-  // OCL #2: password lunga almeno 8 caratteri prima dell'hashing bcrypt.
+  // OCL #2: password lunga almeno 8 caratteri prima dell'hashing SHA-256.
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
     throw createAuthError(
       400,
@@ -93,6 +93,7 @@ async function registerUser({ nome, cognome, email, password }) {
   });
 
   await creaWallet(user._id);
+  await addPunti(user._id.toString(), 10, 'Bonus benvenuto');
 
   return buildAuthResponse(user);
 }
@@ -118,6 +119,11 @@ async function loginUser({ email, password }) {
   const valida = await comparePassword(password, user.passwordHash);
   if (!valida) {
     throw createAuthError(401, 'Credenziali non valide', 'INVALID_CREDENTIALS');
+  }
+
+  if (isLegacySha256Hash(user.passwordHash)) {
+    user.passwordHash = await hashPassword(password);
+    await user.save();
   }
 
   return buildAuthResponse(user);

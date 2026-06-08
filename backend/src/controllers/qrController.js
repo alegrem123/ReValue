@@ -7,8 +7,6 @@ const {
 } = require('../services/scambioQrService');
 const QR_TTL_MS = 24 * 60 * 60 * 1000; // 24 ore
 
-/** Codice di errore MongoDB per violazione di indice unique. */
-const MONGO_DUPLICATE_KEY = 11000;
 
 function generaCodiceQR() {
   return crypto.randomBytes(32).toString('hex');
@@ -21,8 +19,9 @@ function generaCodiceQR() {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function generaQR(req, res) {
+async function generaQR(req, res, next) {
   try {
     const { prenotazioneId } = req.body;
     if (!prenotazioneId) {
@@ -31,7 +30,7 @@ async function generaQR(req, res) {
 
     const prenotazione = await Prenotazione.findById(prenotazioneId).populate('annuncio');
 
-    // BUG FIX #1: distinguiamo prenotazione inesistente da stati non generabili.
+    // Distingue prenotazione inesistente da stati non generabili.
     if (!prenotazione) {
       return res.status(404).json({ error: 'Prenotazione non trovata' });
     }
@@ -43,38 +42,33 @@ async function generaQR(req, res) {
     }
     // stato === 'ATTIVA' da qui in poi
 
-    // Solo il donatore può generare il QR per questa prenotazione
+    // Precondizione QR: la prenotazione attiva deve riferirsi a un annuncio PRENOTATO.
+    if (prenotazione.annuncio.stato !== 'PRENOTATO') {
+      return res.status(409).json({ error: 'Impossibile generare QR: annuncio non in stato PRENOTATO' });
+    }
+
+    // OCL #13: solo il donatore della prenotazione può generare il QR
     if (prenotazione.annuncio.donatore.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Solo il donatore può generare il QR per questa prenotazione' });
     }
 
-    // OCL #13: Genera un nuovo TokenQR. Rimuoviamo gli eventuali precedenti
-    // PRIMA del create, così il nuovo insert non incappa nel vincolo unique.
-    await TokenQR.deleteMany({ prenotazione: prenotazione._id });
-
-    const scadenzaQR = new Date(Date.now() + QR_TTL_MS);
-    let token;
-    try {
-      token = await TokenQR.create({
-        prenotazione: prenotazione._id,
-        codice: generaCodiceQR(),
-        scadenza: scadenzaQR,
-      });
-    } catch (createErr) {
-      // BUG FIX #2: race-condition – un altro processo ha appena inserito un token
-      // (violazione unique su prenotazione) → 409 invece di 500.
-      if (createErr.code === MONGO_DUPLICATE_KEY) {
-        return res.status(409).json({ error: 'QR in fase di generazione da un altro processo, riprovare' });
-      }
-      throw createErr;
+    // Return existing valid token if available
+    const existing = await TokenQR.findOne({ prenotazione: prenotazione._id, usato: false });
+    if (existing && existing.scadenza > new Date()) {
+      return res.status(200).json({ codice: existing.codice, scadenza: existing.scadenza });
     }
 
-    return res.status(201).json({
-      codice: token.codice,
-      scadenza: token.scadenza,
-    });
+    // Create or refresh token atomically (unique index on prenotazione: only one doc per prenotazione)
+    const scadenzaQR = new Date(Date.now() + QR_TTL_MS);
+    const token = await TokenQR.findOneAndUpdate(
+      { prenotazione: prenotazione._id },
+      { $set: { codice: generaCodiceQR(), scadenza: scadenzaQR, usato: false } },
+      { upsert: true, new: true }
+    );
+
+    return res.status(201).json({ codice: token.codice, scadenza: token.scadenza });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return next(err);
   }
 }
 
@@ -85,8 +79,9 @@ async function generaQR(req, res) {
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-async function validaQR(req, res) {
+async function validaQR(req, res, next) {
   try {
     const { codice } = req.body;
     if (!codice) {
@@ -96,7 +91,7 @@ async function validaQR(req, res) {
     // Cerchiamo il token e facciamo populate di prenotazione e annuncio
     const token = await findTokenByCodice(codice);
 
-    // BUG FIX #3: Il TTL index di MongoDB rimuove automaticamente i token scaduti.
+    // Il TTL index di MongoDB rimuove automaticamente i token scaduti.
     // Se findOne ritorna null NON possiamo sapere se il codice non è mai esistito
     // oppure se è stato rimosso per scadenza. Per dare un messaggio preciso al
     // client, tentiamo un lookup "tombstone" cercando nella cronologia della
@@ -112,19 +107,20 @@ async function validaQR(req, res) {
     }
 
     if (token.usato) {
-      return res.status(400).json({ error: 'Codice QR già utilizzato' });
+      return res.status(409).json({ error: 'Codice QR già utilizzato' });
     }
 
     // OCL #14: token non deve essere scaduto (difesa in profondità; il TTL
     // potrebbe non aver ancora eliminato il documento se la scadenza è appena
     // passata e il job di pulizia non è ancora girato).
     if (token.scadenza < new Date()) {
-      return res.status(400).json({ error: 'Codice QR scaduto' });
+      return res.status(410).json({ error: 'Codice QR scaduto' });
     }
 
     const prenotazione = token.prenotazione;
+    // OCL #15: il token validato deve appartenere alla prenotazione caricata (già garantito da findTokenByCodice)
 
-    // BUG FIX #4: messaggi distinti per ogni stato non-ATTIVA.
+    // Messaggi distinti per ogni stato non-ATTIVA.
     if (prenotazione.stato === 'ANNULLATA') {
       return res.status(409).json({
         error: 'Prenotazione annullata: lo scambio non può essere validato',
@@ -144,16 +140,24 @@ async function validaQR(req, res) {
 
     const creditiAssegnati = await finalizzaScambioAtomico({ tokenId: token._id });
 
+    const notificheService = require('../services/notificheService');
+    const link = `/prenotazioni/${prenotazione._id}`;
+    Promise.allSettled([
+      notificheService.creaNotifica(prenotazione.annuncio.donatore, 'scambio', 'Scambio completato e crediti aggiornati', link),
+      notificheService.creaNotifica(prenotazione.acquirente, 'scambio', 'Scambio completato e crediti aggiornati', link),
+    ]).then((results) => {
+      for (const r of results) {
+        if (r.status === 'rejected') console.error('[notifica] validaQR fallita', r.reason);
+      }
+    });
+
     return res.status(200).json({
       message: 'Scambio validato con successo',
       prenotazione: prenotazione._id,
       creditiAssegnati
     });
   } catch (err) {
-    if (err.statusCode) {
-      return res.status(err.statusCode).json({ error: err.message });
-    }
-    return res.status(500).json({ error: err.message });
+    return next(err);
   }
 }
 

@@ -12,20 +12,47 @@
 const isViewsPage = window.location.pathname.includes('/views/');
 const homeUrl = isViewsPage ? '../index.html' : 'index.html';
 const viewUrl = (fileName) => (isViewsPage ? fileName : `views/${fileName}`);
+const assetUrl = (fileName) => (isViewsPage ? `../assets/${fileName}` : `assets/${fileName}`);
 
 // API base URL: usa apiClient se disponibile, altrimenti rileva ambiente
 const _layoutApiBase = (function () {
   if (typeof API_BASE !== 'undefined') return API_BASE;
   if (window.REVALUE_API_BASE) return window.REVALUE_API_BASE;
-  if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://127.0.0.1:3000';
+  if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) return 'http://localhost:3000';
   return 'https://revalue-backend-84jb.onrender.com';
 })();
+
+async function layoutApiGet(endpoint) {
+  if (window.api?.get) return window.api.get(endpoint);
+
+  const token = localStorage.getItem('jwt');
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  try {
+    const res = await fetch(`${_layoutApiBase}${endpoint}`, { headers });
+    const data = await res.json().catch(() => null);
+    const normalized = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'ok')
+      ? data
+      : null;
+    return {
+      ok: normalized ? Boolean(normalized.ok && res.ok) : res.ok,
+      data: normalized && normalized.ok ? normalized.data : data,
+      status: res.status,
+      error: data?.message || data?.error || null,
+    };
+  } catch {
+    return { ok: false, data: null, status: 0, error: 'Errore di rete.' };
+  }
+}
 
 const NAVBAR_HTML = `
 <nav class="navbar navbar-expand-lg sticky-top rv-navbar">
   <div class="container">
     <a class="navbar-brand" href="${homeUrl}">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFD54F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+      <span class="rv-brand-mark" aria-hidden="true">
+        <img src="${assetUrl('logo.png')}" alt="">
+      </span>
       RE-VALUE
     </a>
     <button class="navbar-toggler border-white" type="button"
@@ -40,30 +67,29 @@ const NAVBAR_HTML = `
         <li class="nav-item">
           <a class="nav-link text-white" href="${viewUrl('catalog.html')}">Catalogo</a>
         </li>
-        <!-- Visibili solo se loggato -->
-        <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="${viewUrl('create-annuncio.html')}">Crea annuncio</a>
-        </li>
-        <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="${viewUrl('my-annunci.html')}">I miei annunci</a>
-        </li>
-        <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="${viewUrl('mybookings.html')}">Mie prenotazioni</a>
-        </li>
-        <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="${viewUrl('my-premi.html')}">I miei premi</a>
-        </li>
-        <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="${viewUrl('my-reports.html')}">Le mie segnalazioni</a>
-        </li>
-        <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="${viewUrl('notifiche.html')}">Notifiche</a>
-        </li>
+        <!-- Messaggi — fuori da Area Personale, solo se loggato -->
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('messaggi.html')}">
             Messaggi
             <span id="unread-badge" class="badge bg-warning text-dark ms-1 d-none">0</span>
           </a>
+        </li>
+        <!-- Notifiche — fuori da Area Personale, solo se loggato -->
+        <li class="nav-item nav-auth d-none">
+          <a class="nav-link text-white" href="${viewUrl('notifiche.html')}">Notifiche</a>
+        </li>
+        <!-- Area Personale dropdown — solo se loggato -->
+        <li class="nav-item dropdown nav-auth d-none">
+          <a class="nav-link text-white dropdown-toggle" href="#" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            Area Personale
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="${viewUrl('my-annunci.html')}">I miei annunci</a></li>
+            <li><a class="dropdown-item" href="${viewUrl('mybookings.html')}">Mie prenotazioni</a></li>
+            <li><a class="dropdown-item" href="${viewUrl('my-premi.html')}">I miei premi</a></li>
+            <li><a class="dropdown-item" href="${viewUrl('my-reports.html')}">Le mie segnalazioni</a></li>
+          </ul>
         </li>
       </ul>
 
@@ -77,18 +103,21 @@ const NAVBAR_HTML = `
         </li>
         <!-- Visibili solo se loggato -->
         <li class="nav-item nav-auth d-none">
-          <a class="nav-link text-white" href="${viewUrl('profile.html')}">
-            <i class="bi bi-person-circle me-1"></i>
+          <a class="nav-link text-white d-flex align-items-center gap-1" href="${viewUrl('profile.html')}" id="navbar-profile-link">
+            <i class="bi bi-person-circle" id="navbar-avatar-icon"></i>
+            <img id="navbar-avatar-img" src="" alt="" width="28" height="28"
+                 style="border-radius:50%;object-fit:cover;display:none;">
             <span id="navbar-username">Profilo</span>
           </a>
         </li>
         <li class="nav-item nav-auth d-none">
           <a class="nav-link text-white" href="${viewUrl('wallethistory.html')}">
-             <span id="navbar-balance">0</span> crediti
+             <span id="navbar-balance">0</span> cr.
           </a>
         </li>
         <li class="nav-item nav-auth d-none">
-          <button class="btn btn-outline-light btn-sm ms-2" id="btn-logout">Esci</button>
+          <button class="btn btn-outline-light btn-sm ms-2" id="btn-logout"
+                  data-bs-toggle="modal" data-bs-target="#logout-modal">Esci</button>
         </li>
       </ul>
     </div>
@@ -100,7 +129,12 @@ const FOOTER_HTML = `
   <div class="container">
     <div class="row g-3 align-items-center">
       <div class="col-md-4">
-        <span class="fw-bold fs-5"> RE-VALUE</span>
+        <span class="fw-bold fs-5 d-inline-flex align-items-center gap-2">
+          <span class="rv-brand-mark rv-brand-mark-footer" aria-hidden="true">
+            <img src="${assetUrl('logo.png')}" alt="">
+          </span>
+          RE-VALUE
+        </span>
         <p class="mb-0 small opacity-75 mt-1">
           Dai nuova vita ai tuoi oggetti.<br/>
           Progetto accademico — UniTN 2026
@@ -171,10 +205,25 @@ function updateAuthUI(user) {
     const nameEl = document.getElementById('navbar-username');
     if (nameEl) nameEl.textContent = user.nome || 'Profilo';
 
-    api.get('/api/v1/wallet/saldo')
+    layoutApiGet('/api/v1/wallet/saldo')
       .then((res) => {
         const el = document.getElementById('navbar-balance');
         if (el) el.textContent = res.data?.bilancio ?? 0;
+      })
+      .catch(() => {});
+
+    // Fetch profile photo for navbar avatar
+    layoutApiGet('/api/v1/users/me')
+      .then((res) => {
+        const foto = res.data?.user?.fotoProfilo ?? res.data?.fotoProfilo;
+        const avatarImg  = document.getElementById('navbar-avatar-img');
+        const avatarIcon = document.getElementById('navbar-avatar-icon');
+        if (!avatarImg || !avatarIcon) return;
+        if (foto) {
+          avatarImg.src = foto;
+          avatarImg.style.display = 'inline-block';
+          avatarIcon.style.display = 'none';
+        }
       })
       .catch(() => {});
   } else {
@@ -190,7 +239,7 @@ function updateAuthUI(user) {
 function updateUnreadBadge() {
   if (!localStorage.getItem('jwt')) return;
 
-  api.get('/api/v1/conversazioni/me/non-letti')
+  layoutApiGet('/api/v1/conversazioni/me/non-letti')
     .then((res) => {
       const badge = document.getElementById('unread-badge');
       if (!badge) return;
@@ -215,6 +264,26 @@ function initLayout() {
   if (navContainer) navContainer.innerHTML = NAVBAR_HTML;
   if (footerContainer) footerContainer.innerHTML = FOOTER_HTML;
 
+  // Inject logout confirmation modal
+  if (!document.getElementById('logout-modal')) {
+    const modalWrap = document.createElement('div');
+    modalWrap.innerHTML = `
+<div class="modal fade" id="logout-modal" tabindex="-1" aria-labelledby="logout-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center py-4">
+        <p class="fw-semibold mb-3" id="logout-modal-label">Sei sicuro di voler uscire?</p>
+        <div class="d-flex gap-2 justify-content-center">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button class="btn btn-danger" id="btn-logout-confirm">Esci</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+    document.body.appendChild(modalWrap.firstElementChild);
+  }
+
   const user = getUser();
   updateAuthUI(user);
   setActiveLink();
@@ -225,10 +294,10 @@ function initLayout() {
     setInterval(updateUnreadBadge, 30_000);
   }
 
-  // Logout
-  const btnLogout = document.getElementById('btn-logout');
-  if (btnLogout) {
-    btnLogout.addEventListener('click', () => {
+  // Logout — confermato da modal
+  const btnLogoutConfirm = document.getElementById('btn-logout-confirm');
+  if (btnLogoutConfirm) {
+    btnLogoutConfirm.addEventListener('click', () => {
       localStorage.removeItem('jwt');
       window.location.href = homeUrl;
     });
@@ -240,6 +309,15 @@ function initLayout() {
  * Chiamato una volta sola da initLayout.
  */
 function injectGlobalStyles() {
+  if (!document.getElementById('rv-favicon')) {
+    const icon = document.createElement('link');
+    icon.id = 'rv-favicon';
+    icon.rel = 'icon';
+    icon.type = 'image/png';
+    icon.href = assetUrl('logo.png');
+    document.head.appendChild(icon);
+  }
+
   // Inject global design system CSS
   if (!document.getElementById('rv-design-system')) {
     const link = document.createElement('link');
@@ -361,12 +439,18 @@ window.showToast = function showToast(message, type = 'success', delay = 4000) {
 
   const icons = { success: '✓', danger: '✕', warning: '⚠', info: 'ℹ' };
   const id = `toast-${Date.now()}`;
+  const safeMessage = String(message ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
   const html = `
     <div id="${id}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
         <div class="toast-body fw-semibold">
-          <span class="me-2">${icons[type] || ''}</span>${message}
+          <span class="me-2">${icons[type] || ''}</span>${safeMessage}
         </div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Chiudi"></button>
       </div>

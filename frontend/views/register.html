@@ -17,6 +17,7 @@
     integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+"
       crossorigin="anonymous"
     />
+    <link rel="stylesheet" href="../css/style.css" />
 
     <style>
       .strength-bar {
@@ -24,7 +25,7 @@
         border-radius: 2px;
         transition: width 0.3s ease, background-color 0.3s ease;
       }
-      .auth-card { max-width: 520px; }
+      .auth-card { max-width: min(520px, calc(100vw - 32px)); }
     </style>
   </head>
   <body>
@@ -34,7 +35,12 @@
       <div class="auth-wrapper">
         <div class="auth-card">
           <div class="auth-card-header">
-            <div class="auth-logo">RE-VALUE</div>
+            <div class="auth-logo d-inline-flex align-items-center justify-content-center gap-2">
+              <span class="rv-brand-mark" aria-hidden="true">
+                <img src="../assets/logo.png" alt="">
+              </span>
+              RE-VALUE
+            </div>
             <h1 class="h4 mb-1 fw-bold">Crea il tuo account</h1>
             <p class="mb-0 small" style="opacity:0.75">Unisciti alla community</p>
           </div>
@@ -411,8 +417,5 @@
         }
       );
     </script>
-  <!-- impeccable-live-start -->
-<script src="http://localhost:8400/live.js"></script>
-<!-- impeccable-live-end -->
 </body>
 </html>

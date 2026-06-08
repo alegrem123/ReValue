@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { api } from '../api/client';
+import { api, getUserId } from '../api/client';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
@@ -31,10 +31,11 @@ function entroQuindiciMinuti(dataPrenotazione) {
 }
 
 export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
-  const [bookings, setBookings]   = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [filter, setFilter]       = useState('');
-  const [error, setError]         = useState('');
+  const [bookings, setBookings]       = useState([]);
+  const [loading, setLoading]         = useState(false);
+  const [filter, setFilter]           = useState('');
+  const [error, setError]             = useState('');
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +47,7 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { getUserId().then(setCurrentUserId); }, []);
 
   async function annulla(id) {
     Alert.alert('Annulla prenotazione', 'Sei sicuro? Puoi annullare solo entro 15 minuti.', [
@@ -62,10 +64,40 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
     ]);
   }
 
+  async function noShow(id) {
+    Alert.alert('Segnala mancato ritiro', "L'acquirente non si è presentato?", [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Sì, segnala',
+        style: 'destructive',
+        onPress: async () => {
+          const res = await api.post(`/api/v1/prenotazioni/${id}/no-show`, {});
+          if (!res.ok) { Alert.alert('Errore', res.error || 'Impossibile segnalare.'); return; }
+          load();
+        },
+      },
+    ]);
+  }
+
+  async function disdici(id) {
+    Alert.alert('Disdici ritiro', 'Vuoi disdire questo appuntamento di ritiro?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Sì, disdici',
+        style: 'destructive',
+        onPress: async () => {
+          const res = await api.post(`/api/v1/prenotazioni/${id}/disdici`, {});
+          if (!res.ok) { Alert.alert('Errore', res.error || 'Impossibile disdire.'); return; }
+          load();
+        },
+      },
+    ]);
+  }
+
   const visible = filter ? bookings.filter((b) => b.stato === filter) : bookings;
 
   return (
-    <Screen title="Prenotazioni" subtitle="Le tue prenotazioni come acquirente." scroll={false}>
+    <Screen title="Prenotazioni" subtitle="Gestisci ritiri, QR e scambi completati." scroll={false}>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <View style={styles.filters}>
@@ -74,6 +106,7 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
             key={s || 'all'}
             title={STATO_LABEL[s] || 'Tutte'}
             variant={filter === s ? 'primary' : 'secondary'}
+            size="small"
             onPress={() => setFilter(s)}
           />
         ))}
@@ -99,26 +132,52 @@ export function MyBookingsScreen({ onOpenQRDisplay, onOpenQRScan }) {
             <Text style={styles.meta}>
               Donatore: {b.donatore ? `${b.donatore.nome} ${b.donatore.cognome}` : '—'}
             </Text>
+            <Text style={styles.meta}>
+              Ruolo: {b.donatore?._id === currentUserId ? 'Donatore' : 'Acquirente'}
+            </Text>
             <Text style={styles.meta}>{formatDate(b.dataPrenotazione)}</Text>
 
-            {b.stato === 'ATTIVA' ? (
+            {b.stato === 'ATTIVA' && currentUserId ? (
               <View style={styles.actions}>
-                <Button
-                  title="Mostra QR"
-                  onPress={() => onOpenQRDisplay(b._id)}
-                />
-                <Button
-                  title="Scansiona QR"
-                  variant="secondary"
-                  onPress={() => onOpenQRScan()}
-                />
-                {entroQuindiciMinuti(b.dataPrenotazione) ? (
-                  <Button
-                    title="Annulla"
-                    variant="danger"
-                    onPress={() => annulla(b._id)}
-                  />
-                ) : null}
+                {b.donatore?._id === currentUserId ? (
+                  <>
+                    <Button
+                      title="Mostra QR"
+                      variant="primary"
+                      size="compact"
+                      onPress={() => onOpenQRDisplay(b._id)}
+                    />
+                    <Button
+                      title="Mancato ritiro"
+                      variant="danger"
+                      size="compact"
+                      onPress={() => noShow(b._id)}
+                    />
+                    <Button
+                      title="Disdici ritiro"
+                      variant="secondary"
+                      size="compact"
+                      onPress={() => disdici(b._id)}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      title="Scansiona QR"
+                      variant="secondary"
+                      size="compact"
+                      onPress={() => onOpenQRScan()}
+                    />
+                    {entroQuindiciMinuti(b.dataPrenotazione) ? (
+                      <Button
+                        title="Annulla"
+                        variant="danger"
+                        size="compact"
+                        onPress={() => annulla(b._id)}
+                      />
+                    ) : null}
+                  </>
+                )}
               </View>
             ) : null}
           </View>
@@ -140,7 +199,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 14,
@@ -159,7 +218,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   badge: {
-    borderRadius: 4,
+    borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },

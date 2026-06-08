@@ -1,13 +1,21 @@
 const { Router } = require('express');
 const { authenticate, requireAdmin } = require('../middleware/authMiddleware');
+const { validateObjectIdParam } = require('../middleware/validateObjectId');
 const {
   getStatistiche,
+  listUsers,
+  listAnnunci,
   getSegnalazioni,
+  applicaMalusSegnalazione,
   bannaUtente,
   sospendiUtente,
   riabilitaUtente,
   forzaStatoAnnuncio,
   rimuoviAnnuncio,
+  listCoupon,
+  creaCoupon,
+  aggiornaCoupon,
+  disattivaCoupon,
 } = require('../controllers/adminController');
 
 const router = Router();
@@ -18,16 +26,29 @@ router.use(authenticate, requireAdmin);
 // RF30/UC14: dashboard statistiche
 router.get('/statistiche', getStatistiche);
 
+// RF29: lista utenti per dashboard admin
+router.get('/users', listUsers);
+
+// RF31: lista annunci per dashboard admin
+router.get('/annunci', listAnnunci);
+
 // UC13: gestione segnalazioni
 router.get('/segnalazioni', getSegnalazioni);
+router.post('/segnalazioni/:id/malus', validateObjectIdParam('id'), applicaMalusSegnalazione);
 
 // RF29/D2 §2.2.2: gestione account
-router.post('/utenti/:id/ban', bannaUtente);
-router.post('/utenti/:id/sospendi', sospendiUtente);
-router.post('/utenti/:id/riabilita', riabilitaUtente);
+router.post('/utenti/:id/ban', validateObjectIdParam('id'), bannaUtente);
+router.post('/utenti/:id/sospendi', validateObjectIdParam('id'), sospendiUtente);
+router.post('/utenti/:id/riabilita', validateObjectIdParam('id'), riabilitaUtente);
 
 // RF31/D2 §2.2.2: gestione annunci
-router.patch('/annunci/:id/forza', forzaStatoAnnuncio);
-router.delete('/annunci/:id', rimuoviAnnuncio);
+router.patch('/annunci/:id/forza', validateObjectIdParam('id'), forzaStatoAnnuncio);
+router.delete('/annunci/:id', validateObjectIdParam('id'), rimuoviAnnuncio);
+
+// PB-15 estesa: gestione coupon dal pannello admin
+router.get('/coupon', listCoupon);
+router.post('/coupon', creaCoupon);
+router.patch('/coupon/:id', validateObjectIdParam('id'), aggiornaCoupon);
+router.patch('/coupon/:id/disattiva', validateObjectIdParam('id'), disattivaCoupon);
 
 module.exports = router;
