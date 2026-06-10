@@ -214,22 +214,6 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.x:3000 npm start
 
 ---
 
-## Documentazione e file di supporto
-
-| File | Ruolo | Se rimosso rompe runtime/test? | Valutazione |
-|------|-------|--------------------------------|-------------|
-| `.nvmrc` | Versione Node locale (`22`). | No: CI usa Node 22 in `.github/workflows/ci.yml`; npm continua a funzionare se Node e' corretto. | Da tenere: riduce errori ambientali prima di push/merge. |
-| `.prettierrc` | Convenzioni Prettier per formattazione manuale/editor. | No: non ci sono script `format`/`prettier` nella pipeline corrente. | Non essenziale, ma tenerlo costa zero e mantiene stile condiviso. |
-| `oas3.yaml` | Specifica OpenAPI 3 / Swagger-compatible. | No runtime, ma si rompe la consegna API-first se manca o non e' allineata. | Essenziale per il corso: alimenta Swagger UI ed e' validabile in Swagger Editor/SwaggerHub. |
-| `apiary.apib` | Versione API Blueprint pubblicabile su Apiary. | No runtime. | Utile come documentazione Apiary; non sostituisce OpenAPI 3. |
-
-File generati o temporanei (`*.log`, cache, build output, `.env`, credenziali)
-non vanno committati. I file di report generati (`.aux`, `.toc`, `.out`, `.log`)
-sono utili solo se il team vuole rendere riproducibile localmente la build LaTeX;
-per una consegna pulita bastano sorgente `.tex` e PDF finale.
-
----
-
 ## Evidenze Sprint 2
 
 - Specifica OpenAPI/Swagger: `oas3.yaml`
