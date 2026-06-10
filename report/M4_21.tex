@@ -1,0 +1,829 @@
+% ============================================================
+%  RE-VALUE --- Deliverable D4
+%  Gruppo 21 --- Ingegneria del Software, UniTrento
+%  A.A. 2025/2026 
+% ============================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage[top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{seqsplit}
+
+\pgfplotsset{compat=1.18}
+\setlength\hfuzz{30pt}
+\AtBeginDocument{\setlength\hfuzz{30pt}}
+
+\definecolor{blurevalue}{HTML}{2563EB}
+\definecolor{greenrevalue}{HTML}{16A34A}
+\definecolor{graylight}{HTML}{F3F4F6}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small RE-VALUE --- Deliverable D4}
+\rhead{\small Gruppo 21 --- Ingegneria del Software, UniTrento}
+\cfoot{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% ==============================================================
+\begin{document}
+\hypersetup{pageanchor=false}
+
+\begin{titlepage}
+  \centering
+  \vspace*{2.5cm}
+  {\Huge\bfseries RE-VALUE\par}
+  \vspace{0.6em}
+  {\large\itshape Piattaforma per il riuso locale di oggetti\par}
+  \vspace{1.5em}
+  \rule{\linewidth}{0.6pt}\\[0.8em]
+  {\LARGE\bfseries Report Milestone \#4 --- Deliverable D4\par}
+  \rule{\linewidth}{0.6pt}
+  \vspace{1.5em}
+  {\large Ingegneria del Software --- A.A.\ 2025/2026\par}
+  {\large Università degli Studi di Trento\par}
+  \vspace{2em}
+
+  \begin{tabular}{L{4.5cm}C{3cm}C{4cm}}
+    \toprule
+    \textbf{Nome e cognome} & \textbf{Matricola} & \textbf{Account GitHub} \\
+    \midrule
+    Alessandro Gremes  & 242330 & \code{alegrem123}      \\
+    Paolo Sarcletti    & 246846 & \code{Puzzapol}        \\
+    Alessandro Turri   & 244927 & \code{alessandroturri} \\
+    \bottomrule
+  \end{tabular}
+
+\end{titlepage}
+
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+% ==============================================================
+\section{Sezione Introduttiva}
+% ==============================================================
+
+\subsection{Team Members}
+
+\begin{table}[H]
+  \centering\scriptsize
+  \begin{tabular}{L{5cm}C{2.5cm}L{5cm}}
+    \toprule
+    \textbf{Nome e cognome} & \textbf{Matricola} & \textbf{Account GitHub} \\
+    \midrule
+    Alessandro Gremes  & 242330 & \code{alegrem123} \\
+    Paolo Sarcletti    & 246846 & \code{Puzzapol} \\
+    Alessandro Turri   & 244927 & \code{alessandroturri} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Project Idea}
+
+RE-VALUE è una piattaforma web e mobile per favorire il riuso locale di oggetti ancora utilizzabili.
+Un donatore pubblica un annuncio, un acquirente lo prenota e lo scambio fisico viene certificato tramite QR code.
+Alla validazione il sistema completa atomicamente prenotazione e annuncio, aggiorna i wallet con crediti dinamici calcolati al momento della prenotazione, abilita recensioni, notifiche e reputazione.
+
+\subsection{Link}
+
+\begin{longtable}{L{4.2cm}L{10.5cm}}
+\toprule
+\textbf{Risorsa} & \textbf{Link / credenziali} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Repository GitHub & \url{https://github.com/alegrem123/ReValue} \\
+Link ad Apiary & \url{https://alessandrogremes.docs.apiary.io/#}; documentazione API storica del progetto, allineata alla specifica Apiary. \\
+Specifica OpenAPI 3 / Swagger & \code{oas3.yaml} nel repository; fonte principale del contratto API machine-readable e importabile in Swagger Editor/SwaggerHub. \\
+Swagger UI interattiva & \url{https://revalue-backend-84jb.onrender.com/api-docs/}; pagina generata da \code{oas3.yaml} per consultare e testare le API. \\
+Backend in produzione & \url{https://revalue-backend-84jb.onrender.com} \\
+Frontend in produzione & \url{https://revalue-frontend.onrender.com} \\
+Account demo user & \code{demo.acquirente@revalue.local} / \code{Demo1234!} \\
+Account demo admin & \code{demo.admin@revalue.local} / \code{Demo1234!} \\
+\end{longtable}
+
+Gli account demo sono generati tramite il comando \code{npm run seed:demo} nel backend. L'account utente standard dispone di un wallet iniziale di 160 crediti, cosi' da rendere dimostrabili anche il flusso premi e il riscatto dei coupon. L'account admin serve per accedere alla dashboard amministrativa web; nell'app mobile non abilita privilegi o schermate amministrative dedicate. Il seed crea inoltre altri utenti, annunci, prenotazioni e chat per rendere piu' popolato lo scenario dimostrativo.
+
+% ==============================================================
+\section{Sezione Generale}
+% ==============================================================
+
+\subsection{Strategia di branching}
+
+\textbf{Sprint 1.} Il repository non ha usato una strategia \textit{master-only}: sono stati mantenuti due branch permanenti, \code{main} per la versione stabile e \code{preRelease} per l'integrazione. Alcuni commit sono comunque arrivati direttamente su \code{preRelease}; questa è stata una criticità di processo emersa nella retrospettiva e corretta nello Sprint 2.
+
+\textbf{Sprint 2.} Il team ha reso obbligatori i branch temporanei per feature, bug fix o test prima dell'integrazione su \code{preRelease}. Il flusso usato è:
+\begin{center}
+\code{feat/fix/test/<nome>} $\rightarrow$ \code{preRelease} $\rightarrow$ \code{main}
+\end{center}
+
+I branch effettivamente presenti e usati a supporto della consegna sono:
+
+\begin{itemize}[noitemsep]
+  \item \code{main} --- branch stabile, sempre deployabile in produzione; aggiornato solo tramite merge da \code{preRelease} con pipeline CI verde.
+  \item \code{preRelease} --- branch di integrazione; le feature vengono qui validate prima del rilascio su \code{main}.
+  \item \code{feat/AT-*} --- branch settimanali di Alessandro Turri (settimane 4, 5, 6).
+  \item \code{feat/ag-*} --- branch di Alessandro Gremes (admin, email, sicurezza, settimana 5).
+  \item \code{feat/ps-*} --- branch di Paolo Sarcletti (recensioni, chat, frontend, Apiary).
+  \item \code{fix/*} --- branch per bug fix urgenti, es.\ \code{fix/ag-priority-0}.
+\end{itemize}
+
+I messaggi di commit seguono in larga parte \textit{Conventional Commits} con scope per modulo, ad esempio \code{feat(premi): ...}, \code{fix(admin): ...}, \code{test(security): ...}, \code{docs(api): ...}. Alcuni commit di merge o di correzione veloce non sono perfettamente uniformi: sono stati mantenuti per preservare la cronologia reale del lavoro, ma la convenzione è stata usata come regola operativa.
+
+Il CI/CD su GitHub Actions si attiva su push verso \code{main} e \code{preRelease}: esegue test backend con coverage, smoke test frontend, smoke test mobile e uno smoke test HTTP sul backend Render. Solo a pipeline verde si procede con il merge su \code{main}.
+
+\subsection{Definizione di ``Done''}
+
+La seguente definizione è stata adottata dal team a partire da Sprint 1 e rafforzata in Sprint 2 con i punti relativi a CI e deploy.
+
+Una user story si considera \textbf{Done} quando:
+\begin{enumerate}[noitemsep]
+  \item Il contratto API è aggiornato in \code{oas3.yaml}; \code{apiary.apib} viene riallineato come versione API Blueprint pubblicabile su Apiary.
+  \item Tutti i test automatici passano (\code{npm test} con 0 failing e copertura stabile).
+  \item Nessuna regressione critica è stata introdotta nella suite di regressione esistente.
+  \item[\textit{S2}] La pipeline CI GitHub Actions è verde prima del merge su \code{main}.
+  \item[\textit{S2}] Il backend di produzione supera lo smoke test HTTP post-deploy.
+\end{enumerate}
+
+\subsection{Product Backlog}
+
+Il product backlog completo è riportato nella tabella seguente. Le storie di Sprint 1 e Sprint 2 sono marchiate come \textit{Done}; le storie non ancora implementate rimangono nel backlog come lavoro futuro.
+
+\begin{longtable}{L{0.9cm}L{6.5cm}C{1cm}C{1.3cm}C{1.3cm}L{1.8cm}}
+\toprule
+\textbf{ID} & \textbf{User Story} & \textbf{SP} & \textbf{Prio.} & \textbf{Sprint} & \textbf{Stato} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+% -- Sprint 1 --
+PB-01 & Come utente, voglio registrarmi con email e password per accedere alla piattaforma. & 3 & Alta & S1 & Done \\
+PB-02 & Come utente, voglio fare login e ricevere un token JWT per autenticarmi nelle richieste. & 3 & Alta & S1 & Done \\
+PB-03 & Come donatore, voglio pubblicare un annuncio con oggetto, foto e data di scadenza. & 8 & Alta & S1 & Done \\
+PB-04 & Come utente, voglio sfogliare il catalogo pubblico con filtri per categoria, dimensione e materiale. & 5 & Alta & S1 & Done \\
+PB-05 & Come acquirente, voglio prenotare un oggetto disponibile. & 8 & Alta & S1 & Done \\
+PB-06 & Come donatore, voglio generare un QR code per confermare il ritiro dell'oggetto. & 5 & Alta & S1 & Done \\
+PB-07 & Come acquirente, voglio scansionare il QR code per completare lo scambio. & 5 & Alta & S1 & Done \\
+PB-08 & Come utente, voglio vedere il mio saldo e lo storico transazioni del wallet. & 5 & Alta & S1 & Done \\
+PB-09 & Come utente, voglio accedere alle funzionalità principali tramite il frontend web. & 8 & Alta & S1 & Done \\
+PB-10 & Come utente, voglio accedere alle funzionalità principali tramite l'app mobile. & 5 & Media & S1 & Done \\
+% -- Sprint 2 --
+PB-11 & Come utente, voglio lasciare una recensione al partner dello scambio dopo il completamento. & 5 & Alta & S2 & Done \\
+PB-12 & Come utente, voglio inviare messaggi al partner dello scambio tramite la chat integrata. & 8 & Alta & S2 & Done \\
+PB-13 & Come utente, voglio ricevere notifiche in-app per eventi rilevanti (prenotazione, scambio, ecc.). & 5 & Alta & S2 & Done \\
+PB-14 & Come sistema, voglio inviare push notification su dispositivo mobile tramite Expo. & 5 & Media & S2 & Parziale \\
+PB-15 & Come utente, voglio riscattare coupon premio con i crediti accumulati. & 5 & Media & S2 & Done \\
+PB-16 & Come utente, voglio segnalare comportamenti scorretti di altri utenti. & 3 & Media & S2 & Done \\
+PB-17 & Come admin, voglio visualizzare le statistiche della piattaforma (scambi, crediti, utenti). & 5 & Alta & S2 & Done \\
+PB-18 & Come admin, voglio sospendere, bannare in modo reversibile e riabilitare utenti. & 5 & Alta & S2 & Done \\
+PB-19 & Come admin, voglio gestire e forzare lo stato degli annunci non conformi. & 3 & Media & S2 & Done \\
+PB-20 & Come sistema, voglio applicare hardening sicurezza (Helmet, rate-limit, sanitizzazione). & 3 & Alta & S2 & Done \\
+PB-21 & Come team, voglio CI/CD automatizzato su GitHub Actions con test e smoke produzione. & 3 & Alta & S2 & Done \\
+PB-22 & Come team, voglio il deploy stabile su Render.com con MongoDB Atlas. & 5 & Alta & S2 & Done \\
+PB-23 & Come utente, voglio poter aprire un ticket di supporto dalla piattaforma. & 2 & Bassa & S2 & Parziale API \\
+% -- Backlog futuro --
+PB-24 & Come utente, voglio accedere con SPID/SSO istituzionale. & 8 & Bassa & -- & Backlog \\
+PB-25 & Come utente, voglio visualizzare gli annunci vicini su una mappa interattiva. & 5 & Bassa & -- & Backlog \\
+PB-26 & Come utente, voglio ricevere notifiche in tempo reale via WebSocket (senza polling). & 5 & Bassa & -- & Backlog \\
+PB-27 & Come utente mobile, voglio una schermata dedicata per i ticket di supporto. & 2 & Bassa & -- & Backlog \\
+PB-28 & Come sistema, voglio verificare end-to-end la consegna push su dispositivo reale. & 3 & Media & -- & Backlog \\
+PB-29 & Come sistema, voglio validare RNF2 con un load test documentato a 500 utenti concorrenti. & 5 & Media & -- & Backlog \\
+
+\end{longtable}
+
+% ==============================================================
+\section{Sezione Sprint \#2}
+% ==============================================================
+
+\subsection{Goal}
+
+\textbf{Periodo:} 18 maggio 2026 -- 7 giugno 2026.
+
+Lo Sprint 2 ha avuto come obiettivo principale l'\textbf{estensione della piattaforma con le funzionalità sociali e di moderazione} e il \textbf{raggiungimento di un deploy stabile in produzione}. Concretamente: completare recensioni, chat, notifiche in-app, sistema premi e segnalazioni; realizzare il pannello di amministrazione con statistiche e moderazione utenti; irrobustire la sicurezza del backend; automatizzare test e deploy tramite CI/CD.
+
+\subsection{Sprint 2 Planning}
+
+\subsubsection*{Sprint 2 Backlog}
+
+Il backlog di Sprint 2 corrisponde agli item PB-11---PB-23 del product backlog. La colonna ``owner'' indica il responsabile prevalente, mentre la colonna dei contributi riporta i casi in cui la feature è stata completata o corretta da più membri.
+
+\begin{table}[H]
+  \centering\scriptsize\sloppy
+  \begin{tabular}{C{0.8cm}L{3.6cm}C{0.65cm}L{3cm}L{2.8cm}L{1.7cm}}
+    \toprule
+    \textbf{ID} & \textbf{User Story} & \textbf{SP} & \textbf{Owner prevalente / contributi} & \textbf{Stato} \\
+    \midrule
+    PB-11 & Recensioni post-scambio & 5 & P. Sarcletti; integrazione mobile AT & Done \\
+    PB-12 & Chat e messaggi tra partecipanti & 8 & P. Sarcletti; notifiche AG; hardening AT & Done \\
+    PB-13 & Notifiche in-app & 5 & A. Gremes; hook PS/AT & Done \\
+    PB-14 & Push notification Expo & 5 & AG backend, AT mobile/test & Parziale \\
+    PB-15 & Sistema premi / coupon & 5 & A. Turri & Done \\
+    PB-16 & Segnalazioni utenti & 3 & A. Turri & Done \\
+    PB-17 & Dashboard admin --- statistiche & 5 & A. Gremes; grafici/statistiche finali AT & Done \\
+    PB-18 & Admin moderazione utenti & 5 & AG frontend iniziale; AT backend atomico/fix & Done \\
+    PB-19 & Admin gestione annunci & 3 & A. Turri & Done \\
+    PB-20 & Hardening sicurezza & 3 & AG hardening iniziale; AT regression/security fixes & Done \\
+    PB-21 & CI/CD GitHub Actions & 3 & AG workflow iniziale; AT deploy/smoke Node 22 & Done \\
+    PB-22 & Deploy Render.com + MongoDB Atlas & 5 & A. Turri & Done \\
+    PB-23 & Ticket di supporto & 2 & A. Turri backend/API/test; UI dedicata futura & Parziale API \\
+    \midrule
+    \multicolumn{2}{r}{\textbf{Totale impegnato}} & \textbf{57} & & \multicolumn{2}{l}{53 SP Done pieni, 4 SP parziali dichiarati} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{itemize}[noitemsep]
+  \item \textbf{Alessandro Gremes:} 38 commit nel periodo come \code{alegrem123} più 5 commit con autore \code{Alessandro Gremes}; aree principali: \code{/api/v1}, CORS, Apiary iniziale, email, notifiche, admin dashboard, CI, hardening errori/id.
+  \item \textbf{Paolo Sarcletti:} 18 commit nel periodo; aree principali: recensioni backend, test recensioni, QR edge cases, chat search/image/polling/typing, frontend profilo pubblico e recensioni.
+  \item \textbf{Alessandro Turri:} 143 commit nel periodo; aree principali: premi/coupon, segnalazioni/malus, mobile, deploy, admin backend, sicurezza finale, test regressione, documentazione D4 e tracciabilità.
+\end{itemize}
+
+Questa distribuzione spiega perché alcune user story sono attribuite a un owner prevalente ma riportano contributi incrociati: il lavoro finale è stato integrato e corretto collettivamente, soprattutto sui moduli admin, sicurezza, notifiche e mobile.
+
+\subsubsection*{Burndown Chart}
+
+Sprint 2 è durato 3 settimane (18 maggio -- 7 giugno 2026). La velocità iniziale è stata più bassa a causa della definizione dell'architettura dei moduli Social, poi ha accelerato nelle settimane centrali.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=13cm, height=7cm,
+  xlabel={Giorno dello sprint},
+  ylabel={Story point rimanenti},
+  xmin=0, xmax=21,
+  ymin=0, ymax=62,
+  xtick={0,7,14,21},
+  xticklabels={0 (16/5),7 (23/5),14 (30/5),21 (6/6)},
+  ytick={0,10,20,30,40,50,57},
+  grid=major,
+  grid style={line width=0.3pt, draw=gray!30},
+  legend pos=north east,
+  legend style={font=\small},
+  title={Burndown Sprint 2 -- RE-VALUE},
+  title style={font=\normalsize\bfseries},
+]
+% Linea ideale
+\addplot[color=gray, dashed, line width=1.5pt, mark=none]
+  coordinates {(0,57)(21,0)};
+\addlegendentry{Ideale}
+
+% Linea effettiva
+\addplot[color=blurevalue, solid, line width=2pt, mark=*, mark size=2.5pt]
+  coordinates {(0,57)(7,49)(14,32)(21,4)};
+\addlegendentry{Effettivo}
+
+\end{axis}
+\end{tikzpicture}
+\caption{Burndown chart Sprint 2 (57 SP totali; 4 SP residui dichiarati: verifica push nativa su device reale e UI dedicata ticket supporto).}
+\end{figure}
+
+\subsection{Test Cases}
+
+La verifica finale di Sprint 2 è stata eseguita il \textbf{8 giugno 2026} con i comandi:
+\code{cd backend \&\& npm test -- --coverage --coverageReporters=text --runInBand},
+\code{cd frontend \&\& npm test} e \code{cd mobile \&\& npm test}. L'esito complessivo è:
+\textbf{backend 192/192 test passati su 21 suite}, \textbf{frontend 9/9 smoke test passati} e
+\textbf{mobile 11/11 smoke test passati}. La coverage backend rilevata è
+\textbf{69.48\% statements}, \textbf{57.39\% branches}, \textbf{67.63\% functions} e
+\textbf{71.52\% lines}; i model e le route risultano quasi interamente coperti, mentre i controller
+di chat/messaggi e gli adapter opzionali restano le aree con copertura più bassa.
+
+\renewcommand{\arraystretch}{1.12}
+\setlength\tabcolsep{2pt}
+\hfuzz=10pt
+\tiny
+\begin{longtable}{L{1.2cm}C{0.45cm}L{2.35cm}L{2.05cm}L{1.95cm}L{0.9cm}L{2.3cm}L{1.55cm}L{2.05cm}}
+\toprule
+\textbf{User Story} & \textbf{N} & \textbf{Descrizione} & \textbf{Dati Test} & \textbf{Precondizioni} & \textbf{Dip.} & \textbf{Risultato Atteso} & \textbf{Ris. Eff.} & \textbf{Note} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+US01 & 1 & Registrazione valida. & Email valida, password 8+ char. & Email non registrata. & Auth & HTTP 201, JWT, wallet a 0, hash non esposto. & \code{PASS-auth} & EP; RF2/RF3, OCL \#1-\#2. \\
+US01 & 2 & Email già registrata. & Stessa email usata due volte. & Utente esistente. & Auth & Registrazione rifiutata, nessun duplicato. & \code{PASS-auth} & EP; unicità email. \\
+US01 & 3 & Password sotto soglia. & Password di 7 caratteri. & Email nuova. & Auth & HTTP 400, vincolo password applicato. & \code{PASS-auth} & BVA; RNF4/OCL \#2. \\
+US01 & 4 & Login corretto. & Email/password valide. & Utente attivo. & Auth & HTTP 200 con JWT valido. & \code{PASS-auth} & EP; RF3. \\
+US01 & 5 & Login con password errata. & Email valida, password errata. & Utente attivo. & Auth & HTTP 401, nessun token. & \code{PASS-auth} & EP; credenziali invalide. \\
+US01 & 6 & Login utente bannato. & Credenziali corrette. & \code{bannato=true}. & Auth & HTTP 403, accesso negato. & \code{PASS-auth} & Cause-effect; moderazione. \\
+US01 & 7 & JWT scaduto. & Token con \code{expiresIn=-1s}. & Route privata. & JWT & HTTP 401. & \code{PASS-auth} & Error guessing; sessioni. \\
+US01 & 8 & Rate limit login. & 6 tentativi stesso identificatore. & Limiter attivo. & Auth & Il sesto tentativo riceve 429. & \code{PASS-auth} & BVA; soglia 5. \\
+
+US02 & 9 & Catalogo pubblico. & GET \code{/api/v1/annunci}. & Annunci attivi nel DB. & Ann. & HTTP 200, lista paginata. & \code{PASS-annunci} & EP; RF4/UC8. \\
+US02 & 10 & Privacy coordinate anonime. & Richiesta non autenticata. & Annuncio con lat/lng. & Ann. & Coordinate esatte non esposte. & \code{PASS-catalog} & Cause-effect; RF25. \\
+US02 & 11 & Filtro categoria. & \code{?categoria=Mobili}. & Dataset misto. & Ann. & Solo annunci della categoria richiesta. & \code{PASS-annunci} & EP; RF22. \\
+US02 & 12 & Filtro dimensione. & Dimensione \code{grande}. & Dataset misto. & Ann. & Solo annunci coerenti. & \code{PASS-annunci} & EP; RF22. \\
+US02 & 13 & Filtro materiale. & \code{?materiale=legno}. & Dataset misto. & Ann. & Solo annunci coerenti. & \code{PASS-annunci} & EP; RF22. \\
+US02 & 14 & Ordinamento per scadenza. & Tre scadenze diverse. & Annunci attivi. & DB & Ordine ASC per \code{dataScadenza}. & \code{PASS-annunci} & BVA/RNF1. \\
+
+US03 & 15 & Creazione annuncio valida. & Titolo, oggetto, max 5 foto, scadenza futura. & Donatore autenticato. & Auth & HTTP 201, stato \code{DISPONIBILE}. & \code{PASS-annunci} & EP; RF15/RF16/OCL \#5. \\
+US03 & 16 & Scadenza nel passato. & \code{dataScadenza < now}. & Donatore autenticato. & Auth & HTTP 400, annuncio non creato. & \code{PASS-annunci} & BVA; OCL \#5. \\
+US03 & 17 & Foto oltre limite. & 6 foto base64. & Donatore autenticato. & Upload & HTTP 400. & \code{PASS-annunci} & BVA; max 5 foto. \\
+US03 & 18 & Campi obbligatori assenti. & Titolo o categoria mancanti. & Donatore autenticato. & Model & HTTP 400. & \code{PASS-annunci} & EP; required fields. \\
+US03 & 19 & Modifica annuncio disponibile. & PUT titolo/descrizione. & Donatore, stato \code{DISPONIBILE}. & Auth & HTTP 200, dati aggiornati. & \code{PASS-annunci} & EP; RF18/OCL \#8. \\
+US03 & 20 & Modifica annuncio prenotato. & PUT su stato \code{PRENOTATO}. & Donatore proprietario. & Auth & HTTP 409. & \code{PASS-annunci} & Cause-effect; OCL \#8. \\
+US03 & 21 & Soft delete. & DELETE annuncio disponibile. & Donatore proprietario. & Auth & \code{isAttivo=false}, documento conservato. & \code{PASS-annunci} & EP; soft delete. \\
+
+US04 & 22 & Prenotazione valida. & Acquirente prenota annuncio disponibile. & Annuncio attivo e non scaduto. & Auth & HTTP 201, annuncio \code{PRENOTATO}. & \code{PASS-swap} & EP; OCL \#6-\#7. \\
+US04 & 23 & Donatore prenota proprio annuncio. & ID annuncio proprio. & Donatore autenticato. & Auth & Prenotazione rifiutata. & \code{PASS-swap} & Cause-effect; OCL \#4. \\
+US04 & 24 & Prenotazione concorrente. & Due acquirenti simultanei. & Annuncio disponibile. & DB & Un 201, un 409, una sola \code{ATTIVA}. & \code{PASS-conc} & Cause-effect; OCL \#9/RNF2. \\
+US04 & 25 & Stress locale a 10 utenti. & Dieci prenotazioni simultanee. & Annuncio disponibile. & DB & Un successo, nove conflitti. & \code{PASS-conc} & Error guessing; concorrenza locale, RNF2 parziale. \\
+US04 & 26 & Annullamento entro finestra. & DELETE prenotazione entro 15 min. & Prenotazione \code{ATTIVA}. & Auth & \code{ANNULLATA}, annuncio disponibile. & \code{PASS-pren} & BVA; OCL \#10-\#11. \\
+US04 & 27 & Annullamento fuori finestra. & Prenotazione oltre 15 min. & Prenotazione \code{ATTIVA}. & Auth & HTTP 409 finestra scaduta. & \code{PASS-pren} & BVA; OCL \#10. \\
+
+US05 & 28 & Generazione QR valida. & Donatore chiama \code{/qr/genera}. & Prenotazione \code{ATTIVA}. & Auth & Token QR non nullo, scadenza futura. & \code{PASS-swap} & EP; OCL \#13. \\
+US05 & 29 & Acquirente tenta QR. & \code{/qr/genera} da acquirente. & Prenotazione attiva. & Auth & HTTP 403. & \code{PASS-qr} & Cause-effect; ruoli. \\
+US05 & 30 & Validazione QR valida. & Codice QR corretto. & Prenotazione \code{ATTIVA}. & Wallet & \code{COMPLETATA}, annuncio \code{RITIRATO}, crediti dinamici accreditati a entrambi. & \code{PASS-swap} & Cause-effect; OCL \#14/RNF5; reverse auction. \\
+US05 & 31 & QR già usato. & Stesso codice due volte. & Scambio completato. & QR & HTTP 409. & \code{PASS-qr} & Error guessing; idempotenza. \\
+US05 & 32 & QR scaduto. & Token scaduto. & Documento QR esistente. & QR & HTTP 410. & \code{PASS-qr} & BVA; TTL 24h. \\
+US05 & 33 & QR inesistente. & Codice casuale. & Nessun token. & QR & HTTP 404. & \code{PASS-qr} & EP; codice invalido. \\
+
+US06 & 34 & Wallet nuovo. & Creazione utente. & Registrazione valida. & Auth & Bilancio 0, storico vuoto. & \code{PASS-wallet} & EP; OCL \#15. \\
+US06 & 35 & Accredito positivo. & \code{ammontare=}. & Wallet esistente. & Wallet & Bilancio incrementato, transazione registrata. & \code{PASS-wallet} & EP; OCL \#16. \\
+US06 & 36 & Accredito nullo. & \code{ammontare=0}. & Wallet esistente. & Wallet & Errore, saldo invariato. & \code{PASS-wallet} & BVA; OCL \#16. \\
+US06 & 37 & Sottrazione valida. & Saldo 100, costo 50. & Wallet esistente. & Wallet & Saldo 50, transazione registrata. & \code{PASS-wallet} & EP; OCL \#17. \\
+US06 & 38 & Saldo insufficiente. & Saldo 10, costo 50. & Wallet esistente. & Wallet & Errore, saldo non negativo. & \code{PASS-wallet} & BVA; OCL \#15/\#17. \\
+
+US07 & 39 & Chat richiede JWT. & GET messaggi senza token. & Conversazione esistente. & Auth & HTTP 401. & \code{PASS-chat} & EP; RF14. \\
+US07 & 40 & Utente estraneo legge chat. & GET da non partecipante. & Conversazione attiva. & Auth & HTTP 403. & \code{PASS-chat} & Cause-effect; RF13. \\
+US07 & 41 & Partecipante legge storico. & GET da donatore/acquirente. & Prenotazione attiva. & Auth & HTTP 200 con messaggi. & \code{PASS-chat} & EP; RF11. \\
+US07 & 42 & Partecipante invia messaggio. & POST testo valido. & Conversazione attiva. & Auth & HTTP 201, messaggio nello storico. & \code{PASS-chat} & EP; RF10. \\
+US07 & 43 & Immagine oltre limite. & POST allegato grande. & Conversazione esistente. & Chat & HTTP 413. & \code{PASS-chat} & BVA; allegati. \\
+
+US08 & 44 & Segnalazione valida. & Motivo non vuoto, target diverso. & Utente autenticato. & Auth & HTTP 201. & \code{PASS-segn} & EP; RF9/OCL \#18-\#19. \\
+US08 & 45 & Auto-segnalazione. & Segnalante = segnalato. & Utente autenticato. & Auth & HTTP 409/400. & \code{PASS-segn} & Cause-effect; OCL \#19. \\
+US08 & 46 & Motivo vuoto. & Motivo stringa vuota. & Utente autenticato. & Auth & HTTP 400. & \code{PASS-segn} & BVA; OCL \#18. \\
+US08 & 47 & No-show da acquirente. & POST no-show da acquirente. & Prenotazione attiva. & Auth & HTTP 403. & \code{PASS-pren} & Cause-effect; RF19. \\
+US08 & 48 & No-show da donatore. & POST no-show da donatore. & Prenotazione attiva. & Auth & Annullamento, annuncio disponibile, malus +1. & \code{PASS-pren} & EP; RF19/OCL \#20. \\
+US08 & 49 & Terzo malus. & Applica terzo malus. & Utente con 2 malus. & Admin & Utente auto-sospeso. & \code{PASS-admin} & BVA; soglia 3/OCL \#20. \\
+
+US09 & 50 & Lista premi attivi. & GET \code{/premi}. & Coupon attivi/non attivi. & Premi & Solo premi attivi ordinati per costo. & \code{PASS-premi} & EP; US09. \\
+US09 & 51 & Riscatto saldo sufficiente. & Costo 50, saldo 100. & Utente autenticato. & Wallet & HTTP 201, codice univoco, stock aggiornato. & \code{PASS-premi} & EP; OCL \#17. \\
+US09 & 52 & Riscatto saldo insufficiente. & Costo 50, saldo 10. & Utente autenticato. & Wallet & HTTP 409, saldo invariato. & \code{PASS-premi} & BVA; OCL \#17. \\
+US09 & 53 & Riscatto già usato. & PATCH usato due volte. & Riscatto proprietario. & Premi & Secondo update rifiutato. & \code{PASS-premi} & Error guessing; stato. \\
+
+US10 & 54 & Utente normale accede admin. & JWT ruolo \code{user}. & Route admin. & Auth & HTTP 403. & \code{PASS-security} & EP; ruoli. \\
+US10 & 55 & Sospensione e riabilitazione. & Admin sospende poi riabilita. & Utente non bannato. & Admin & Stato aggiornato, accessi coerenti. & \code{PASS-admin} & EP; moderazione. \\
+US10 & 56 & Riabilitazione bannato. & Admin riabilita utente bannato. & \code{bannato=true}. & Admin & Blocco rimosso e login nuovamente consentito. & \code{PASS-admin} & Cause-effect; decisione S2: ban reversibile. \\
+US10 & 57 & Forzatura stato annuncio. & Admin forza annuncio bloccato. & Prenotazione attiva. & Admin & Stato aggiornato e prenotazioni annullate. & \code{PASS-admin} & Error guessing; RF31. \\
+
+US11 & 58 & Recensione prima dello scambio. & POST su prenotazione attiva. & Scambio non completato. & Auth & HTTP 409. & \code{PASS-review} & Cause-effect; OCL \#21. \\
+US11 & 59 & Recensione post-scambio. & POST dopo QR valido. & Prenotazione completata. & Auth & HTTP 201. & \code{PASS-review} & EP; RF21/RF28. \\
+US11 & 60 & Recensione duplicata. & Stesso autore/prenotazione. & Prima recensione presente. & Auth & HTTP 409. & \code{PASS-review} & Error guessing; duplicati. \\
+
+US12 & 61 & Lista notifiche richiede token. & GET notifiche anonimo. & Notifiche esistenti. & Auth & HTTP 401. & \code{PASS-notif} & EP; RF12. \\
+US12 & 62 & Lista notifiche filtrabile. & \code{?letta=false}. & Notifiche miste. & Notif. & HTTP 200, paginazione coerente. & \code{PASS-notif} & EP; RF12. \\
+US12 & 63 & Marca singola letta. & PATCH notifica propria. & Notifica non letta. & Auth & Solo notifica propria aggiornata. & \code{PASS-notif} & Cause-effect; ownership. \\
+US12 & 64 & Token Expo valido. & Token Expo valido. & Utente autenticato. & Mobile & Token salvato nel profilo. & \code{PASS-push} & EP; push parziale. \\
+US12 & 65 & Token Expo non valido. & Stringa qualsiasi. & Utente autenticato. & Mobile & HTTP 400. & \code{PASS-push} & EP; validazione token. \\
+
+US13 & 66 & Ticket supporto valido. & Oggetto e messaggio non vuoti. & Utente autenticato. & Supp. & HTTP 201. & \code{PASS-supp} & EP; supporto S2. \\
+US13 & 67 & Ticket supporto vuoto. & Messaggio vuoto. & Utente autenticato. & Supp. & HTTP 400. & \code{PASS-supp} & BVA; required. \\
+US13 & 68 & Lista ticket personali. & GET ticket utente. & Ticket di più utenti. & Supp. & Solo ticket del richiedente. & \code{PASS-supp} & Cause-effect; privacy. \\
+
+S2-N1 & 69 & Endpoint legacy scambi. & GET/POST \code{/api/v1/scambi/*}. & Route legacy. & API & HTTP 410 con \code{Deprecation}. & \code{PASS-legacy} & Error guessing; compatibilità. \\
+S2-N2 & 70 & Smoke frontend. & Node test su viste web. & Repository completo. & Web & 8 smoke test passati. & \code{PASS-front} & Regression; frontend. \\
+S2-N3 & 71 & Smoke mobile. & Node test su schermate RN. & Repository completo. & Mobile & 10 smoke test passati. & \code{PASS-mobile} & Regression; mobile. \\
+S2-N4 & 72 & CI backend con coverage. & GitHub Actions su push/PR. & Branch \code{main/preRelease}. & CI & Test backend, frontend e mobile eseguiti. & \code{PASS-CI} & White-box; regressione. \\
+S2-N5 & 73 & Push end-to-end device reale. & Device fisico Expo/EAS. & Permessi e build configurati. & Expo & Notifica ricevuta sul device. & \code{PENDING-PB28} & Manuale; dipende da EAS. \\
+
+\end{longtable}
+\setlength\tabcolsep{6pt}
+\renewcommand{\arraystretch}{1}
+\normalsize
+
+\subsection{Sprint Review}
+
+La Sprint Review si è svolta al termine della terza settimana di Sprint 2 (8 giugno 2026). Durante la demo è stato mostrato l'intero flusso della piattaforma in produzione: registrazione, login, pubblicazione annuncio, prenotazione, generazione QR, scansione, completamento scambio con aggiornamento wallet tramite crediti dinamici, invio messaggio in chat, riscatto coupon, invio segnalazione e gestione da pannello admin (statistiche, moderazione utente, forzatura stato annuncio).
+
+\medskip
+\noindent\textbf{Aspetti rilevanti della demo:}
+
+\begin{itemize}[noitemsep]
+  \item Tutti i flussi principali sono risultati operativi in produzione; la verifica del 8 giugno ha confermato backend 192/192, frontend 9/9 e mobile 11/11 test passati.
+  \item Il pannello admin ha mostrato le statistiche in tempo reale calcolate dalla suite di aggregazioni MongoDB.
+  \item La demo della chat ha evidenziato il funzionamento del middleware \code{requireParticipant}: utenti estranei non possono accedere allo storico.
+  \item Le notifiche in-app vengono create e segnate come lette correttamente; il canale push su dispositivo reale non è stato dimostrato live per dipendenza dalla configurazione EAS.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Discussione:}
+Nel complesso la demo ha soddisfatto i criteri di accettazione dei principali use case. Le limitazioni emerse e dichiarate nel report sono due: la consegna push nativa non è stata verificata end-to-end su dispositivo fisico con build EAS, e il modulo supporto è completo lato backend/API ma non ha ancora una schermata dedicata comparabile alle altre aree web/mobile. Sono stati predisposti due account demo verificati in produzione per rendere la valutazione ripetibile senza interventi manuali su MongoDB Atlas.
+
+\subsection{Product Backlog Refinement}
+
+Il meeting di refinement si è tenuto al termine della seconda settimana di Sprint 2. Le principali variazioni al product backlog sono state le seguenti.
+
+\begin{itemize}[noitemsep]
+  \item Le storie relative a SPID/SSO e mappa OpenStreetMap (PB-24, PB-25) sono state spostate in icebox: il rapporto tra effort e valore prototipale non giustifica l'integrazione entro la deadline D4.
+  \item La storia PB-14 (push notification nativa su device reale) è stata ridimensionata: il backend Expo Push e il package \code{expo-notifications} nel client mobile sono presenti; la verifica end-to-end su dispositivo reale (PB-28) è stata separata e spostata nel backlog futuro.
+  \item È stata aggiunta la storia PB-23 (ticket di supporto) dopo il feedback ricevuto durante la Sprint Review intermedia. Entro Sprint 2 sono stati completati backend, API e test; la UI dedicata è stata spostata nel backlog futuro per non ridurre la qualità dei flussi core.
+  \item Il sistema crediti è stato evoluto da accredito fisso a \textit{reverse auction}: i punti assegnati a donatore e acquirente sono calcolati dinamicamente in base a categoria e vicinanza alla scadenza, poi salvati sulla prenotazione e accreditati solo alla validazione QR.
+  \item La moderazione PB-18 è stata interpretata come blocco amministrativo reversibile: l'utente bannato non può accedere finché il flag \code{bannato=true}, ma un admin può riabilitarlo in caso di errore o revisione manuale. Questa scelta mantiene tracciabilità e recuperabilità dell'account nel prototipo accademico.
+  \item È stato identificato un bug nella logica dello scheduler (annunci scaduti non venivano marcati \code{isAttivo=false}) e nel metodo \code{forzaStatoAnnuncio} (non ripristinava \code{isAttivo=true}): entrambi i fix sono stati inclusi nello sprint corrente come task tecnici.
+\end{itemize}
+
+\subsection{Sprint Retrospective}
+
+La retrospettiva si è tenuta l' 8 giugno 2026, a valle della Sprint Review e della preparazione della documentazione D4.
+
+\medskip
+\noindent\textbf{Cosa ha funzionato:}
+\begin{itemize}[noitemsep]
+  \item La separazione in layer (route → controller → service → model) ha permesso di aggiungere tutti i moduli Sprint 2 senza riscrivere il backend: ogni membro ha lavorato su file distinti con conflitti minimi.
+  \item L'adozione di Conventional Commits e branch per membro ha reso la cronologia git leggibile e ha semplificato la costruzione della lista commit finale.
+  \item La suite di test automatici (backend 192/192, frontend 9/9, mobile 11/11) ha dato fiducia nelle modifiche: ogni merge su \code{preRelease} era verificato dal CI prima di toccare \code{main}.
+  \item Il deploy su Render.com ha richiesto meno effort del previsto; la configurazione con variabili d'ambiente ha tenuto le credenziali fuori dal repository.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Cosa non ha funzionato:}
+\begin{itemize}[noitemsep]
+  \item La gestione del time-boxing non è stata sempre rispettata: alcune storie (chat, admin moderazione) si sono rivelate più complesse del previsto e hanno richiesto più SP di quanto stimato.
+  \item L'integrazione push nativa ha richiesto tempo su configurazione EAS che non era prevista inizialmente; il risultato è parziale.
+  \item I bug nello scheduler e in \code{forzaStatoAnnuncio} sono stati scoperti tardi: un code review più attento sulle funzioni critiche avrebbe permesso di intercettarli prima.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Adozione di pratiche agili:}
+  Durante lo sviluppo di RE-VALUE il team ha adottato un processo agile ispirato a Scrum, adattato al contesto accademico e alla dimensione ridotta del gruppo. Il lavoro è stato organizzato in sprint
+  incrementali, con un backlog mantenuto e aggiornato in base alle priorità funzionali, ai vincoli del corso.
+
+  All'inizio dello Sprint 2 il team ha svolto una fase di planning per selezionare le user story più rilevanti: chat, notifiche, recensioni, premi, segnalazioni, moderazione admin, deploy e hardening API. A
+  ciascuna attività sono stati associati story point e un responsabile prevalente, pur mantenendo collaborazione trasversale nei punti più critici, come QR, wallet, sicurezza e documentazione.
+
+  La gestione del lavoro è stata supportata da una strategia Gitflow semplificata: \code{main} come branch stabile, \code{preRelease} come branch di integrazione e branch temporanei \code{feat/*}, \code{fix/
+  *} e \code{test/*} per lo sviluppo delle singole attività. Questa scelta ha permesso di integrare progressivamente le funzionalità e di mantenere una cronologia leggibile tramite Conventional Commits.
+
+  Il team ha applicato una Definition of Done condivisa: una user story è stata considerata conclusa solo dopo aggiornamento del contratto API, implementazione, test automatici o smoke test, verifica su
+  ambiente integrato e assenza di regressioni critiche. Per le funzionalità backend più rischiose sono stati aggiunti test di regressione con Jest/Supertest, mentre frontend e mobile sono stati verificati
+  con smoke test automatici e prove manuali sui flussi principali.
+
+  Durante lo sprint sono stati svolti momenti frequenti di sincronizzazione informale, usati per riallineare priorità, risolvere blocchi tecnici e ridistribuire attività quando alcune stime iniziali si sono
+  rivelate ottimistiche. La retrospettiva di Sprint 1 ha portato a decisioni concrete in Sprint 2: introduzione sistematica del prefisso \code{/api/v1}, maggiore attenzione alla documentazione API,
+  rafforzamento dei test su concorrenza e sicurezza, e deploy stabile su cloud.
+
+  Il processo non è stato applicato in modo puramente formale: alcune revisioni sono state svolte direttamente tramite integrazione su \code{preRelease} e controllo con CI, invece che sempre tramite pull
+  request strutturate. Questa deviazione è stata documentata come adattamento pragmatico alla dimensione del team, mantenendo comunque i principi agili di incremento funzionante, ispezione continua,
+  adattamento e trasparenza sulle decisioni tecniche.
+
+
+\medskip
+\noindent\textbf{Spunti per eventuali sprint futuri:}
+\begin{itemize}[noitemsep]
+  \item Completare la verifica push end-to-end su dispositivo fisico con EAS.
+  \item Eseguire e documentare un load test RNF2 con 500 utenti concorrenti simulati.
+  \item Valutare WebSocket per le notifiche in tempo reale (attualmente il frontend fa polling).
+  \item Aggiungere indice geospaziale 2dsphere per ottimizzare le query di catalogo con filtro distanza.
+  \item Migrare l'hashing password da SHA-256 a bcrypt/Argon2 in un contesto di produzione reale.
+\end{itemize}
+
+% ==============================================================
+\section{Sezione Finale}
+% ==============================================================
+
+\subsection{Diagramma del deploy finale}
+Il sistema è deployato su un'architettura cloud a tre blocchi principali: repository e pipeline CI/CD su GitHub, servizi applicativi su Render e persistenza su MongoDB Atlas. Il branch \code{main}
+  rappresenta la versione stabile consegnabile: dopo il merge da \code{preRelease}, GitHub Actions esegue test backend con coverage, smoke test frontend/mobile e controlli HTTP sugli ambienti di produzione.
+  Solo dopo una pipeline verde il deploy Render viene considerato valido per la consegna.
+
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{diagram.png}
+    \caption{Deployment diagram di RE-VALUE: GitHub Actions, servizi Render, client web/mobile e MongoDB Atlas.}
+    \label{fig:deployment}
+  \end{figure}
+
+  Il backend è eseguito come Web Service Render e contiene l'API Node.js/Express esposta sotto il prefisso \code{/api/v1}, la Swagger UI accessibile da \code{/api-docs} e lo scheduler batch per la scadenza
+  automatica degli annunci. La configurazione sensibile è gestita tramite variabili d'ambiente Render, tra cui \code{MONGODB\_URI}, \code{JWT\_SECRET}, \code{FRONTEND\_URL}, \code{NODE\_ENV=production} e
+  \code{REQUEST\_BODY\_LIMIT}.
+
+  Il frontend web è deployato come sito statico Render e comunica con il backend tramite chiamate HTTPS REST verso gli endpoint versionati. L'app mobile Expo/React Native usa lo stesso contratto API e si
+  collega al backend di produzione tramite HTTPS. La persistenza è affidata a MongoDB Atlas, raggiunto dal backend tramite Mongoose e connection string TLS. Le principali collezioni includono utenti,
+  annunci, prenotazioni, wallet, token QR, conversazioni, recensioni, segnalazioni, notifiche, coupon e riscatti.
+
+  Questa configurazione separa chiaramente client, API e database, mantiene le credenziali fuori dal repository e rende verificabile il rilascio tramite CI/CD e smoke test su produzione.
+
+
+\subsection{Note sui servizi esterni}
+
+\begin{itemize}[noitemsep]
+  \item \textbf{SPID/SSO:} non implementato nel prototipo. L'autenticazione usa email/password con JWT. Dichiarato come scelta progettuale per il contesto accademico.
+  \item \textbf{OpenStreetMap (backend):} non attivo come servizio backend. La geolocalizzazione rimane lato client; le coordinate degli annunci vengono filtrate via haversine in-memory per il catalogo con raggio.
+  \item \textbf{Email (Nodemailer/SMTP):} adapter opzionale. Invia solo se \code{SMTP\_USER} e \code{SMTP\_PASS} sono configurati; salta senza bloccare il flusso applicativo in assenza di configurazione.
+  \item \textbf{Expo Push API:} il backend chiama \code{https://exp.host/--/api/v2/push/send} in modalità fire-and-forget quando l'utente ha un \code{expoPushToken} valido. Il package \code{expo-notifications} è presente nel client mobile; la verifica end-to-end su dispositivo fisico con configurazione EAS è stata rimandata al backlog futuro (PB-28).
+  \item \textbf{SHA-256 salato per hashing password:} scelta deliberata per il prototipo accademico, in coerenza con il vincolo OCL \#2 implementato nel modello utente: il backend accetta hash legacy a 64 caratteri o il formato salato \code{salt:sha256}. In un contesto produttivo si raccomanda bcrypt o Argon2 con parametri di costo configurabili.
+\end{itemize}
+
+\subsection{Stack tecnologico}
+
+\subsubsection*{Backend}
+
+\begin{itemize}[noitemsep]
+  \item \textbf{Runtime:} Node.js 22 (LTS) --- versione usata in ambiente CI/CD; lo sviluppo locale è stato condotto su versioni recenti compatibili.
+  \item \textbf{Framework:} Express 5.2
+  \item \textbf{Database:} MongoDB 7, Mongoose 8 (ODM)
+  \item \textbf{Autenticazione:} JWT (\code{jsonwebtoken} 9), hashing SHA-256 (\code{crypto} nativo)
+  \item \textbf{Sicurezza:} Helmet 8, express-rate-limit 8, express-mongo-sanitize 2, CORS configurato per ambiente
+  \item \textbf{Email:} Nodemailer 8 (adapter opzionale)
+  \item \textbf{Logging:} Morgan 1
+  \item \textbf{Testing:} Jest 29, Supertest 7, mongodb-memory-server 9 (MongoMemoryReplSet per transazioni)
+  \item \textbf{CI:} GitHub Actions (Node.js 22, coverage obbligatoria)
+  \item \textbf{Deploy:} Render.com Web Service
+\end{itemize}
+
+\subsubsection*{Frontend web}
+
+\begin{itemize}[noitemsep]
+  \item HTML5, CSS3, JavaScript ES modules (vanilla, nessun framework)
+  \item Bootstrap (layout e componenti UI)
+  \item Chart.js (grafici nella dashboard admin)
+  \item \code{jsQR} (decodifica QR da browser)
+  \item Client API centralizzato (\code{frontend/js/apiClient.js})
+  \item Deploy: Render.com Static Site
+\end{itemize}
+
+\subsubsection*{App mobile}
+
+\begin{itemize}[noitemsep]
+  \item Expo 54, React Native 0.81.5
+  \item \code{@react-native-async-storage/async-storage} (persistenza token)
+  \item \code{expo-camera 17} (scansione QR)
+  \item \code{expo-image-picker 17} (foto annunci)
+  \item \code{expo-location 19} (geolocalizzazione)
+  \item \code{expo-notifications 0.32} (push notification, installato, integrazione end-to-end su device reale in PB-28)
+  \item \code{react-native-qrcode-svg 6}, \code{react-native-svg 15} (generazione QR)
+  \item \code{@expo/vector-icons 15}
+\end{itemize}
+
+\subsubsection*{Documentazione e strumenti}
+
+\begin{itemize}[noitemsep]
+  \item OpenAPI 3 / Swagger (\code{oas3.yaml}) --- fonte formale e machine-readable del contratto API
+  \item API Blueprint / Apiary (\code{apiary.apib}) --- documentazione pubblicabile su Apiary
+  \item Conventional Commits per la cronologia git
+  \item GitHub Actions per CI/CD con smoke test su produzione
+\end{itemize}
+
+
+\subsection{Conclusioni}
+
+RE-VALUE è partito come un nucleo minimale (auth, annunci, prenotazione, QR, wallet) e nel corso dei due sprint si è evoluto in una piattaforma completa con funzionalità sociali, moderazione admin, sistema reputazionale, crediti dinamici e deploy in produzione su cloud. La suite automatica finale passa con 191 test backend su 21 suite, 9 smoke test frontend e 11 smoke test mobile, garantendo un livello di confidenza adeguato per un prototipo accademico.
+
+Le scelte tecnologiche più discusse --- SHA-256 per hashing, assenza di SPID/SSO, push nativa non verificata end-to-end su device reale --- sono state documentate esplicitamente come decisioni deliberate per il contesto di prototipo, con indicazione delle evoluzioni consigliate per un contesto produttivo.
+
+Dal punto di vista del processo, l'adozione di Gitflow semplificato e CI/CD obbligatoria ha nettamente migliorato la qualità delle integrazioni rispetto a Sprint 1. La comunicazione interna è stata efficace, anche se le stime iniziali degli SP per alcuni moduli (chat, admin) si sono rivelate ottimistiche.
+
+Il team considera gli obiettivi di Sprint 2 sostanzialmente raggiunti: tutte le user story ad alta priorità sono Done, i flussi principali sono verificabili in produzione, la documentazione Apiary/OpenAPI è allineata al backend e il report integra test cases e matrice di tracciabilità.
+
+% ==============================================================
+\appendix
+\section{Matrice di tracciabilità requisiti}
+% ==============================================================
+
+La tabella seguente mappa ogni requisito funzionale (RF), use case (UC) e vincolo OCL ai moduli backend, alle schermate frontend/mobile e alle evidenze di test. Gli stati sono: \textbf{Completo}, \textbf{Parziale}, \textbf{Prototipale}, \textbf{Futuro}.
+
+\newcommand{\tr}[1]{{\ttfamily\seqsplit{#1}}}
+
+\setlength\tabcolsep{3pt}
+\renewcommand{\arraystretch}{1.15}
+\scriptsize
+\begin{longtable}{L{2.0cm}L{2.2cm}L{3.4cm}L{2.5cm}L{2.2cm}L{1.4cm}}
+\toprule
+\textbf{Area} & \textbf{RF/UC/OCL} & \textbf{Backend / API} & \textbf{Frontend / Mobile} & \textbf{Test} & \textbf{Stato} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+Autenticazione
+  & Auth
+  & \tr{authRoutes, authController,} \tr{jwt.js, authService}
+  & \tr{login.html, register.html,} \tr{AuthScreen}
+  & \tr{auth.test.js,} \tr{security.test.js}
+  & Completo \\
+
+Password hash
+  & OCL \#2 / RNF
+  & \tr{password.js, userModel.js}
+  & login/register web e mobile
+  & \tr{auth.test.js}
+  & Prototipale\footnotemark[1] \\
+
+Profilo utente
+  & Users
+  & \tr{usersRoutes, usersController}
+  & \tr{profile.html, ProfileScreen}
+  & smoke
+  & Completo \\
+
+Profilo pubblico
+  & RF8
+  & \tr{GET /users/:id/profilo,} \tr{recensioniController}
+  & \tr{public-profile.html}
+  & \tr{reviews.test.js}
+  & Completo \\
+
+Catalogo
+  & RF4 / UC8 / RF22
+  & \tr{GET /annunci,} \tr{annunciController}
+  & \tr{catalog.html, CatalogScreen}
+  & \tr{annunci.test.js,} \tr{catalog\_flow.test.js}
+  & Completo \\
+
+Crea annuncio
+  & RF15 / RF16 / OCL \#5
+  & \tr{POST /annunci,} \tr{annuncioModel}
+  & \tr{create-annuncio.html,} \tr{CreateAnnuncioScreen}
+  & \tr{annunci.test.js,} \tr{catalog\_flow.test.js}
+  & Completo \\
+
+Modifica annuncio
+  & RF18 / OCL \#7
+  & \tr{PUT /annunci/:id}
+  & \tr{edit-annuncio.html,} \tr{MyAnnunciScreen}
+  & \tr{annunci.test.js}
+  & Completo \\
+
+Cancellazione
+  & RF18 / OCL \#8
+  & \tr{DELETE /annunci/:id}
+  & \tr{my-annunci.html}
+  & \tr{annunci.test.js,} \tr{catalog\_flow.test.js}
+  & Completo \\
+
+Stato annuncio
+  & state machine
+  & \tr{PATCH /annunci/:id/stato}
+  & viste donatore
+  & \tr{annunci.test.js}
+  & Completo \\
+
+Prenotazione
+  & UC2 / OCL \#4,\#6, \#9,\#10
+  & \tr{prenotazioniRoutes,} \tr{prenotazioniController,} \tr{prenotazioniService}
+  & \tr{annuncio.html,} \tr{MyBookingsScreen}
+  & \tr{prenotazioni.test.js,} \tr{concurrent.test.js}
+  & Completo \\
+
+Concorrenza
+  & OCL \#9,\#10 / RNF2 parziale
+  & update atomico su campo \tr{versione}
+  & n/a
+  & \tr{concurrent.test.js}
+  & Parziale \\
+
+Annullamento
+  & RF19 / RF20 / OCL \#11
+  & disdetta e no-show routes
+  & \tr{mybookings.html,} \tr{MyBookingsScreen}
+  & \tr{prenotazioni.test.js,} \tr{prenotazioni\_flow.test.js}
+  & Completo \\
+
+QR scambio
+  & UC3 / RF17,RF27 / OCL \#13--\#15
+  & \tr{qrRoutes,} \tr{scambioQrService}
+  & \tr{qr-display.html,} \tr{qr-scan.html,} \tr{QRScanScreen}
+  & \tr{swap.test.js,} \tr{qr\_edge\_cases.test.js}
+  & Completo \\
+
+Wallet
+  & RF5,RF6 / OCL \#16,\#17
+  & \tr{walletRoutes, walletService}
+  & \tr{wallethistory.html}
+  & \tr{wallet.test.js,} \tr{swap.test.js}
+  & Completo \\
+
+Premi / coupon
+  & UC7 / OCL \#17
+  & \tr{premiController,} \tr{couponModel, riscattoModel}
+  & \tr{premi.html, my-premi.html,} \tr{PremiScreen}
+  & \tr{premi.test.js}
+  & Completo \\
+
+Recensioni
+  & RF8,RF21,RF28 / OCL \#21
+  & \tr{recensioniController}
+  & \tr{swap-success.html,} \tr{public-profile.html,} \tr{SwapSuccessScreen}
+  & \tr{reviews.test.js}
+  & Completo \\
+
+Chat
+  & RF10,RF11, RF13,RF14
+  & \tr{chatRoutes, messaggiRoutes,} \tr{requireParticipant}
+  & \tr{chat.html, messaggi.html,} \tr{ChatScreen}
+  & \tr{chat\_access.test.js,} smoke
+  & Completo \\
+
+Notifiche in-app
+  & RF12
+  & \tr{notificheService,} \tr{notificaModel}
+  & \tr{notifiche.html,} \tr{NotificheScreen}
+  & \tr{notifiche.test.js}
+  & Completo \\
+
+Push native
+  & RF12 esteso
+  & \tr{sendExpoPushIfConfigured,} \tr{PATCH /users/me/push-token}
+  & token mobile (parziale)
+  & \tr{support\_push.test.js}
+  & Parziale\footnotemark[2] \\
+
+Email
+  & servizio esterno
+  & \tr{emailService.js}
+  & n/a
+  & doc servizi
+  & Prototipale \\
+
+Segnalazioni
+  & RF9 / OCL \#18,\#19
+  & \tr{segnalazioniController}
+  & \tr{segnala.html, my-reports.html}
+  & \tr{segnalazioni.test.js,} \tr{security.test.js}
+  & Completo \\
+
+Moderazione admin
+  & RF29 / OCL \#20
+  & \tr{adminController, userService}
+  & \tr{admin/dashboard.html}
+  & \tr{admin\_moderation.test.js}
+  & Completo \\
+
+Dashboard admin
+  & RF30,RF31 / UC14
+  & \tr{GET /admin/statistiche}
+  & dashboard admin
+  & \tr{admin\_moderation.test.js}
+  & Completo \\
+
+Ticket supporto
+  & S2
+  & \tr{supportoController,} \tr{ticketSupportoModel}
+  & nessuna UI dedicata
+  & \tr{support\_push.test.js}
+  & Parziale\footnotemark[3] \\
+
+Contratto API
+  & REST / Apiary
+  & \tr{apiary.apib, /api/v1/*}
+  & client web/mobile
+  & smoke API client
+  & Completo \\
+
+App mobile
+  & prototipo
+  & \tr{App.js,} \tr{mobile/src/screens/}
+  & React Native/Expo
+  & \tr{mobile/tests/smoke}
+  & Completo prototipo \\
+
+CI/CD
+  & processo
+  & \tr{.github/workflows/ci.yml}
+  & deploy Render
+  & GitHub Actions
+  & Completo \\
+
+SPID/SSO, OSM
+  & feature future
+  & n/a
+  & n/a
+  & n/a
+  & Futuro \\
+
+\end{longtable}
+\setlength\tabcolsep{6pt}
+\renewcommand{\arraystretch}{1}
+\normalsize
+
+\footnotetext[1]{SHA-256 è scelta accademica dichiarata; bcrypt/Argon2 consigliati per produzione.}
+\footnotetext[2]{Backend pronto e testato; verifica end-to-end su device fisico (EAS) rinviata a PB-28.}
+\footnotetext[3]{Backend implementato e testato; schermata UI mobile dedicata in PB-27.}
+
+\end{document}
